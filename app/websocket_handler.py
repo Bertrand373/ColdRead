@@ -177,6 +177,11 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                                 })
                             print(f"[WS] Context updated for {client_id}", flush=True)
                             
+                        elif data.get("type") == "down_close":
+                            # Agent clicked down-close button
+                            transcriber.apply_down_close()
+                            print(f"[WS] Down-close applied for {client_id}", flush=True)
+                            
                         elif data.get("type") == "stop":
                             print(f"[WS] Stop requested by {client_id}", flush=True)
                             break

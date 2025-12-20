@@ -19,6 +19,7 @@ from deepgram import DeepgramClient, LiveTranscriptionEvents, LiveOptions
 
 from .config import settings
 from .rag_engine import get_rag_engine, CallContext
+from .call_state_machine import CallStateMachine
 from .usage_tracker import log_deepgram_usage
 
 
@@ -52,7 +53,8 @@ class RealtimeTranscriber:
         self.connection = None
         self.transcript_buffer = ""
         self.last_guidance_time = 0
-        self.call_context = CallContext()
+        self.call_context = CallContext()  # Legacy fallback
+        self.state_machine = None  # V2: Full state tracking
         self.rag_engine = None
         self.is_running = False
         self._loop = None
@@ -292,6 +294,9 @@ class RealtimeTranscriber:
                         # Buffer final transcripts for context
                         if is_final:
                             self.transcript_buffer += " " + transcript
+                            # Feed to state machine for full tracking
+                            if self.state_machine:
+                                self.state_machine.add_transcript(transcript, is_final=True)
                                 
         except Exception as e:
             print(f"[RT] Error handling transcript: {e}", flush=True)
@@ -449,15 +454,33 @@ class RealtimeTranscriber:
                     "type": "price_objection",
                     "trigger": self.transcript_buffer[-100:]
                 })
+                # Record in state machine
+                if self.state_machine:
+                    self.state_machine.record_objection("price", self.transcript_buffer[-200:])
             
-            # Stream guidance using the new streaming method
-            # Pass session_id for Claude usage tracking
-            for chunk in self.rag_engine.generate_guidance_stream(
-                self.transcript_buffer,
-                self.call_context,
-                agency=self._agency,
-                session_id=self._session_id
-            ):
+            # Use V2 with full state if state machine exists, otherwise legacy
+            if self.state_machine:
+                call_state = self.state_machine.get_state_for_claude()
+                print(f"[RT] Using V2 guidance (phase={call_state.get('presentation_context', {}).get('current_phase', 'N/A')}, down_close={call_state.get('down_close_level', 0)})", flush=True)
+                
+                guidance_stream = self.rag_engine.generate_guidance_stream_v2(
+                    call_state,
+                    self.transcript_buffer[-500:],
+                    agency=self._agency,
+                    session_id=self._session_id
+                )
+            else:
+                # Legacy fallback
+                print(f"[RT] Using legacy guidance (no state machine)", flush=True)
+                guidance_stream = self.rag_engine.generate_guidance_stream(
+                    self.transcript_buffer,
+                    self.call_context,
+                    agency=self._agency,
+                    session_id=self._session_id
+                )
+            
+            # Stream guidance
+            for chunk in guidance_stream:
                 if chunk:
                     full_text += chunk
                     batch_buffer += chunk
@@ -494,6 +517,14 @@ class RealtimeTranscriber:
             # Send completion signal
             if full_text:
                 print(f"[RT] Guidance complete ({len(full_text)} chars), sending completion signal", flush=True)
+                
+                # Record in state machine for history
+                if self.state_machine:
+                    self.state_machine.record_guidance(
+                        full_text,
+                        self.transcript_buffer[-100:] if len(self.transcript_buffer) > 100 else self.transcript_buffer
+                    )
+                
                 await self.on_guidance({
                     "type": "guidance_complete",
                     "guidance": full_text,
@@ -513,6 +544,7 @@ class RealtimeTranscriber:
             
     def update_context(self, context_data: dict):
         """Update call context with client information"""
+        # Update legacy context (fallback)
         if "call_type" in context_data:
             self.call_context.call_type = context_data["call_type"]
             print(f"[RT] Call type set to: {self.call_context.call_type}", flush=True)
@@ -527,6 +559,109 @@ class RealtimeTranscriber:
         if "agency" in context_data:
             self._agency = context_data["agency"]
             print(f"[RT] Agency set to: {self._agency} for session {self._session_id[:8]}", flush=True)
+        
+        # Create or update state machine (V2)
+        if self.state_machine is None:
+            self.state_machine = CallStateMachine(
+                session_id=self._session_id,
+                agency=self._agency or "default",
+                call_type=context_data.get("call_type", "phone")
+            )
+            print(f"[RT] State machine created for session {self._session_id[:8]}", flush=True)
+        
+        # Update state machine with client info
+        if self.state_machine:
+            self.state_machine.update_client_profile(
+                age=context_data.get("client_age"),
+                occupation=context_data.get("client_occupation"),
+                family=context_data.get("client_family")
+            )
+    
+    def apply_down_close(self):
+        """Agent clicked down-close button - reduce coverage and generate contextual guidance"""
+        if self.state_machine:
+            result = self.state_machine.do_down_close(reason="price")
+            level = result.get('level', 0)
+            label = result.get('label', '')
+            print(f"[RT] Down-close applied: level {level}, {label}", flush=True)
+            
+            # Generate contextual guidance for this down-close
+            self._schedule_async(self._generate_down_close_guidance(level, label))
+        else:
+            print(f"[RT] Down-close requested but no state machine", flush=True)
+    
+    async def _generate_down_close_guidance(self, level: int, label: str):
+        """Generate contextual down-close guidance using Claude"""
+        try:
+            if not self.rag_engine:
+                self.rag_engine = get_rag_engine()
+            
+            full_text = ""
+            first_chunk = True
+            batch_buffer = ""
+            last_send_time = time.time()
+            BATCH_INTERVAL = 0.08
+            
+            # Get full state for context
+            call_state = self.state_machine.get_state_for_claude()
+            
+            # Build specific down-close prompt
+            down_close_prompt = f"""The client just said they can't afford the coverage. The agent clicked to reduce coverage.
+
+DOWN-CLOSE LEVEL: {level} - {label}
+CURRENT COVERAGE: {call_state.get('coverage_summary', 'Unknown')}
+
+Based on the conversation so far, give the agent EXACTLY what to say to present this reduced coverage option.
+- Reference something specific from the conversation (family, job, concerns mentioned)
+- State the new coverage amount naturally
+- Keep it to 2-3 sentences max
+- Make it feel personal, not scripted"""
+
+            print(f"[RT] Generating contextual down-close guidance...", flush=True)
+            
+            for chunk in self.rag_engine.generate_guidance_stream_v2(
+                call_state,
+                down_close_prompt,
+                agency=self._agency,
+                session_id=self._session_id
+            ):
+                if chunk:
+                    full_text += chunk
+                    batch_buffer += chunk
+                    
+                    now = time.time()
+                    if first_chunk or (now - last_send_time) >= BATCH_INTERVAL:
+                        await self.on_guidance({
+                            "type": "guidance_start" if first_chunk else "guidance_chunk",
+                            "chunk": batch_buffer,
+                            "full_text": full_text,
+                            "is_complete": False
+                        })
+                        batch_buffer = ""
+                        last_send_time = now
+                        first_chunk = False
+            
+            if batch_buffer:
+                await self.on_guidance({
+                    "type": "guidance_chunk",
+                    "chunk": batch_buffer,
+                    "full_text": full_text,
+                    "is_complete": False
+                })
+            
+            if full_text:
+                print(f"[RT] Down-close guidance complete ({len(full_text)} chars)", flush=True)
+                self.state_machine.record_guidance(full_text, f"down_close_level_{level}")
+                await self.on_guidance({
+                    "type": "guidance_complete",
+                    "guidance": full_text,
+                    "trigger": f"down_close_level_{level}"
+                })
+                
+        except Exception as e:
+            print(f"[RT] Error generating down-close guidance: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
     
     def get_session_stats(self) -> dict:
         """Get current session statistics for debugging/monitoring"""

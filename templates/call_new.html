@@ -1670,14 +1670,8 @@
         
         // ==================== PRICE OBJECTION / DOWN-CLOSE ====================
         // Down-close scripts from Globe Life training
-        const DOWN_CLOSE_SCRIPTS = [
-            "I understand budget is tight. Let me show you how we can adjust the coverage to fit what works for you today.",
-            "Let's adjust Final Expense to $15,000 — that still covers funeral costs. Your income protection stays the same. Does this feel better?",
-            "Here's what we can do: adjust Final Expense to $10,000. That's right in the middle of current costs. Everything else stays the same.",
-            "Let's adjust Final Expense to $7,500 — the basic funeral cost. Leave everything else to protect your family.",
-            "We'll keep Final Expense at $7,500 and adjust income protection from 2 years to 1 year. When things get better, you can always increase.",
-            "If something happened unexpectedly, which of these could your family go without for now, knowing we can add it later?"
-        ];
+        // Down-close levels tracked for backend sync
+        const MAX_DOWN_CLOSE_LEVELS = 5;
         
         function showPriceObjectionButton() {
             dom.priceObjectionContainer.classList.add('visible');
@@ -1688,19 +1682,17 @@
         }
         
         function handlePriceObjection() {
-            // Get the appropriate script based on current level
-            const script = DOWN_CLOSE_SCRIPTS[state.downCloseLevel] || DOWN_CLOSE_SCRIPTS[DOWN_CLOSE_SCRIPTS.length - 1];
-            
-            // Show the guidance
-            showGuidance(script);
-            
-            // Increment level for next time (AI tracks internally)
-            if (state.downCloseLevel < DOWN_CLOSE_SCRIPTS.length - 1) {
-                state.downCloseLevel++;
-            }
-            
-            // Send to backend for tracking
+            // Request contextual down-close guidance from Claude
             if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                // Show loading state
+                showGuidance("...");
+                
+                // Increment level
+                if (state.downCloseLevel < 5) {
+                    state.downCloseLevel++;
+                }
+                
+                // Request contextual guidance from backend
                 state.ws.send(JSON.stringify({
                     type: 'down_close',
                     data: { level: state.downCloseLevel }
