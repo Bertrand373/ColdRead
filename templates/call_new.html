@@ -2218,19 +2218,23 @@
             state.streamingGuidance = msg.chunk || '';
             state.guidanceRenderPending = false;
             
-            dom.listeningState.style.display = 'none';
-            dom.guidanceState.classList.remove('active');
+            // Check if guidance is already showing (prevents flash on rapid re-triggers)
+            const alreadyShowing = dom.guidanceState.classList.contains('active');
             
-            // Show first text immediately
+            dom.listeningState.style.display = 'none';
+            
+            // Update text content
             dom.guidanceText.innerHTML = formatGuidanceText(state.streamingGuidance);
             
-            // Trigger fade-in animation on panel
-            requestAnimationFrame(() => {
-                dom.guidanceState.classList.add('active');
-            });
-            
-            playNotify();
-            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+            // Only animate and notify if panel wasn't already showing
+            if (!alreadyShowing) {
+                requestAnimationFrame(() => {
+                    dom.guidanceState.classList.add('active');
+                });
+                
+                playNotify();
+                if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+            }
         }
         
         function handleGuidanceChunk(msg) {
