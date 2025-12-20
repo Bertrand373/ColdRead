@@ -169,6 +169,50 @@ Be direct. Be specific. Help them close."""
         )
         
         return response.content[0].text
+
+    def generate_guidance_stream(
+        self, 
+        transcript_chunk: str, 
+        call_context: CallContext,
+        agency: Optional[str] = None
+    ):
+        """
+        Stream guidance tokens as they're generated.
+        Yields text chunks for real-time display.
+        
+        Usage:
+            for chunk in engine.generate_guidance_stream(transcript, context):
+                send_to_client(chunk)
+        """
+        
+        # Get relevant context from agency's knowledge base
+        relevant_context = self.get_relevant_context(
+            transcript_chunk,
+            category=call_context.current_product,
+            agency=agency
+        )
+        
+        system_prompt = self.build_system_prompt(call_context)
+        
+        if relevant_context:
+            system_prompt += f"\n\nRELEVANT TRAINING MATERIALS:\n{relevant_context}"
+        
+        messages = [
+            {
+                "role": "user",
+                "content": f"Conversation snippet:\n\n\"{transcript_chunk}\"\n\nProvide guidance for the agent."
+            }
+        ]
+        
+        # Stream the response
+        with self.client.messages.stream(
+            model=settings.claude_model,
+            max_tokens=500,
+            system=system_prompt,
+            messages=messages
+        ) as stream:
+            for text in stream.text_stream:
+                yield text
     
     def analyze_transcript(
         self, 

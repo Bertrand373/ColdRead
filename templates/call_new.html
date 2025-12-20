@@ -538,7 +538,21 @@
             max-width: 600px;
         }
         
-        .guidance-state.active { display: flex; }
+        .guidance-state.active { 
+            display: flex;
+            animation: guidanceFadeIn 150ms ease-out;
+        }
+        
+        @keyframes guidanceFadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(-8px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
         
         .guidance-text {
             font-size: 1.5rem;
@@ -547,6 +561,12 @@
             color: var(--text);
             text-align: center;
             margin-bottom: 32px;
+        }
+        
+        /* Bold key phrases for quick scanning */
+        .guidance-text .say-this {
+            color: var(--accent-dark);
+            font-weight: 600;
         }
         
         .guidance-text .cursor {
@@ -1326,7 +1346,7 @@
             wsEndpoint: '/ws/',
             outcomeEndpoint: '/api/call/outcome',
             agenciesEndpoint: '/api/agencies',
-            streamSpeed: 18,
+            streamSpeed: 18,  // DEPRECATED: No longer used for guidance (now instant fade-in)
             audioNotifyFreq: 880,
             audioNotifyDuration: 0.15,
             captionFadeDelay: 4000 // Fade caption after 4s of silence
@@ -1348,6 +1368,7 @@
             guidanceHistory: [],
             selectedTipIndex: null,
             callOutcome: null,
+            streamingGuidance: '',  // Accumulates text during streaming guidance
             // Agent identity
             agentName: null,
             agentId: null,
@@ -1753,8 +1774,21 @@
                 case 'transcript':
                     handleTranscript(msg);
                     break;
+                // Legacy non-streaming guidance
                 case 'guidance':
                     handleGuidance(msg);
+                    break;
+                // Streaming guidance - first chunk
+                case 'guidance_start':
+                    handleGuidanceStart(msg);
+                    break;
+                // Streaming guidance - subsequent chunks
+                case 'guidance_chunk':
+                    handleGuidanceChunk(msg);
+                    break;
+                // Streaming guidance - complete
+                case 'guidance_complete':
+                    handleGuidanceComplete(msg);
                     break;
                 case 'error':
                     console.error('Server error:', msg.message);
@@ -1986,6 +2020,73 @@
             if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
         }
         
+        // ==================== STREAMING GUIDANCE HANDLERS ====================
+        // These handle real-time token streaming for ~1 second first-visible latency
+        
+        function handleGuidanceStart(msg) {
+            // First chunk arrived - show panel immediately
+            state.streamingGuidance = msg.chunk || '';
+            
+            dom.listeningState.style.display = 'none';
+            dom.guidanceState.classList.remove('active');
+            
+            // Show first text immediately
+            dom.guidanceText.innerHTML = formatGuidanceText(state.streamingGuidance);
+            
+            // Trigger animation and play notification
+            requestAnimationFrame(() => {
+                dom.guidanceState.classList.add('active');
+            });
+            
+            playNotify();
+            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+        }
+        
+        function handleGuidanceChunk(msg) {
+            // Update with accumulated text from server
+            state.streamingGuidance = msg.full_text || (state.streamingGuidance + (msg.chunk || ''));
+            
+            // Update display with latest text
+            dom.guidanceText.innerHTML = formatGuidanceText(state.streamingGuidance);
+        }
+        
+        function handleGuidanceComplete(msg) {
+            // Final text received
+            const fullText = msg.guidance || state.streamingGuidance || '';
+            const sayThis = extractSayThis(fullText);
+            
+            // Store in history for outcome tracking
+            state.guidanceHistory.push({
+                text: sayThis,
+                raw: fullText,
+                timestamp: Date.now()
+            });
+            
+            // Final render with full formatting
+            dom.guidanceText.innerHTML = formatGuidanceText(sayThis);
+            
+            // Clear streaming state
+            state.streamingGuidance = '';
+        }
+        
+        function formatGuidanceText(text) {
+            if (!text) return '';
+            
+            // Bold numbers/money
+            let formatted = text.replace(/(\$[\d,]+|\d+%|\d+,\d+)/g, '<strong>$1</strong>');
+            
+            // Highlight quoted text as key phrase
+            const quotedMatch = formatted.match(/"([^"]+)"/);
+            if (quotedMatch) {
+                formatted = formatted.replace(
+                    `"${quotedMatch[1]}"`, 
+                    `<span class="say-this">"${quotedMatch[1]}"</span>`
+                );
+            }
+            
+            return formatted;
+        }
+        
         function extractSayThis(text) {
             const quotedMatch = text.match(/"([^"]+)"/);
             if (quotedMatch) return quotedMatch[1];
@@ -2002,34 +2103,35 @@
         }
         
         function showGuidance(text) {
-            if (state.streamInterval) clearInterval(state.streamInterval);
+            // Clear any previous animation
+            if (state.streamInterval) {
+                clearInterval(state.streamInterval);
+                state.streamInterval = null;
+            }
             
             dom.listeningState.style.display = 'none';
-            dom.guidanceState.classList.add('active');
+            dom.guidanceState.classList.remove('active'); // Reset for re-trigger animation
             
-            const formattedText = text.replace(/(\$[\d,]+|\d+%|\d+,\d+)/g, '<strong>$1</strong>');
+            // Format text: bold numbers/money and highlight "SAY THIS" content
+            let formattedText = text
+                .replace(/(\$[\d,]+|\d+%|\d+,\d+)/g, '<strong>$1</strong>');
             
-            let i = 0;
-            dom.guidanceText.innerHTML = '<span class="cursor"></span>';
+            // If there's quoted text, make it stand out as the key phrase
+            const quotedMatch = formattedText.match(/"([^"]+)"/);
+            if (quotedMatch) {
+                formattedText = formattedText.replace(
+                    `"${quotedMatch[1]}"`, 
+                    `<span class="say-this">"${quotedMatch[1]}"</span>`
+                );
+            }
             
-            state.streamInterval = setInterval(() => {
-                if (i < formattedText.length) {
-                    if (formattedText[i] === '<') {
-                        const tagEnd = formattedText.indexOf('>', i);
-                        if (tagEnd !== -1) {
-                            dom.guidanceText.innerHTML = formattedText.substring(0, tagEnd + 1) + '<span class="cursor"></span>';
-                            i = tagEnd + 1;
-                            return;
-                        }
-                    }
-                    dom.guidanceText.innerHTML = formattedText.substring(0, i + 1) + '<span class="cursor"></span>';
-                    i++;
-                } else {
-                    dom.guidanceText.innerHTML = formattedText;
-                    clearInterval(state.streamInterval);
-                    state.streamInterval = null;
-                }
-            }, CONFIG.streamSpeed);
+            // INSTANT render - no typewriter delay
+            dom.guidanceText.innerHTML = formattedText;
+            
+            // Trigger fade-in animation
+            requestAnimationFrame(() => {
+                dom.guidanceState.classList.add('active');
+            });
         }
         
         function dismissGuidance() {

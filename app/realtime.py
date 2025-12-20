@@ -6,6 +6,7 @@ Production-ready with:
 - Thread-safe async callbacks
 - Timeout on AI guidance generation
 - Proper error handling
+- OPTIMIZED: Reduced latency for real-time feel
 """
 
 import asyncio
@@ -21,10 +22,21 @@ from .rag_engine import get_rag_engine, CallContext
 class RealtimeTranscriber:
     """Handles real-time audio transcription via Deepgram"""
     
-    # Configuration
-    GUIDANCE_TIMEOUT_SECONDS = 15.0  # Max time for AI guidance generation
-    GUIDANCE_COOLDOWN_SECONDS = 10.0  # Min time between guidance generations
-    MIN_WORDS_FOR_GUIDANCE = 30  # Minimum words before generating guidance
+    # ============ LATENCY-OPTIMIZED CONFIGURATION ============
+    # Target: ~800ms to first visible guidance text
+    #
+    # Timing chain:
+    #   Deepgram interim transcript → 200-400ms
+    #   Hot trigger detection       → 0ms (checked on interim)
+    #   RAG search                  → 200-300ms
+    #   Claude first token          → 400ms
+    #   WebSocket to browser        → 50ms
+    #   Total first visible:        → ~800-1000ms
+    #
+    GUIDANCE_TIMEOUT_SECONDS = 8.0   # Max time for AI guidance generation
+    GUIDANCE_COOLDOWN_SECONDS = 3.0  # Cooldown for word-count triggers
+    # Note: Hot triggers use 1.0s cooldown (hardcoded in _check_for_guidance_trigger)
+    MIN_WORDS_FOR_GUIDANCE = 12      # Minimum words before non-trigger guidance
     
     def __init__(self, on_transcript: Callable, on_guidance: Callable):
         self.on_transcript = on_transcript
@@ -37,8 +49,9 @@ class RealtimeTranscriber:
         self.is_running = False
         self._loop = None
         self._generating_guidance = False  # Prevent concurrent guidance generation
+        self._agency = None  # Track agency for RAG context
         
-        print(f"[RT] RealtimeTranscriber initialized", flush=True)
+        print(f"[RT] RealtimeTranscriber initialized (cooldown={self.GUIDANCE_COOLDOWN_SECONDS}s, min_words={self.MIN_WORDS_FOR_GUIDANCE})", flush=True)
         
         # Initialize Deepgram client
         if settings.deepgram_api_key:
@@ -90,14 +103,15 @@ class RealtimeTranscriber:
             print(f"[RT] Event handlers registered", flush=True)
             
             # Configure live transcription options
-            # IMPORTANT: Must match frontend audio format (16kHz PCM Int16 mono)
+            # MAXIMUM SPEED: Fastest possible sentence detection
             options = LiveOptions(
                 model="nova-2",
                 language="en-US",
                 smart_format=True,
                 interim_results=True,
-                utterance_end_ms="1000",
-                endpointing=300,
+                utterance_end_ms="400",   # Was 500 - faster sentence boundaries
+                endpointing=200,          # Was 300 - react faster to pauses
+                vad_events=True,          # Know when speech starts/stops
                 sample_rate=16000,
                 encoding="linear16",
                 channels=1
@@ -105,14 +119,13 @@ class RealtimeTranscriber:
             print(f"[RT] Options configured, starting connection...", flush=True)
             
             # Start the connection in an executor to prevent blocking
-            # This is the key fix - connection.start() might block
             try:
                 result = await asyncio.wait_for(
                     asyncio.get_event_loop().run_in_executor(
                         None, 
                         lambda: self.connection.start(options)
                     ),
-                    timeout=8.0  # 8 second timeout for connection
+                    timeout=8.0
                 )
                 print(f"[RT] connection.start() returned: {result}", flush=True)
             except asyncio.TimeoutError:
@@ -158,14 +171,14 @@ class RealtimeTranscriber:
             loop = asyncio.get_event_loop()
             await asyncio.wait_for(
                 loop.run_in_executor(None, self.connection.send, audio_data),
-                timeout=2.0  # Don't wait more than 2 seconds
+                timeout=2.0
             )
         except asyncio.TimeoutError:
             print(f"[RT] WARNING: send_audio timed out, stopping", flush=True)
             self.is_running = False
         except Exception as e:
             print(f"[RT] Error sending audio: {e}", flush=True)
-            self.is_running = False  # Stop trying on error
+            self.is_running = False
             
     async def stop(self):
         """Stop the transcription (non-blocking)"""
@@ -174,7 +187,6 @@ class RealtimeTranscriber:
         
         if self.connection:
             try:
-                # Run finish in executor with timeout to prevent blocking
                 loop = asyncio.get_event_loop()
                 await asyncio.wait_for(
                     loop.run_in_executor(None, self.connection.finish),
@@ -221,39 +233,85 @@ class RealtimeTranscriber:
                             "is_final": is_final
                         }))
                         
-                        # Buffer final transcripts for analysis
+                        # Check for trigger keywords on BOTH interim AND final
+                        # This lets us react MID-SENTENCE to objections
+                        self._check_for_guidance_trigger(transcript, is_final)
+                        
+                        # Buffer final transcripts for context
                         if is_final:
                             self.transcript_buffer += " " + transcript
-                            self._check_for_guidance_trigger(transcript)
                                 
         except Exception as e:
             print(f"[RT] Error handling transcript: {e}", flush=True)
     
-    def _check_for_guidance_trigger(self, latest_transcript: str):
+    def _check_for_guidance_trigger(self, latest_transcript: str, is_final: bool = True):
         """Check if we should trigger guidance generation"""
         # Don't generate if already generating
         if self._generating_guidance:
             return
-            
-        # Check cooldown
+        
         now = time.time()
+        text_lower = latest_transcript.lower()
+        
+        # EXPANDED trigger keywords - life insurance specific
+        # These trigger IMMEDIATELY, even mid-sentence
+        hot_triggers = [
+            # Price/Money - highest priority
+            "afford", "expensive", "cost", "price", "money", "budget",
+            "too much", "cheaper", "waste", "worth it", "tight",
+            # Stalling tactics
+            "think about", "talk to", "spouse", "wife", "husband",
+            "not sure", "don't know", "maybe", "later", "call me back",
+            "let me think", "need time", "sleep on it", "pray about", "pray on",
+            # Brush-offs
+            "send me information", "email me", "mail me", "send me something",
+            "already have", "don't need", "not interested", "no thanks",
+            "can't", "won't", "no way", "pass", "not for me",
+            # Trust/Skepticism
+            "scam", "pushy", "what's the catch", "fine print",
+            "too good", "sounds fishy", "pyramid", "legit",
+            # Health/Age objections
+            "too young", "too old", "healthy", "never get sick",
+            "pre-existing", "health issues", "medical",
+            # Timing
+            "bad time", "busy", "call back", "not now", "swamped",
+            # Existing coverage
+            "work insurance", "through my job", "employer", "through work",
+            "social security", "government", "va ", "veteran",
+            # Product objections
+            "term", "whole life", "universal", "cash value",
+            "investment", "stock market", "better return", "mutual fund",
+            "dave ramsey", "ramsey", "suze orman",
+            # Waiting/Process
+            "waiting period", "how long", "blood test", "exam",
+            # Decision makers
+            "check with", "ask my", "run it by"
+        ]
+        
+        has_hot_trigger = any(kw in text_lower for kw in hot_triggers)
+        
+        # HOT TRIGGERS: 1 second cooldown (react fast to objections)
+        # WORD COUNT: 3 second cooldown (normal flow)
+        if has_hot_trigger:
+            # Reduced cooldown for hot triggers - react fast!
+            if now - self.last_guidance_time < 1.0:
+                return
+            print(f"[RT] 🔥 HOT TRIGGER detected: '{latest_transcript[:50]}...' - generating immediately", flush=True)
+            self._schedule_async(self._generate_guidance())
+            return
+        
+        # For non-trigger situations, only check on FINAL transcripts
+        if not is_final:
+            return
+            
+        # Standard cooldown for word-count based triggers
         if now - self.last_guidance_time < self.GUIDANCE_COOLDOWN_SECONDS:
             return
             
         word_count = len(self.transcript_buffer.split())
         
-        # Check for trigger keywords
-        trigger_keywords = [
-            "afford", "expensive", "cost", "price", "money",
-            "think about", "talk to", "spouse", "wife", "husband",
-            "not sure", "don't know", "maybe", "later",
-            "already have", "don't need", "not interested",
-            "can't", "won't", "no way", "too much"
-        ]
-        has_trigger = any(kw in latest_transcript.lower() for kw in trigger_keywords)
-        
-        # Generate guidance if conditions met
-        if word_count > self.MIN_WORDS_FOR_GUIDANCE or has_trigger:
+        # Generate guidance if enough words accumulated
+        if word_count > self.MIN_WORDS_FOR_GUIDANCE:
             self._schedule_async(self._generate_guidance())
                    
     def _handle_error(self, *args, **kwargs):
@@ -261,10 +319,8 @@ class RealtimeTranscriber:
         error = kwargs.get('error') or (args[1] if len(args) > 1 else "Unknown error")
         print(f"[RT] Deepgram error: {error}", flush=True)
         
-        # Stop trying to send audio
         self.is_running = False
         
-        # Notify client of error (thread-safe)
         self._schedule_async(self.on_transcript({
             "type": "error",
             "message": str(error)
@@ -287,11 +343,6 @@ class RealtimeTranscriber:
         self.last_guidance_time = time.time()
         
         try:
-            # Notify client we're processing
-            await self.on_transcript({
-                "type": "processing"
-            })
-            
             # Run guidance generation with timeout
             try:
                 result = await asyncio.wait_for(
@@ -304,7 +355,6 @@ class RealtimeTranscriber:
                     
             except asyncio.TimeoutError:
                 print(f"[RT] WARNING: Guidance generation timed out after {self.GUIDANCE_TIMEOUT_SECONDS}s", flush=True)
-                # Don't send error to client - just log and continue
             
             # Clear buffer after processing
             self.transcript_buffer = ""
@@ -315,20 +365,38 @@ class RealtimeTranscriber:
             self._generating_guidance = False
     
     async def _do_generate_guidance(self) -> Optional[dict]:
-        """Actually generate the guidance (run in executor for blocking calls)"""
+        """Stream guidance tokens to client in real-time"""
         try:
-            # Generate guidance using RAG engine
-            guidance = self.rag_engine.generate_guidance(
-                self.transcript_buffer,
-                self.call_context
-            )
+            full_text = ""
+            first_chunk = True
             
-            if guidance:
-                return {
-                    "type": "guidance",
-                    "guidance": guidance,
+            # Stream guidance using the new streaming method
+            for chunk in self.rag_engine.generate_guidance_stream(
+                self.transcript_buffer,
+                self.call_context,
+                agency=self._agency
+            ):
+                if chunk:
+                    full_text += chunk
+                    
+                    # Send each chunk immediately over WebSocket
+                    await self.on_guidance({
+                        "type": "guidance_chunk" if not first_chunk else "guidance_start",
+                        "chunk": chunk,
+                        "full_text": full_text,  # Include accumulated text for simpler client handling
+                        "is_complete": False
+                    })
+                    first_chunk = False
+            
+            # Send completion signal
+            if full_text:
+                await self.on_guidance({
+                    "type": "guidance_complete",
+                    "guidance": full_text,
                     "trigger": self.transcript_buffer[-100:] if len(self.transcript_buffer) > 100 else self.transcript_buffer
-                }
+                })
+                return None  # Already sent via streaming
+            
             return None
             
         except Exception as e:
@@ -345,3 +413,5 @@ class RealtimeTranscriber:
             self.call_context.client_occupation = context_data["client_occupation"]
         if "client_family" in context_data:
             self.call_context.client_family = context_data["client_family"]
+        if "agency" in context_data:
+            self._agency = context_data["agency"]
