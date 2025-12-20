@@ -465,7 +465,7 @@ class RealtimeTranscriber:
                 
                 guidance_stream = self.rag_engine.generate_guidance_stream_v2(
                     call_state,
-                    self.transcript_buffer[-500:],
+                    self.transcript_buffer,  # Full buffer - state machine handles limits
                     agency=self._agency,
                     session_id=self._session_id
                 )
@@ -574,7 +574,8 @@ class RealtimeTranscriber:
             self.state_machine.update_client_profile(
                 age=context_data.get("client_age"),
                 occupation=context_data.get("client_occupation"),
-                family=context_data.get("client_family")
+                family=context_data.get("client_family"),
+                budget=context_data.get("client_budget")
             )
     
     def apply_down_close(self):

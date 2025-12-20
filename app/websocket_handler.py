@@ -173,6 +173,7 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                                     "client_age": context_data.get("age"),
                                     "client_occupation": context_data.get("occupation"),
                                     "client_family": context_data.get("family"),
+                                    "client_budget": context_data.get("budget"),
                                     "agency": context_data.get("agency")
                                 })
                             print(f"[WS] Context updated for {client_id}", flush=True)

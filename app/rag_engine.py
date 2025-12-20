@@ -436,19 +436,19 @@ DO NOT:
         recent_transcript = call_state.get("recent_transcript", trigger_text)
         active_objection = call_state.get("active_objection", "")
         
-        # Build user message
+        # Build user message - use full transcript (already capped at 8000 chars by state machine)
         if active_objection:
             user_message = f"""OBJECTION DETECTED: {active_objection.upper()}
 
-Recent conversation:
-"{recent_transcript[-500:]}"
+Conversation so far:
+"{recent_transcript}"
 
 Latest trigger: "{trigger_text}"
 
 Provide immediate guidance to handle this {active_objection} objection."""
         else:
-            user_message = f"""Recent conversation:
-"{recent_transcript[-500:]}"
+            user_message = f"""Conversation so far:
+"{recent_transcript}"
 
 Latest: "{trigger_text}"
 

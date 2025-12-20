@@ -1493,6 +1493,7 @@
                 kidsCount: 0,
                 occupation: null,
                 income: null,
+                budget: null,  // Monthly budget for insurance (extracted from "I can only do $50")
                 weight: null,
                 tobacco: 'N',
                 product: 'whole_life',
@@ -2065,6 +2066,26 @@
                 console.log('[Context] Extracted tobacco: N');
             }
             
+            // Budget extraction - "I can only do $50", "$75 a month", "maybe $60"
+            const budgetPatterns = [
+                /(?:only|maybe|about|around|do|afford|pay|spend)\s*\$(\d+)/i,
+                /\$(\d+)\s*(?:a|per)?\s*month/i,
+                /(\d+)\s*(?:dollars|bucks)\s*(?:a|per)?\s*month/i,
+                /budget\s*(?:is|of)?\s*\$?(\d+)/i
+            ];
+            for (const pattern of budgetPatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    const budget = parseInt(match[1]);
+                    if (budget >= 10 && budget <= 500 && budget !== state.clientContext.budget) {
+                        state.clientContext.budget = budget;
+                        updated = true;
+                        console.log('[Context] Extracted budget:', budget);
+                    }
+                    break;
+                }
+            }
+            
             // Send context update to backend if anything changed
             if (updated) {
                 sendContextUpdate();
@@ -2080,7 +2101,8 @@
                     product: state.clientContext.product,
                     age: state.clientContext.age,
                     occupation: state.clientContext.occupation,
-                    family: buildFamilyString()
+                    family: buildFamilyString(),
+                    budget: state.clientContext.budget
                 };
                 
                 state.ws.send(JSON.stringify({

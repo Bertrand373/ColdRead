@@ -178,6 +178,7 @@ class ClientProfile:
     occupation: Optional[str] = None
     family: Optional[str] = None  # "married, 2 kids"
     tobacco: Optional[str] = None  # Y/N
+    budget: Optional[int] = None  # Monthly budget mentioned (e.g., "I can only do $50")
     
     def to_string(self) -> str:
         """Format for Claude prompt"""
@@ -190,6 +191,8 @@ class ClientProfile:
             parts.append(f"Family: {self.family}")
         if self.tobacco:
             parts.append(f"Tobacco: {self.tobacco}")
+        if self.budget:
+            parts.append(f"Budget: ~${self.budget}/mo")
         return ", ".join(parts) if parts else "Unknown"
 
 
@@ -243,8 +246,8 @@ class CallStateMachine:
     """
     
     # Memory limits to manage context window
-    MAX_TRANSCRIPT_CHARS = 8000  # ~2000 tokens
-    MAX_RECENT_CHARS = 2000  # Last ~30 seconds
+    MAX_TRANSCRIPT_CHARS = 100000  # ~25k tokens - covers 2-hour presentations
+    MAX_RECENT_CHARS = 2000  # Last ~30 seconds (for quick reference)
     MAX_OBJECTION_HISTORY = 10
     MAX_GUIDANCE_HISTORY = 10
     
@@ -317,7 +320,8 @@ class CallStateMachine:
         age: Optional[int] = None,
         occupation: Optional[str] = None,
         family: Optional[str] = None,
-        tobacco: Optional[str] = None
+        tobacco: Optional[str] = None,
+        budget: Optional[int] = None
     ):
         """Update client profile with extracted/provided info"""
         if age is not None:
@@ -328,6 +332,8 @@ class CallStateMachine:
             self.client.family = family
         if tobacco is not None:
             self.client.tobacco = tobacco
+        if budget is not None:
+            self.client.budget = budget
     
     # ============ TRANSCRIPT MANAGEMENT ============
     
@@ -856,7 +862,7 @@ class CallStateMachine:
             "objection_pattern": self.get_objection_pattern(),
             
             # Conversation context
-            "recent_transcript": self.recent_transcript.strip(),
+            "recent_transcript": self.full_transcript.strip(),  # Full conversation for better context
             "key_moments": self.key_moments[-5:],
             "recent_guidance": recent_guidance,
             
