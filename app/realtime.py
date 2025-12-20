@@ -432,10 +432,13 @@ class RealtimeTranscriber:
             self._generating_guidance = False
     
     async def _do_generate_guidance(self) -> Optional[dict]:
-        """Stream guidance tokens to client in real-time"""
+        """Stream guidance tokens to client in real-time with batched updates for smooth display"""
         try:
             full_text = ""
             first_chunk = True
+            batch_buffer = ""
+            last_send_time = time.time()
+            BATCH_INTERVAL = 0.08  # Send updates every 80ms for smooth visual streaming
             
             print(f"[RT] Calling RAG engine for guidance...", flush=True)
             
@@ -449,18 +452,36 @@ class RealtimeTranscriber:
             ):
                 if chunk:
                     full_text += chunk
+                    batch_buffer += chunk
                     
-                    if first_chunk:
-                        print(f"[RT] First guidance chunk received, streaming to client...", flush=True)
+                    now = time.time()
                     
-                    # Send each chunk immediately over WebSocket
-                    await self.on_guidance({
-                        "type": "guidance_chunk" if not first_chunk else "guidance_start",
-                        "chunk": chunk,
-                        "full_text": full_text,  # Include accumulated text for simpler client handling
-                        "is_complete": False
-                    })
-                    first_chunk = False
+                    # Send first chunk immediately for instant feedback
+                    # Then batch subsequent chunks for smooth streaming effect
+                    if first_chunk or (now - last_send_time) >= BATCH_INTERVAL:
+                        if first_chunk:
+                            print(f"[RT] First guidance chunk received, streaming to client...", flush=True)
+                        
+                        # Send batched content
+                        await self.on_guidance({
+                            "type": "guidance_start" if first_chunk else "guidance_chunk",
+                            "chunk": batch_buffer,
+                            "full_text": full_text,
+                            "is_complete": False
+                        })
+                        
+                        batch_buffer = ""
+                        last_send_time = now
+                        first_chunk = False
+            
+            # Send any remaining buffered content
+            if batch_buffer:
+                await self.on_guidance({
+                    "type": "guidance_chunk",
+                    "chunk": batch_buffer,
+                    "full_text": full_text,
+                    "is_complete": False
+                })
             
             # Send completion signal
             if full_text:
@@ -470,7 +491,7 @@ class RealtimeTranscriber:
                     "guidance": full_text,
                     "trigger": self.transcript_buffer[-100:] if len(self.transcript_buffer) > 100 else self.transcript_buffer
                 })
-                return None  # Already sent via streaming
+                return None
             else:
                 print(f"[RT] WARNING: No guidance text generated", flush=True)
             

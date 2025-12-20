@@ -1369,6 +1369,7 @@
             selectedTipIndex: null,
             callOutcome: null,
             streamingGuidance: '',  // Accumulates text during streaming guidance
+            guidanceRenderPending: false,  // Throttle flag for smooth DOM updates
             // Agent identity
             agentName: null,
             agentId: null,
@@ -2026,6 +2027,7 @@
         function handleGuidanceStart(msg) {
             // First chunk arrived - show panel immediately
             state.streamingGuidance = msg.chunk || '';
+            state.guidanceRenderPending = false;
             
             dom.listeningState.style.display = 'none';
             dom.guidanceState.classList.remove('active');
@@ -2033,7 +2035,7 @@
             // Show first text immediately
             dom.guidanceText.innerHTML = formatGuidanceText(state.streamingGuidance);
             
-            // Trigger animation and play notification
+            // Trigger fade-in animation on panel
             requestAnimationFrame(() => {
                 dom.guidanceState.classList.add('active');
             });
@@ -2043,11 +2045,17 @@
         }
         
         function handleGuidanceChunk(msg) {
-            // Update with accumulated text from server
+            // Accumulate text
             state.streamingGuidance = msg.full_text || (state.streamingGuidance + (msg.chunk || ''));
             
-            // Update display with latest text
-            dom.guidanceText.innerHTML = formatGuidanceText(state.streamingGuidance);
+            // Throttle DOM updates to animation frames for smooth rendering
+            if (!state.guidanceRenderPending) {
+                state.guidanceRenderPending = true;
+                requestAnimationFrame(() => {
+                    dom.guidanceText.innerHTML = formatGuidanceText(state.streamingGuidance);
+                    state.guidanceRenderPending = false;
+                });
+            }
         }
         
         function handleGuidanceComplete(msg) {
@@ -2062,7 +2070,8 @@
                 timestamp: Date.now()
             });
             
-            // Final render with full formatting
+            // Final render - ensure clean display
+            state.guidanceRenderPending = false;
             dom.guidanceText.innerHTML = formatGuidanceText(sayThis);
             
             // Clear streaming state
