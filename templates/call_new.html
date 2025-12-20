@@ -6,6 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Coachd.ai | Live Call</title>
+    <!-- VERSION: 2025-12-20-v3-debug -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -1543,6 +1544,7 @@
         
         // ==================== INIT ====================
         async function init() {
+            console.log('🚀 Coachd.ai Live Call - VERSION: 2025-12-20-v3-debug');
             await loadAgencies();
             loadClientContext();
             checkExistingIdentity();
@@ -1919,8 +1921,11 @@
                 state.ws.onmessage = (e) => {
                     try {
                         const msg = JSON.parse(e.data);
+                        console.log('[WS] Received:', msg.type, msg);
                         handleMessage(msg);
-                    } catch (err) {}
+                    } catch (err) {
+                        console.error('[WS] Parse error:', err);
+                    }
                 };
                 
                 setTimeout(() => {
@@ -1930,6 +1935,7 @@
         }
         
         function handleMessage(msg) {
+            console.log('[MSG] Processing:', msg.type);
             switch (msg.type) {
                 case 'ready':
                     setStatus('listening');
@@ -1939,18 +1945,22 @@
                     break;
                 // Legacy non-streaming guidance
                 case 'guidance':
+                    console.log('[MSG] Legacy guidance received');
                     handleGuidance(msg);
                     break;
                 // Streaming guidance - first chunk
                 case 'guidance_start':
+                    console.log('[MSG] guidance_start received, chunk length:', (msg.chunk || '').length, 'full_text length:', (msg.full_text || '').length);
                     handleGuidanceStart(msg);
                     break;
                 // Streaming guidance - subsequent chunks
                 case 'guidance_chunk':
+                    console.log('[MSG] guidance_chunk received');
                     handleGuidanceChunk(msg);
                     break;
                 // Streaming guidance - complete
                 case 'guidance_complete':
+                    console.log('[MSG] guidance_complete received, guidance length:', (msg.guidance || '').length);
                     handleGuidanceComplete(msg);
                     break;
                 // Price objection detected - show down-close button
@@ -1960,6 +1970,8 @@
                 case 'error':
                     console.error('Server error:', msg.message);
                     break;
+                default:
+                    console.log('[MSG] Unknown message type:', msg.type);
             }
         }
         
@@ -2214,70 +2226,77 @@
         // These handle real-time token streaming for ~1 second first-visible latency
         
         function handleGuidanceStart(msg) {
-            const newContent = msg.full_text || msg.chunk || '';
-            const alreadyShowing = dom.guidanceState.classList.contains('active');
+            console.log('[GUIDANCE_START] Called');
             
-            // ANTI-FLASH: Only skip small chunks if panel is VISIBLE with substantial content
-            // If panel is hidden, always show new content
-            if (alreadyShowing) {
-                const currentContent = dom.guidanceText.textContent || '';
-                if (currentContent.length > 100 && newContent.length < 50) {
-                    console.log('[Guidance] Skipping small chunk, keeping current content');
-                    return;
-                }
+            // Get the content to display
+            const content = msg.full_text || msg.chunk || '';
+            console.log('[GUIDANCE_START] Content to display:', content.substring(0, 50) + '...');
+            
+            if (!content) {
+                console.log('[GUIDANCE_START] No content, returning');
+                return;
             }
             
-            state.streamingGuidance = newContent;
-            state.guidanceRenderPending = false;
+            // Store streaming state
+            state.streamingGuidance = content;
             
+            // Hide listening state
             dom.listeningState.style.display = 'none';
-            dom.guidanceText.innerHTML = formatGuidanceText(state.streamingGuidance);
+            console.log('[GUIDANCE_START] Hid listening state');
             
-            // Only animate and notify if panel wasn't already showing
-            if (!alreadyShowing) {
-                requestAnimationFrame(() => {
-                    dom.guidanceState.classList.add('active');
-                });
-                
-                playNotify();
-                if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
-            }
+            // Set the text
+            dom.guidanceText.innerHTML = formatGuidanceText(content);
+            console.log('[GUIDANCE_START] Set guidanceText innerHTML');
+            
+            // Show the guidance panel
+            dom.guidanceState.classList.add('active');
+            console.log('[GUIDANCE_START] Added active class to guidanceState');
+            
+            // Play notification
+            playNotify();
+            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+            console.log('[GUIDANCE_START] Played notification');
         }
         
         function handleGuidanceChunk(msg) {
-            // Use full_text from server (accumulated) for reliable display
-            const newContent = msg.full_text || (state.streamingGuidance + (msg.chunk || ''));
+            // Get the accumulated content
+            const content = msg.full_text || (state.streamingGuidance + (msg.chunk || ''));
             
-            // Always update streaming guidance state
-            state.streamingGuidance = newContent;
+            if (!content) return;
             
-            // Update DOM
-            if (!state.guidanceRenderPending) {
-                state.guidanceRenderPending = true;
-                requestAnimationFrame(() => {
-                    dom.guidanceText.innerHTML = formatGuidanceText(state.streamingGuidance);
-                    state.guidanceRenderPending = false;
-                });
-            }
+            // Update state
+            state.streamingGuidance = content;
+            
+            // Update display
+            dom.guidanceText.innerHTML = formatGuidanceText(content);
         }
         
         function handleGuidanceComplete(msg) {
-            const fullText = msg.guidance || state.streamingGuidance || '';
-            const sayThis = extractSayThis(fullText);
+            console.log('[GUIDANCE_COMPLETE] Called');
             
-            // Store in history for outcome tracking
+            const fullText = msg.guidance || state.streamingGuidance || '';
+            console.log('[GUIDANCE_COMPLETE] Full text length:', fullText.length);
+            
+            const sayThis = extractSayThis(fullText);
+            console.log('[GUIDANCE_COMPLETE] Extracted sayThis:', sayThis.substring(0, 50) + '...');
+            
+            // Store in history
             state.guidanceHistory.push({
                 text: sayThis,
                 raw: fullText,
                 timestamp: Date.now()
             });
             
-            // Final render - use extracted text if substantial, otherwise full text
-            state.guidanceRenderPending = false;
-            const displayText = (sayThis && sayThis.length > 10) ? sayThis : fullText;
+            // Display the final text
+            const displayText = sayThis || fullText;
             if (displayText) {
                 dom.guidanceText.innerHTML = formatGuidanceText(displayText);
+                console.log('[GUIDANCE_COMPLETE] Set final text');
             }
+            
+            // Ensure panel is visible
+            dom.listeningState.style.display = 'none';
+            dom.guidanceState.classList.add('active');
             
             // Clear streaming state
             state.streamingGuidance = '';
@@ -2349,6 +2368,8 @@
         }
         
         function dismissGuidance() {
+            console.log('[DISMISS] dismissGuidance called');
+            
             if (state.streamInterval) {
                 clearInterval(state.streamInterval);
                 state.streamInterval = null;
@@ -2358,9 +2379,11 @@
             dom.listeningState.style.display = 'flex';
             hidePriceObjectionButton();
             
-            // CRITICAL: Clear text content so anti-flash logic doesn't block new guidance
+            // Clear text content
             dom.guidanceText.innerHTML = '';
             state.streamingGuidance = '';
+            
+            console.log('[DISMISS] Panel hidden, text cleared');
         }
         
         // ==================== CALL CONTROLS ====================

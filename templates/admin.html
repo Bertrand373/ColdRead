@@ -351,16 +351,16 @@
             overflow-y: auto;
         }
         
-        /* System Document - AI Brain */
+        /* System Document - Proven Rebuttals */
         .system-doc {
             display: grid;
             grid-template-columns: 40px 1fr auto;
             align-items: center;
             gap: 12px;
-            padding: 14px 12px;
+            padding: 12px;
             margin-bottom: 8px;
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.06) 0%, rgba(245, 158, 11, 0.02) 100%);
-            border: 1px solid rgba(245, 158, 11, 0.15);
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.02) 100%);
+            border: 1px solid rgba(245, 158, 11, 0.12);
             border-radius: var(--radius-md);
         }
         
@@ -372,27 +372,43 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #D97706;
-            position: relative;
+            color: #B45309;
+            flex-shrink: 0;
         }
         
         .system-doc-content {
             min-width: 0;
         }
         
-        .system-doc-title {
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: var(--color-text);
+        .system-doc-header {
             display: flex;
             align-items: center;
             gap: 6px;
         }
         
-        .system-doc-title svg {
-            width: 12px;
-            height: 12px;
-            color: var(--color-text-muted);
+        .system-doc-title {
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--color-text);
+        }
+        
+        .system-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 2px 6px;
+            background: rgba(245, 158, 11, 0.1);
+            border-radius: var(--radius-full);
+            font-size: 0.625rem;
+            font-weight: 600;
+            color: #B45309;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        
+        .system-badge svg {
+            width: 8px;
+            height: 8px;
         }
         
         .system-doc-meta {
@@ -401,44 +417,22 @@
             margin-top: 2px;
         }
         
-        .training-progress {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .training-ring {
-            width: 32px;
-            height: 32px;
-            position: relative;
-        }
-        
-        .training-ring svg {
-            width: 32px;
-            height: 32px;
-            transform: rotate(-90deg);
-        }
-        
-        .training-ring-bg {
-            fill: none;
-            stroke: var(--color-border);
-            stroke-width: 3;
-        }
-        
-        .training-ring-progress {
-            fill: none;
-            stroke: #D97706;
-            stroke-width: 3;
-            stroke-linecap: round;
-            transition: stroke-dashoffset 0.5s ease;
-        }
-        
-        .training-percent {
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: #D97706;
-            min-width: 32px;
+        .system-doc-stats {
             text-align: right;
+            flex-shrink: 0;
+        }
+        
+        .system-stat-value {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #B45309;
+        }
+        
+        .system-stat-label {
+            font-size: 0.65rem;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
         
         /* User Documents - Grid aligned */
@@ -911,6 +905,36 @@
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
         }
         
+        /* Delete Modal Styles */
+        .delete-modal .modal-icon,
+        .modal-icon.delete-icon {
+            background: var(--color-error-soft);
+            color: var(--color-error);
+        }
+        
+        .modal-btn-delete {
+            background: var(--color-error);
+            border: none;
+            color: white;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25), 0 1px 3px rgba(239, 68, 68, 0.15);
+        }
+        
+        .modal-btn-delete:hover {
+            background: #DC2626;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3), 0 2px 4px rgba(239, 68, 68, 0.2);
+        }
+        
+        .modal-btn-delete:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 4px rgba(239, 68, 68, 0.2);
+        }
+        
+        .modal-desc strong {
+            color: var(--color-text);
+            font-weight: 600;
+        }
+        
         /* Desktop modal adjustments */
         @media (min-width: 768px) {
             .modal-overlay {
@@ -1304,6 +1328,29 @@
         </div>
     </div>
     
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal delete-modal">
+            <div class="modal-header">
+                <div class="modal-icon delete-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M3 6h18"/>
+                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
+                        <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                        <line x1="10" y1="11" x2="10" y2="17"/>
+                        <line x1="14" y1="11" x2="14" y2="17"/>
+                    </svg>
+                </div>
+                <h3 class="modal-title">Delete Document</h3>
+            </div>
+            <p class="modal-desc">Are you sure you want to delete <strong id="deleteDocName"></strong>? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="cancelDelete()">Cancel</button>
+                <button class="modal-btn modal-btn-delete" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+    
     <script>
         // Agency data from server
         const agencyDocs = {{ agency_docs | tojson | safe }};
@@ -1400,38 +1447,33 @@
             const systemDocHTML = `
                 <div class="system-doc" id="systemDoc">
                     <div class="system-doc-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
-                            <path d="M12 2a4 4 0 014 4c0 1.1-.45 2.1-1.17 2.83L12 12l-2.83-3.17A4 4 0 0112 2z"/>
-                            <path d="M12 12v6"/>
-                            <path d="M8 22h8"/>
-                            <path d="M10 22v-4h4v4"/>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                            <path d="M14 2v6h6"/>
                         </svg>
                     </div>
                     <div class="system-doc-content">
-                        <div class="system-doc-title">
-                            AI Brain
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM9 8V6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9z"/>
-                            </svg>
+                        <div class="system-doc-header">
+                            <span class="system-doc-title">Proven Rebuttals</span>
+                            <span class="system-badge">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM9 8V6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9z"/>
+                                </svg>
+                                System
+                            </span>
                         </div>
-                        <div class="system-doc-meta">Learns from your winning calls</div>
+                        <div class="system-doc-meta" id="systemDocMeta">Loading...</div>
                     </div>
-                    <div class="training-progress">
-                        <div class="training-ring">
-                            <svg viewBox="0 0 36 36">
-                                <circle class="training-ring-bg" cx="18" cy="18" r="14"/>
-                                <circle class="training-ring-progress" id="trainingRingProgress" cx="18" cy="18" r="14" 
-                                    stroke-dasharray="88" stroke-dashoffset="88"/>
-                            </svg>
-                        </div>
-                        <span class="training-percent" id="trainingPercent">0%</span>
+                    <div class="system-doc-stats" id="systemDocStats">
+                        <div class="system-stat-value" id="systemStatValue">—</div>
+                        <div class="system-stat-label" id="systemStatLabel">rebuttals</div>
                     </div>
                 </div>
             `;
             
             if (!docs.length) {
                 container.innerHTML = systemDocHTML + '<div class="empty-state">No documents uploaded</div>';
-                loadTrainingProgress();
+                loadSystemDocStats();
                 return;
             }
             
@@ -1458,42 +1500,64 @@
             `).join('');
             
             container.innerHTML = systemDocHTML + docsHTML;
-            loadTrainingProgress();
+            loadSystemDocStats();
         }
         
-        // Load training progress for AI Brain
-        async function loadTrainingProgress() {
+        // Load real stats for system document
+        async function loadSystemDocStats() {
+            const metaEl = document.getElementById('systemDocMeta');
+            const valueEl = document.getElementById('systemStatValue');
+            const labelEl = document.getElementById('systemStatLabel');
+            
             try {
                 const pwd = await getAdminPassword();
                 const res = await fetch('/api/admin/winning-rebuttals/status', {
                     headers: { 'X-Admin-Password': pwd }
                 });
                 
-                if (!res.ok) return;
+                if (!res.ok) {
+                    metaEl.textContent = 'Learns from closed deals';
+                    valueEl.textContent = '—';
+                    labelEl.textContent = 'rebuttals';
+                    return;
+                }
                 
                 const data = await res.json();
                 const status = data.data || {};
                 
-                // Calculate training percentage
-                // Factors: outcomes collected, rebuttals meeting threshold, objection coverage
-                const outcomes = status.total_outcomes || 0;
-                const targetOutcomes = 100; // Fully trained at 100 outcomes
-                const outcomeScore = Math.min(outcomes / targetOutcomes, 1) * 100;
+                const totalOutcomes = status.total_outcomes || 0;
+                const docExists = status.document_exists || false;
+                const metadata = status.metadata || {};
+                const rebuttalCount = metadata.rebuttal_count || 0;
                 
-                const percent = Math.round(outcomeScore);
-                
-                // Update ring
-                const ring = document.getElementById('trainingRingProgress');
-                const percentEl = document.getElementById('trainingPercent');
-                
-                if (ring && percentEl) {
-                    const circumference = 88; // 2 * PI * 14
-                    const offset = circumference - (percent / 100) * circumference;
-                    ring.style.strokeDashoffset = offset;
-                    percentEl.textContent = percent + '%';
+                // Show appropriate state
+                if (docExists && rebuttalCount > 0) {
+                    // Document exists with rebuttals
+                    valueEl.textContent = rebuttalCount;
+                    labelEl.textContent = rebuttalCount === 1 ? 'rebuttal' : 'rebuttals';
+                    metaEl.textContent = `From ${totalOutcomes} tracked calls`;
+                } else if (totalOutcomes >= 20) {
+                    // Enough data but no doc yet (needs refresh)
+                    valueEl.textContent = '!';
+                    labelEl.textContent = 'ready';
+                    metaEl.textContent = `${totalOutcomes} calls tracked • Refresh to generate`;
+                } else if (totalOutcomes > 0) {
+                    // Collecting data
+                    valueEl.textContent = totalOutcomes;
+                    labelEl.textContent = 'of 20';
+                    metaEl.textContent = 'Collecting call data...';
+                } else {
+                    // No data yet
+                    valueEl.textContent = '0';
+                    labelEl.textContent = 'calls';
+                    metaEl.textContent = 'Learns from closed deals';
                 }
+                
             } catch (e) {
-                console.log('Training progress not available');
+                console.log('System doc stats not available');
+                metaEl.textContent = 'Learns from closed deals';
+                valueEl.textContent = '—';
+                labelEl.textContent = 'rebuttals';
             }
         }
         
@@ -1586,8 +1650,33 @@
             }
         }
         
-        async function deleteDoc(id) {
-            if (!confirm('Delete this document?')) return;
+        // ==================== DELETE CONFIRMATION ====================
+        let pendingDeleteId = null;
+        let pendingDeleteName = null;
+        
+        function deleteDoc(id) {
+            // Find the document name from the DOM
+            const docItem = document.querySelector(`.doc-item[data-id="${id}"]`);
+            const docName = docItem ? docItem.querySelector('.doc-name').textContent : 'this document';
+            
+            pendingDeleteId = id;
+            pendingDeleteName = docName;
+            
+            document.getElementById('deleteDocName').textContent = docName;
+            document.getElementById('deleteModal').classList.add('visible');
+        }
+        
+        function cancelDelete() {
+            document.getElementById('deleteModal').classList.remove('visible');
+            pendingDeleteId = null;
+            pendingDeleteName = null;
+        }
+        
+        async function confirmDelete() {
+            if (!pendingDeleteId) return;
+            
+            const id = pendingDeleteId;
+            document.getElementById('deleteModal').classList.remove('visible');
             
             try {
                 const res = await fetch(`/api/documents/${id}?agency=${currentAgency}`, {
@@ -1600,8 +1689,18 @@
                 showToast('Document deleted', 'success');
             } catch (e) {
                 showToast('Delete failed', 'error');
+            } finally {
+                pendingDeleteId = null;
+                pendingDeleteName = null;
             }
         }
+        
+        // Close delete modal on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.getElementById('deleteModal').classList.contains('visible')) {
+                cancelDelete();
+            }
+        });
         
         async function testAI() {
             const input = document.getElementById('testInput').value.trim();
