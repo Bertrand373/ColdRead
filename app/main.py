@@ -285,6 +285,18 @@ async def dashboard_redirect(request: Request):
     return RedirectResponse(url="/admin")
 
 
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy_page(request: Request):
+    """Privacy policy page"""
+    return templates.TemplateResponse("privacy.html", {"request": request})
+
+
+@app.get("/terms", response_class=HTMLResponse)
+async def terms_page(request: Request):
+    """Terms of service page"""
+    return templates.TemplateResponse("terms.html", {"request": request})
+
+
 # ============ HEALTH CHECK ============
 # Note: /api/status is now handled by status_router with proper service verification
 

@@ -111,7 +111,6 @@ class RealtimeTranscriber:
                 interim_results=True,
                 utterance_end_ms="400",   # Was 500 - faster sentence boundaries
                 endpointing=200,          # Was 300 - react faster to pauses
-                vad_events=True,          # Know when speech starts/stops
                 sample_rate=16000,
                 encoding="linear16",
                 channels=1
