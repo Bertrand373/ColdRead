@@ -1685,8 +1685,8 @@
         function handlePriceObjection() {
             // Request contextual down-close guidance from Claude
             if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-                // Show loading state
-                showGuidance("...");
+                // Hide button immediately (prevents double-tap, shows action registered)
+                hidePriceObjectionButton();
                 
                 // Increment level
                 if (state.downCloseLevel < 5) {
@@ -1694,6 +1694,7 @@
                 }
                 
                 // Request contextual guidance from backend
+                // The streaming handlers (handleGuidanceStart/Chunk/Complete) will display it
                 state.ws.send(JSON.stringify({
                     type: 'down_close',
                     data: { level: state.downCloseLevel }
