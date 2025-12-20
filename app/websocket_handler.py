@@ -168,10 +168,12 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                             context_data = data.get("data", {})
                             if context_data:
                                 transcriber.update_context({
+                                    "call_type": context_data.get("call_type", "phone"),
                                     "current_product": context_data.get("product", "whole_life"),
                                     "client_age": context_data.get("age"),
                                     "client_occupation": context_data.get("occupation"),
-                                    "client_family": context_data.get("family")
+                                    "client_family": context_data.get("family"),
+                                    "agency": context_data.get("agency")
                                 })
                             print(f"[WS] Context updated for {client_id}", flush=True)
                             

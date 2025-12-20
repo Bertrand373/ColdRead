@@ -442,6 +442,14 @@ class RealtimeTranscriber:
             
             print(f"[RT] Calling RAG engine for guidance...", flush=True)
             
+            # Check for price objection and notify frontend
+            if self.rag_engine.detect_price_objection(self.transcript_buffer):
+                print(f"[RT] 💰 Price objection detected", flush=True)
+                await self.on_guidance({
+                    "type": "price_objection",
+                    "trigger": self.transcript_buffer[-100:]
+                })
+            
             # Stream guidance using the new streaming method
             # Pass session_id for Claude usage tracking
             for chunk in self.rag_engine.generate_guidance_stream(
@@ -505,6 +513,9 @@ class RealtimeTranscriber:
             
     def update_context(self, context_data: dict):
         """Update call context with client information"""
+        if "call_type" in context_data:
+            self.call_context.call_type = context_data["call_type"]
+            print(f"[RT] Call type set to: {self.call_context.call_type}", flush=True)
         if "current_product" in context_data:
             self.call_context.current_product = context_data["current_product"]
         if "client_age" in context_data:

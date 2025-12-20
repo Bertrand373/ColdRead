@@ -48,6 +48,7 @@ class CallContext:
     products_tried: List[str] = None
     objections_faced: List[str] = None
     client_sentiment: str = "neutral"
+    call_type: str = "phone"  # "phone" or "presentation"
     
     def __post_init__(self):
         if self.products_tried is None:
@@ -89,6 +90,17 @@ class RAGEngine:
             )
         
         return "\n---\n".join(context_parts)
+    
+    def detect_price_objection(self, transcript: str) -> bool:
+        """Quick check if transcript contains price-related objection."""
+        price_keywords = [
+            "can't afford", "cannot afford", "too expensive", "too much",
+            "don't have the money", "tight budget", "not in my budget",
+            "that's a lot", "costs too much", "price is too high",
+            "where am i going to get", "how am i supposed to pay"
+        ]
+        lower = transcript.lower()
+        return any(kw in lower for kw in price_keywords)
     
     # ============ V2: FULL STATE-AWARE GUIDANCE ============
     
@@ -472,6 +484,34 @@ Provide guidance for the agent."""
     def build_system_prompt(self, call_context: CallContext) -> str:
         """Build the system prompt for Claude based on call context (legacy)"""
         
+        # PHONE CALL - appointment setting (2-3 min)
+        if call_context.call_type == "phone":
+            return """You are a real-time coach for Globe Life Liberty National agents making PHONE CALLS to set appointments.
+
+GOAL: Set an appointment in 2-3 minutes. Don't sell - just get them to agree to meet.
+
+PHONE SCRIPT FLOW:
+1. "Hey, this is [Name] with Liberty National, your insurance company."
+2. "Home Office asked that we touch base with past, current, and prospective clients..."
+3. "What time are you home from work? What time is your spouse home?"
+4. "I'll have your agent call between ___ and ___."
+5. "Go ahead and grab a pen - your confirmation number is ___."
+
+COMMON PHONE OBJECTIONS:
+
+"How long will this take?" → "It doesn't take long - for me the quicker the better."
+
+"Why does my spouse need to be there?" → "They ask us to speak with both of you to answer any questions."
+
+"Just mail it to me" → "I wish we could, but we need to designate your beneficiaries for the no-cost coverage."
+
+"Not interested" → "That's OK, but you're still entitled to the no-cost coverage. It doesn't take long."
+
+"Is someone going to sell me something?" → "It's our job to review your policy and renew your no-cost coverage."
+
+RESPONSE FORMAT: Give EXACTLY what to say. 1-2 sentences max. No headers or emojis."""
+
+        # PRESENTATION - full sales call (30-45 min)
         current_product = PRODUCT_NAMES.get(call_context.current_product, call_context.current_product)
         products_remaining = [
             PRODUCT_NAMES[p] for p in PRODUCT_HIERARCHY 
@@ -488,39 +528,33 @@ Provide guidance for the agent."""
         
         client_info = ", ".join(client_profile) if client_profile else "Unknown"
         
-        return f"""You are Coachd, an elite real-time sales assistant for life insurance agents. 
-You provide instant, contextual guidance during live sales calls.
+        return f"""You are a real-time coach for Globe Life Liberty National agents during IN-HOME PRESENTATIONS.
 
-CURRENT CALL STATE:
-- Current Product: {current_product}
-- Client Profile: {client_info}
-- Client Sentiment: {call_context.client_sentiment}
-- Objections Faced: {', '.join(call_context.objections_faced) or 'None yet'}
-- Products Remaining: {', '.join(products_remaining) or 'None'}
+CURRENT STATE:
+- Product: {current_product}
+- Client: {client_info}
+- Sentiment: {call_context.client_sentiment}
+- Objections: {', '.join(call_context.objections_faced) or 'None yet'}
+- Remaining: {', '.join(products_remaining) or 'None'}
 
-THE DOWN-CLOSE HIERARCHY:
-1. Whole Life (start here)
-2. Term Life
-3. Cancer
-4. Accident  
-5. Critical Illness / Hospital ICU
+COMMON OBJECTIONS:
 
-When a client objects, help the agent handle the objection OR smoothly transition down to the next product.
+"I need to think about it" → "I understand. What specifically concerns you - the coverage or the investment?"
 
-YOUR ROLE:
-- Detect objections and buying signals in the conversation
-- Provide SPECIFIC rebuttals tailored to the client's demographics
-- Suggest transition language to move between products
-- Keep responses concise (2-3 sentences max for each guidance point)
-- Adapt your tone based on the client profile
+"I need to talk to my spouse" → "Of course. What do you think they'd be concerned about?"
 
-RESPONSE FORMAT:
-When providing guidance, use this structure:
-🎯 DETECTED: [What you detected - objection type, signal, etc.]
-💬 SAY THIS: [Exact words the agent can use]
-📝 WHY: [Brief explanation of the approach]
+"I can't afford it" → Reduce coverage. "Let me adjust this to fit your budget."
 
-Be direct. Be specific. Help them close."""
+"I already have insurance" → "Great. When did you last review it? Most people are underinsured."
+
+DOWN-CLOSE LEVELS (when they can't afford):
+1. Reduce Final Expense to $15,000
+2. Reduce to $10,000
+3. Reduce to $7,500
+4. Reduce income protection to 1 year
+5. Ask which coverage they could go without
+
+RESPONSE FORMAT: Give EXACTLY what to say. 1-3 sentences max. No headers or emojis."""
 
     def generate_guidance(
         self, 
