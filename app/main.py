@@ -26,19 +26,9 @@ from .document_processor import DocumentProcessor
 from .rag_engine import RAGEngine, CallContext
 from .websocket_handler import websocket_endpoint
 
-# Telnyx imports (replaces Twilio)
-from .telnyx_bridge import (
-    is_telnyx_configured,
-    initiate_agent_call,
-    generate_agent_conference_texml,
-    generate_client_conference_texml,
-    add_client_to_conference,
-    join_conference,
-    end_conference,
-    hangup_call,
-    get_recording_url,
-    _decode_client_state
-)
+# Telnyx - simplified import
+from .telnyx_bridge import is_telnyx_configured
+from .telnyx_routes import router as telnyx_router
 from .call_session import session_manager, CallStatus
 
 # Database and usage tracking
@@ -79,18 +69,6 @@ class QueryRequest(BaseModel):
     query: str
     context: Optional[Dict[str, Any]] = {}
 
-# Telnyx request models (renamed from Twilio)
-class TelnyxCallRequest(BaseModel):
-    agent_phone: str
-
-class TelnyxDialRequest(BaseModel):
-    session_id: str
-    client_phone: str
-    agent_caller_id: Optional[str] = None
-
-class TelnyxEndRequest(BaseModel):
-    session_id: str
-
 
 # ============ AGENCY DATA ============
 
@@ -130,9 +108,11 @@ async def lifespan(app: FastAPI):
     else:
         print("⚠ DEEPGRAM_API_KEY not set - transcription disabled")
     
-    # Check Telnyx (replaces Twilio check)
+    # Check Telnyx
     if is_telnyx_configured():
         print("✓ Telnyx configured - 3-way bridge ACTIVE")
+        print(f"  Phone: {settings.telnyx_phone_number}")
+        print(f"  Webhooks: {settings.base_url}/api/telnyx/")
     else:
         print("⚠ Telnyx not configured - using browser mic mode")
     
@@ -151,7 +131,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Coachd.ai",
     description="Real-time AI sales assistant for life insurance agents",
-    version="2.4.0",  # Version bump for Telnyx migration
+    version="2.5.0",  # Version bump for Telnyx TeXML migration
     lifespan=lifespan
 )
 
@@ -175,6 +155,7 @@ templates = Jinja2Templates(directory=str(templates_path))
 # Include routers
 app.include_router(outcome_router)
 app.include_router(status_router)
+app.include_router(telnyx_router)  # All /api/telnyx/* routes
 
 
 # ============ WEBSOCKET ROUTES ============
@@ -313,8 +294,9 @@ async def health_check():
     return {
         "status": "healthy",
         "app": settings.app_name,
-        "version": "2.4.0",
-        "database": is_db_configured()
+        "version": "2.5.0",
+        "database": is_db_configured(),
+        "telnyx": is_telnyx_configured()
     }
 
 
@@ -362,252 +344,6 @@ async def platform_logs(limit: int = 100, agency: Optional[str] = None):
 async def platform_external():
     """Fetch fresh data from external service APIs"""
     return fetch_all_external_usage()
-
-
-# ============ TELNYX API ENDPOINTS ============
-
-@app.post("/api/telnyx/start-call")
-async def start_telnyx_call(data: TelnyxCallRequest):
-    """Start a new Telnyx-bridged call session"""
-    if not is_telnyx_configured():
-        raise HTTPException(status_code=503, detail="Telnyx not configured")
-    
-    # Normalize phone number
-    agent_phone = data.agent_phone
-    if not agent_phone.startswith("+"):
-        digits = agent_phone.replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
-        agent_phone = f"+1{digits}" if len(digits) == 10 else f"+{digits}"
-    
-    # Create session
-    session = await session_manager.create_session(agent_phone)
-    
-    # Initiate call to agent
-    result = initiate_agent_call(agent_phone, session.session_id)
-    
-    if not result["success"]:
-        await session_manager.update_session(session.session_id, status=CallStatus.FAILED)
-        raise HTTPException(status_code=500, detail=result.get("error", "Failed to start call"))
-    
-    await session_manager.update_session(
-        session.session_id,
-        agent_call_sid=result["call_control_id"],  # Telnyx uses call_control_id
-        status=CallStatus.AGENT_RINGING
-    )
-    
-    return {
-        "success": True,
-        "session_id": session.session_id,
-        "message": "Calling your phone now. Answer to connect."
-    }
-
-
-@app.post("/api/telnyx/dial-client")
-async def dial_telnyx_client(data: TelnyxDialRequest):
-    """Add client to existing Telnyx conference"""
-    session = await session_manager.get_session(data.session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    # Normalize phone number
-    client_phone = data.client_phone
-    if not client_phone.startswith("+"):
-        digits = client_phone.replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
-        client_phone = f"+1{digits}" if len(digits) == 10 else f"+{digits}"
-    
-    result = add_client_to_conference(client_phone, data.session_id, data.agent_caller_id)
-    
-    if not result["success"]:
-        raise HTTPException(status_code=500, detail=result.get("error", "Failed to dial client"))
-    
-    await session_manager.update_session(
-        data.session_id,
-        client_phone=client_phone,
-        client_call_sid=result["call_control_id"],  # Telnyx uses call_control_id
-        status=CallStatus.CLIENT_RINGING
-    )
-    
-    return {"success": True, "message": f"Dialing {client_phone}..."}
-
-
-@app.post("/api/telnyx/end-call")
-async def end_telnyx_call(data: TelnyxEndRequest):
-    """End a Telnyx call session"""
-    session = await session_manager.get_session(data.session_id)
-    
-    # Log Telnyx usage when call ends
-    if session and session.started_at:
-        duration = session.get_duration() or 0
-        log_telnyx_usage(
-            call_duration_seconds=duration,
-            agency_code=getattr(session, 'agency_code', None),
-            session_id=data.session_id,
-            call_control_id=session.agent_call_sid
-        )
-    
-    end_conference(data.session_id)
-    await session_manager.end_session(data.session_id)
-    return {"success": True, "message": "Call ended"}
-
-
-@app.get("/api/telnyx/session/{session_id}")
-async def get_telnyx_session(session_id: str):
-    """Get Telnyx session details"""
-    session = await session_manager.get_session(session_id)
-    if not session:
-        raise HTTPException(status_code=404, detail="Session not found")
-    return session.to_dict()
-
-
-# ============ TELNYX WEBHOOKS (Called by Telnyx) ============
-
-@app.post("/api/telnyx/webhook")
-async def telnyx_webhook(request: Request):
-    """
-    Main Telnyx webhook handler.
-    Telnyx sends all events to a single webhook URL.
-    """
-    try:
-        body = await request.json()
-    except Exception:
-        return Response(content="", status_code=200)
-    
-    data = body.get("data", {})
-    event_type = data.get("event_type", "")
-    payload = data.get("payload", {})
-    
-    # Extract session_id from client_state
-    client_state = payload.get("client_state", "")
-    state_data = _decode_client_state(client_state) if client_state else {}
-    session_id = state_data.get("session_id")
-    role = state_data.get("role", "unknown")
-    
-    call_control_id = payload.get("call_control_id")
-    
-    # Handle different event types
-    if event_type == "call.answered":
-        if role == "agent":
-            # Agent answered - join them to conference
-            await session_manager.update_session(
-                session_id,
-                status=CallStatus.AGENT_CONNECTED,
-                started_at=datetime.utcnow()
-            )
-            # Join to conference
-            join_conference(call_control_id, session_id)
-            
-        elif role == "client":
-            # Client answered - join them to conference
-            await session_manager.update_session(session_id, status=CallStatus.IN_PROGRESS)
-            join_conference(call_control_id, session_id)
-    
-    elif event_type == "call.hangup":
-        if session_id:
-            session = await session_manager.get_session(session_id)
-            if session:
-                await session_manager.end_session(session_id)
-    
-    elif event_type == "conference.participant.joined":
-        # Could track participants here if needed
-        pass
-    
-    elif event_type == "conference.ended":
-        if session_id:
-            await session_manager.end_session(session_id)
-    
-    elif event_type == "recording.completed":
-        recording_id = payload.get("recording_id")
-        if session_id and recording_id:
-            recording_url = get_recording_url(recording_id)
-            await session_manager.update_session(
-                session_id,
-                recording_sid=recording_id,
-                recording_url=recording_url
-            )
-    
-    return Response(content="", status_code=200)
-
-
-# Legacy webhook endpoints for backwards compatibility / TeXML
-@app.post("/api/telnyx/agent-joined")
-async def telnyx_agent_joined(request: Request):
-    """Webhook: Agent has answered, return TeXML for conference"""
-    session_id = request.query_params.get("session_id", "unknown")
-    
-    await session_manager.update_session(
-        session_id,
-        status=CallStatus.AGENT_CONNECTED,
-        started_at=datetime.utcnow()
-    )
-    
-    texml = generate_agent_conference_texml(session_id)
-    return Response(content=texml, media_type="application/xml")
-
-
-@app.post("/api/telnyx/client-joined")
-async def telnyx_client_joined(request: Request):
-    """Webhook: Client has answered, return TeXML for conference"""
-    session_id = request.query_params.get("session_id", "unknown")
-    
-    await session_manager.update_session(session_id, status=CallStatus.IN_PROGRESS)
-    
-    texml = generate_client_conference_texml(session_id)
-    return Response(content=texml, media_type="application/xml")
-
-
-@app.post("/api/telnyx/call-status")
-async def telnyx_call_status(request: Request):
-    """Webhook: Call status updates (TeXML mode)"""
-    try:
-        form_data = await request.form()
-        call_status = form_data.get("CallStatus")
-        session_id = request.query_params.get("session_id")
-        
-        if session_id and call_status == "completed":
-            session = await session_manager.get_session(session_id)
-            if session:
-                await session_manager.end_session(session_id)
-    except Exception:
-        pass
-    
-    return Response(content="", status_code=200)
-
-
-@app.post("/api/telnyx/conference-status")
-async def telnyx_conference_status(request: Request):
-    """Webhook: Conference events (TeXML mode)"""
-    try:
-        form_data = await request.form()
-        conference_sid = form_data.get("ConferenceSid")
-        session_id = request.query_params.get("session_id")
-        
-        if session_id:
-            await session_manager.update_session(session_id, conference_sid=conference_sid)
-    except Exception:
-        pass
-    
-    return Response(content="", status_code=200)
-
-
-@app.post("/api/telnyx/recording-complete")
-async def telnyx_recording_complete(request: Request):
-    """Webhook: Recording finished (TeXML mode)"""
-    try:
-        form_data = await request.form()
-        recording_sid = form_data.get("RecordingSid")
-        recording_status = form_data.get("RecordingStatus")
-        session_id = request.query_params.get("session_id")
-        
-        if session_id and recording_status == "completed":
-            recording_url = get_recording_url(recording_sid)
-            await session_manager.update_session(
-                session_id,
-                recording_sid=recording_sid,
-                recording_url=recording_url
-            )
-    except Exception:
-        pass
-    
-    return Response(content="", status_code=200)
 
 
 # ============ AGENCY VALIDATION ============
@@ -705,7 +441,10 @@ Bold **key phrases** the agent should say out loud."""
         
         return {
             "response": response.content[0].text,
-            "model": settings.claude_model
+            "usage": {
+                "input_tokens": response.usage.input_tokens,
+                "output_tokens": response.usage.output_tokens
+            }
         }
         
     except Exception as e:
@@ -714,7 +453,7 @@ Bold **key phrases** the agent should say out loud."""
 
 @app.post("/api/chat/stream")
 async def chat_stream_endpoint(data: ChatRequest):
-    """Stream a chat response with SSE"""
+    """Process a chat message and stream the AI response"""
     
     if not settings.anthropic_api_key:
         raise HTTPException(status_code=503, detail="AI service not configured")
@@ -724,8 +463,7 @@ async def chat_stream_endpoint(data: ChatRequest):
             import anthropic
             client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
             
-            engine = RAGEngine()
-            
+            # Build context
             context = data.context or {}
             client_info = []
             if context.get("name"):
@@ -742,6 +480,7 @@ async def chat_stream_endpoint(data: ChatRequest):
             issue = context.get("issue", "")
             
             agency = data.agency or "ADERHOLT"
+            engine = RAGEngine()
             relevant_context = engine.get_relevant_context(
                 data.message,
                 category=product,
@@ -773,16 +512,16 @@ Match your response to what the question actually requires. No filler, no fluff,
 
 Bold **key phrases** the agent should say out loud."""
 
-            # Track usage
+            # Use synchronous streaming in a thread
             usage_info = {'input': 0, 'output': 0}
-            chunk_queue = asyncio.Queue()
             loop = asyncio.get_event_loop()
+            chunk_queue = asyncio.Queue()
             
             def stream_claude():
                 try:
                     with client.messages.stream(
                         model=settings.claude_model,
-                        max_tokens=2048,
+                        max_tokens=1024,
                         system=system_prompt,
                         messages=messages
                     ) as stream:

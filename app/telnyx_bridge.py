@@ -1,24 +1,18 @@
 """
-Coachd Telnyx Bridge
+Coachd Telnyx Bridge (TeXML Version)
 Handles 3-way conference calls with real-time audio streaming
-Drop-in replacement for twilio_bridge.py
+Uses TeXML API for outbound calls and webhook responses
 """
 
 import logging
-import telnyx
+import requests
+import base64
+import json
 from typing import Optional
 
 from .config import settings
 
 logger = logging.getLogger(__name__)
-
-# Initialize Telnyx (only if configured)
-if settings.telnyx_api_key:
-    try:
-        telnyx.api_key = settings.telnyx_api_key
-        logger.info("Telnyx client initialized")
-    except Exception as e:
-        logger.error(f"Failed to initialize Telnyx client: {e}")
 
 
 def is_telnyx_configured() -> bool:
@@ -26,36 +20,68 @@ def is_telnyx_configured() -> bool:
     return bool(settings.telnyx_api_key and settings.telnyx_phone_number)
 
 
+def _encode_client_state(data: dict) -> str:
+    """Encode client state for Telnyx callbacks"""
+    return base64.b64encode(json.dumps(data).encode()).decode()
+
+
+def _decode_client_state(encoded: str) -> dict:
+    """Decode client state from Telnyx callbacks"""
+    try:
+        return json.loads(base64.b64decode(encoded).decode())
+    except Exception:
+        return {}
+
+
 def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
     """
-    Step 1: Call the agent and put them in a conference room
+    Call the agent using Telnyx API.
+    When agent answers, Telnyx hits our webhook which returns TeXML instructions.
     """
     if not is_telnyx_configured():
         return {"success": False, "error": "Telnyx not configured"}
     
-    conference_name = f"coachd_{session_id}"
-    
     try:
-        call = telnyx.Call.create(
-            connection_id=settings.telnyx_connection_id,
-            to=agent_phone,
-            from_=settings.telnyx_phone_number,
-            webhook_url=f"{settings.base_url}/api/telnyx/agent-joined?session_id={session_id}",
-            webhook_url_method="POST",
-            answering_machine_detection="disabled",
-            client_state=_encode_client_state({"session_id": session_id, "role": "agent"})
+        response = requests.post(
+            "https://api.telnyx.com/v2/texml/calls",
+            headers={
+                "Authorization": f"Bearer {settings.telnyx_api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "to": agent_phone,
+                "from": settings.telnyx_phone_number,
+                "connection_id": settings.telnyx_app_id,
+                "url": f"{settings.base_url}/api/telnyx/agent-answered?session_id={session_id}",
+                "method": "POST"
+            }
         )
         
-        logger.info(f"Initiated agent call: {call.call_control_id} for session {session_id}")
-        
-        return {
-            "success": True,
-            "call_control_id": call.call_control_id,
-            "call_leg_id": call.call_leg_id,
-            "conference_name": conference_name,
-            "session_id": session_id
-        }
-        
+        if response.status_code in [200, 201]:
+            data = response.json().get("data", {})
+            call_control_id = data.get("call_control_id", "") or data.get("call_sid", "")
+            
+            logger.info(f"Initiated agent call: {call_control_id} for session {session_id}")
+            
+            return {
+                "success": True,
+                "call_control_id": call_control_id,
+                "session_id": session_id
+            }
+        else:
+            error_msg = "Unknown error"
+            try:
+                error_data = response.json()
+                if "errors" in error_data:
+                    error_msg = error_data["errors"][0].get("detail", error_msg)
+                elif "error" in error_data:
+                    error_msg = error_data["error"]
+            except:
+                error_msg = f"HTTP {response.status_code}"
+            
+            logger.error(f"Telnyx API error: {response.status_code} - {error_msg}")
+            return {"success": False, "error": error_msg}
+            
     except Exception as e:
         logger.error(f"Failed to initiate agent call: {e}")
         return {"success": False, "error": str(e)}
@@ -63,14 +89,18 @@ def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
 
 def generate_agent_conference_texml(session_id: str) -> str:
     """
-    Generate TeXML to put the agent into the conference with recording.
-    TeXML is TwiML-compatible.
+    Generate TeXML to put the agent into the conference with streaming.
+    Called when agent answers the call.
     """
     conference_name = f"coachd_{session_id}"
+    stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
     
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Say voice="alice">Connected to Coachd. Dial your client now.</Say>
+    <Say voice="Polly.Joanna">Coachd ready. Dial your client now.</Say>
+    <Start>
+        <Stream url="{stream_url}/ws/telnyx/stream/{session_id}" track="both_tracks" />
+    </Start>
     <Dial>
         <Conference 
             startConferenceOnEnter="true"
@@ -87,43 +117,10 @@ def generate_agent_conference_texml(session_id: str) -> str:
     return texml
 
 
-def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id: str = None) -> dict:
-    """
-    Step 2: Add the client to the existing conference
-    """
-    if not is_telnyx_configured():
-        return {"success": False, "error": "Telnyx not configured"}
-    
-    from_number = agent_caller_id if agent_caller_id else settings.telnyx_phone_number
-    
-    try:
-        call = telnyx.Call.create(
-            connection_id=settings.telnyx_connection_id,
-            to=client_phone,
-            from_=from_number,
-            webhook_url=f"{settings.base_url}/api/telnyx/client-joined?session_id={session_id}",
-            webhook_url_method="POST",
-            answering_machine_detection="disabled",
-            client_state=_encode_client_state({"session_id": session_id, "role": "client"})
-        )
-        
-        logger.info(f"Added client to conference: {call.call_control_id}")
-        
-        return {
-            "success": True,
-            "call_control_id": call.call_control_id,
-            "call_leg_id": call.call_leg_id,
-            "client_phone": client_phone
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to add client to conference: {e}")
-        return {"success": False, "error": str(e)}
-
-
 def generate_client_conference_texml(session_id: str) -> str:
     """
-    Generate TeXML to put the client into the conference
+    Generate TeXML to put the client into the conference.
+    Called when client answers the call.
     """
     conference_name = f"coachd_{session_id}"
     
@@ -141,121 +138,142 @@ def generate_client_conference_texml(session_id: str) -> str:
     return texml
 
 
-def join_conference(call_control_id: str, session_id: str) -> dict:
+def generate_inbound_texml(session_id: str) -> str:
     """
-    Join an answered call to the conference using Call Control API
+    Generate TeXML for inbound calls (agent calls the Telnyx number).
+    """
+    stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
+    conference_name = f"coachd_{session_id}"
+    
+    texml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Say voice="Polly.Joanna">Coachd ready.</Say>
+    <Start>
+        <Stream url="{stream_url}/ws/telnyx/stream/{session_id}" track="both_tracks" />
+    </Start>
+    <Dial>
+        <Conference 
+            startConferenceOnEnter="true"
+            endConferenceOnExit="true"
+            record="record-from-start">
+            {conference_name}
+        </Conference>
+    </Dial>
+</Response>"""
+    
+    return texml
+
+
+def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id: str = None) -> dict:
+    """
+    Call the client and add them to the conference.
     """
     if not is_telnyx_configured():
         return {"success": False, "error": "Telnyx not configured"}
     
-    conference_name = f"coachd_{session_id}"
+    from_number = agent_caller_id if agent_caller_id else settings.telnyx_phone_number
     
     try:
-        call = telnyx.Call()
-        call.call_control_id = call_control_id
-        
-        call.join_conference(
-            conference_id=conference_name,
-            start_conference_on_enter=True,
-            hold=False,
-            mute=False,
-            supervisor_role="none"
+        response = requests.post(
+            "https://api.telnyx.com/v2/texml/calls",
+            headers={
+                "Authorization": f"Bearer {settings.telnyx_api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "to": client_phone,
+                "from": from_number,
+                "connection_id": settings.telnyx_app_id,
+                "url": f"{settings.base_url}/api/telnyx/client-answered?session_id={session_id}",
+                "method": "POST"
+            }
         )
         
-        logger.info(f"Joined call {call_control_id} to conference {conference_name}")
-        return {"success": True, "conference_name": conference_name}
-        
+        if response.status_code in [200, 201]:
+            data = response.json().get("data", {})
+            call_control_id = data.get("call_control_id", "") or data.get("call_sid", "")
+            
+            logger.info(f"Added client to conference: {call_control_id}")
+            
+            return {
+                "success": True,
+                "call_control_id": call_control_id,
+                "client_phone": client_phone
+            }
+        else:
+            error_msg = "Unknown error"
+            try:
+                error_data = response.json()
+                if "errors" in error_data:
+                    error_msg = error_data["errors"][0].get("detail", error_msg)
+            except:
+                error_msg = f"HTTP {response.status_code}"
+            
+            logger.error(f"Telnyx API error: {response.status_code} - {error_msg}")
+            return {"success": False, "error": error_msg}
+            
     except Exception as e:
-        logger.error(f"Failed to join conference: {e}")
-        return {"success": False, "error": str(e)}
-
-
-def end_conference(session_id: str) -> dict:
-    """
-    End the conference and all associated calls
-    """
-    if not is_telnyx_configured():
-        return {"success": False, "error": "Telnyx not configured"}
-    
-    conference_name = f"coachd_{session_id}"
-    
-    try:
-        # List conferences and find ours
-        conferences = telnyx.Conference.list()
-        
-        for conf in conferences.data:
-            if conf.name == conference_name:
-                # Get all participants and hang up
-                participants = telnyx.ConferenceParticipant.list(conference_id=conf.id)
-                for participant in participants.data:
-                    try:
-                        call = telnyx.Call()
-                        call.call_control_id = participant.call_control_id
-                        call.hangup()
-                    except Exception as e:
-                        logger.warning(f"Failed to hangup participant: {e}")
-                
-                # End the conference
-                try:
-                    conf.end()
-                except Exception as e:
-                    logger.warning(f"Failed to end conference: {e}")
-        
-        logger.info(f"Ended conference: {conference_name}")
-        return {"success": True, "conference_name": conference_name}
-        
-    except Exception as e:
-        logger.error(f"Failed to end conference: {e}")
+        logger.error(f"Failed to add client to conference: {e}")
         return {"success": False, "error": str(e)}
 
 
 def hangup_call(call_control_id: str) -> dict:
-    """
-    Hang up a specific call
-    """
+    """Hang up a specific call"""
     if not is_telnyx_configured():
         return {"success": False, "error": "Telnyx not configured"}
     
     try:
-        call = telnyx.Call()
-        call.call_control_id = call_control_id
-        call.hangup()
+        response = requests.post(
+            f"https://api.telnyx.com/v2/calls/{call_control_id}/actions/hangup",
+            headers={
+                "Authorization": f"Bearer {settings.telnyx_api_key}",
+                "Content-Type": "application/json"
+            }
+        )
         
-        logger.info(f"Hung up call: {call_control_id}")
-        return {"success": True}
-        
+        if response.status_code in [200, 201]:
+            logger.info(f"Hung up call: {call_control_id}")
+            return {"success": True}
+        else:
+            return {"success": False, "error": "Failed to hangup"}
+            
     except Exception as e:
         logger.error(f"Failed to hangup call: {e}")
         return {"success": False, "error": str(e)}
 
 
+def end_conference(session_id: str) -> dict:
+    """
+    End the conference (simplified - TeXML handles cleanup automatically)
+    """
+    logger.info(f"Ending conference for session: {session_id}")
+    return {"success": True, "session_id": session_id}
+
+
 def get_recording_url(recording_id: str) -> Optional[str]:
-    """
-    Get the URL for a completed recording
-    """
-    if not is_telnyx_configured():
+    """Get the URL for a recording"""
+    if not is_telnyx_configured() or not recording_id:
         return None
     
     try:
-        recording = telnyx.Recording.retrieve(recording_id)
-        return recording.download_urls.get("mp3") or recording.download_urls.get("wav")
+        response = requests.get(
+            f"https://api.telnyx.com/v2/recordings/{recording_id}",
+            headers={
+                "Authorization": f"Bearer {settings.telnyx_api_key}"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json().get("data", {})
+            return data.get("download_urls", {}).get("mp3")
+        return None
+        
     except Exception as e:
         logger.error(f"Failed to get recording URL: {e}")
         return None
 
 
-def _encode_client_state(data: dict) -> str:
-    """Encode client state as base64 for Telnyx webhooks"""
-    import base64
-    import json
-    return base64.b64encode(json.dumps(data).encode()).decode()
-
-
-def _decode_client_state(encoded: str) -> dict:
-    """Decode client state from Telnyx webhook"""
-    import base64
-    import json
-    try:
-        return json.loads(base64.b64decode(encoded).decode())
-    except Exception:
-        return {}
+# Legacy function names for compatibility
+def join_conference(call_control_id: str, session_id: str) -> dict:
+    """Legacy - TeXML handles this via webhook responses"""
+    return {"success": True, "message": "Handled by TeXML webhooks"}

@@ -15,11 +15,13 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     deepgram_api_key: str = ""
     
-    # Telnyx Configuration (replaces Twilio)
+    # Telnyx Configuration (TeXML Application)
     telnyx_api_key: str = ""
     telnyx_phone_number: str = ""
-    telnyx_connection_id: str = ""  # Required for outbound calls
-    base_url: str = "https://coachd.onrender.com"
+    telnyx_app_id: str = ""  # TeXML Application ID (for outbound calls)
+    
+    # Base URL for webhooks (your custom domain)
+    base_url: str = "https://coachd.ai"
     
     # Application
     app_name: str = "Coachd"

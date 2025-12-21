@@ -1,0 +1,2520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Coachd.ai | Live Call</title>
+    <!-- VERSION: 2025-12-21-telnyx-v1 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #FFFFFF;
+            --surface: #F5F5F5;
+            --border: #E5E5E5;
+            --text: #1A1A1A;
+            --text-secondary: #666666;
+            --text-muted: #999999;
+            --accent: #60A5FA;
+            --accent-dark: #3B82F6;
+            --accent-soft: rgba(96, 165, 250, 0.1);
+            --success: #10B981;
+            --success-soft: rgba(16, 185, 129, 0.1);
+            --danger: #EF4444;
+            --danger-soft: rgba(239, 68, 68, 0.1);
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow: hidden;
+        }
+        
+        .landscape-blocker {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #FFFFFF;
+            z-index: 99999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+        }
+        
+        .landscape-blocker-icon { color: var(--text-muted); margin-bottom: 24px; }
+        .landscape-blocker-icon svg { width: 48px; height: 48px; animation: rotatePhone 2s ease-in-out infinite; }
+        @keyframes rotatePhone { 0%, 15% { transform: rotate(90deg); } 40%, 100% { transform: rotate(0deg); } }
+        .landscape-blocker h2 { font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 600; margin-bottom: 8px; }
+        .landscape-blocker p { font-size: 0.875rem; color: var(--text-secondary); }
+        
+        @media (orientation: landscape) and (max-height: 500px) {
+            .landscape-blocker { display: flex; }
+            .app { display: none !important; }
+        }
+        
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+        }
+        
+        /* ========== HEADER ========== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            flex-shrink: 0;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .back-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: var(--surface);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        
+        .back-btn:hover { background: var(--border); }
+        .back-btn:active { transform: scale(0.95); }
+        .back-btn svg { width: 20px; height: 20px; color: var(--text); }
+        
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 1.1rem;
+            letter-spacing: -0.02em;
+            color: var(--text);
+        }
+        
+        .logo .ai { color: var(--accent-dark); }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .agent-badge {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--surface);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            max-width: 140px;
+            overflow: hidden;
+        }
+        
+        .agent-badge.show { display: flex; }
+        
+        .agent-badge svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+        
+        .agent-badge span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .timer {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            min-width: 45px;
+            text-align: right;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--surface);
+            transition: all 0.2s ease;
+        }
+        
+        .status-indicator svg {
+            width: 16px;
+            height: 16px;
+            color: var(--text-muted);
+        }
+        
+        .status-indicator.listening {
+            background: var(--success-soft);
+        }
+        
+        .status-indicator.listening svg {
+            color: var(--success);
+        }
+        
+        .status-indicator.connecting {
+            background: rgba(245, 158, 11, 0.1);
+        }
+        
+        .status-indicator.connecting svg {
+            color: #F59E0B;
+            animation: spin 1s linear infinite;
+        }
+        
+        .status-indicator.ringing {
+            background: var(--accent-soft);
+        }
+        
+        .status-indicator.ringing svg {
+            color: var(--accent-dark);
+            animation: pulse 1s ease-in-out infinite;
+        }
+        
+        .status-indicator.error {
+            background: var(--danger-soft);
+        }
+        
+        .status-indicator.error svg {
+            color: var(--danger);
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* ========== SCREENS ========== */
+        .screen {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+        }
+        
+        .screen.active { display: flex; }
+        
+        /* ========== IDENTIFY SCREEN ========== */
+        .identify-screen {
+            justify-content: center;
+            align-items: center;
+            padding: 40px 24px;
+        }
+        
+        .identify-card {
+            width: 100%;
+            max-width: 340px;
+        }
+        
+        .identify-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .identify-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--accent-soft);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        
+        .identify-icon svg {
+            width: 28px;
+            height: 28px;
+            color: var(--accent-dark);
+        }
+        
+        .identify-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        
+        .identify-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            color: var(--text);
+            background: transparent;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            min-height: 50px;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        /* Hide number spinners */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        
+        input[type="tel"] {
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 14px 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            color: var(--text);
+            background: transparent;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+            min-height: 50px;
+            transition: all 0.2s ease;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        
+        .form-optional {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: 0;
+            margin-left: 4px;
+        }
+        
+        .identify-btn {
+            width: 100%;
+            padding: 16px 24px;
+            margin-top: 12px;
+            background: var(--text);
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        
+        .identify-btn:hover:not(:disabled) { 
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .identify-btn:active:not(:disabled) { 
+            transform: translateY(0);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        }
+        .identify-btn:disabled { 
+            opacity: 0.5; 
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .form-error {
+            color: var(--danger);
+            font-size: 0.85rem;
+            margin-top: 8px;
+            display: none;
+        }
+        
+        .form-error.show { display: block; }
+        
+        /* ========== START SCREEN ========== */
+        .start-screen {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px 24px;
+        }
+        
+        .start-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 24px;
+            background: var(--accent-soft);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .start-icon svg {
+            width: 40px;
+            height: 40px;
+            color: var(--accent-dark);
+        }
+        
+        .start-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .start-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            max-width: 280px;
+            line-height: 1.5;
+        }
+        
+        .start-phone-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: var(--surface);
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+        
+        .start-phone-display svg {
+            width: 18px;
+            height: 18px;
+            color: var(--accent-dark);
+        }
+        
+        .start-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 16px 40px;
+            background: var(--text);
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            max-width: 280px;
+        }
+        
+        .start-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .start-btn:active:not(:disabled) { transform: scale(0.98); }
+        .start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .start-btn svg { width: 22px; height: 22px; }
+        
+        .change-agent {
+            margin-top: 16px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        
+        .change-agent:hover { color: var(--text-secondary); }
+        
+        /* ========== CALL TYPE SELECTOR ========== */
+        .call-type-selector {
+            width: 100%;
+            max-width: 280px;
+            margin-bottom: 24px;
+        }
+
+        .call-type-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .call-type-buttons {
+            display: flex;
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .call-type-btn {
+            flex: 1;
+            padding: 12px 8px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .call-type-btn.active {
+            background: var(--bg);
+            color: var(--text);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .call-type-btn:hover:not(.active) { color: var(--text); }
+
+        .call-type-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+            text-align: center;
+        }
+        
+        /* ========== CONNECTING SCREEN ========== */
+        .connecting-screen {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px 24px;
+        }
+        
+        .connecting-icon {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 24px;
+            background: var(--accent-soft);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: ringPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes ringPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(96, 165, 250, 0); }
+        }
+        
+        .connecting-icon svg {
+            width: 36px;
+            height: 36px;
+            color: var(--accent-dark);
+        }
+        
+        .connecting-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .connecting-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            max-width: 260px;
+            line-height: 1.5;
+        }
+        
+        .connecting-cancel {
+            padding: 12px 24px;
+            background: transparent;
+            color: var(--text-muted);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        
+        .connecting-cancel:hover {
+            background: var(--surface);
+            color: var(--text);
+        }
+        
+        /* ========== CALL SCREEN ========== */
+        .call-screen { position: relative; }
+        
+        .teleprompter {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .teleprompter:active { background: var(--surface); }
+        
+        .listening-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .listening-bars {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .bar {
+            width: 6px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 3px;
+            animation: bars 1s ease-in-out infinite;
+        }
+        
+        .bar:nth-child(1) { animation-delay: 0s; }
+        .bar:nth-child(2) { animation-delay: 0.1s; }
+        .bar:nth-child(3) { animation-delay: 0.2s; }
+        .bar:nth-child(4) { animation-delay: 0.3s; }
+        .bar:nth-child(5) { animation-delay: 0.4s; }
+        
+        @keyframes bars {
+            0%, 100% { height: 12px; opacity: 0.4; }
+            50% { height: 36px; opacity: 1; }
+        }
+        
+        .listening-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        
+        .listening-hint {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+        
+        .guidance-state {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        .guidance-state.active { 
+            display: flex;
+            animation: guidanceFadeIn 150ms ease-out;
+        }
+        
+        @keyframes guidanceFadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(-8px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+        
+        .guidance-text {
+            font-size: 1.5rem;
+            line-height: 1.55;
+            font-weight: 500;
+            color: var(--text);
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        /* Bold key phrases for quick scanning */
+        .guidance-text .say-this {
+            color: var(--accent-dark);
+            font-weight: 600;
+        }
+        
+        .guidance-text .cursor {
+            display: inline-block;
+            width: 3px;
+            height: 1.3em;
+            background: var(--accent-dark);
+            margin-left: 3px;
+            animation: blink 0.6s infinite;
+            vertical-align: text-bottom;
+        }
+        
+        @keyframes blink {
+            0%, 45% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+        
+        .dismiss-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .guidance-state.active .dismiss-hint {
+            opacity: 1;
+            transition-delay: 1s;
+        }
+        
+        .guidance-text strong { font-weight: 700; }
+        
+        /* ========== LIVE CAPTIONS ========== */
+        .live-captions {
+            background: var(--surface);
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.04);
+            padding: 10px 16px;
+            flex-shrink: 0;
+        }
+        
+        .captions-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+        
+        .captions-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+        
+        .captions-dot.active {
+            background: var(--success);
+            box-shadow: 0 0 0 2px var(--success-soft);
+            animation: captionPulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes captionPulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+        
+        .captions-label {
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+        
+        .captions-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .caption-line {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            transition: opacity 0.4s ease;
+        }
+        
+        .caption-line.faded {
+            opacity: 0.4;
+        }
+        
+        .caption-speaker {
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            flex-shrink: 0;
+            min-width: 44px;
+            text-align: center;
+        }
+        
+        .caption-speaker.agent {
+            background: var(--accent-soft);
+            color: var(--accent-dark);
+        }
+        
+        .caption-speaker.caller {
+            background: var(--border);
+            color: var(--text-secondary);
+        }
+        
+        .caption-text {
+            font-size: 12px;
+            line-height: 1.4;
+            color: var(--text-secondary);
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .caption-text.interim {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .caption-text.waiting {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .call-footer {
+            padding: 16px 24px 24px;
+            display: flex;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .end-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 28px;
+            background: var(--surface);
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        
+        .end-btn:hover {
+            background: var(--danger-soft);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        
+        .end-btn svg { width: 18px; height: 18px; }
+        
+        /* ========== PRICE OBJECTION BUTTON ========== */
+        .price-objection-container {
+            display: none;
+            padding: 12px 20px;
+            background: var(--accent-soft);
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .price-objection-container.visible { display: block; }
+
+        .price-objection-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px;
+            background: var(--accent-dark);
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .price-objection-btn:hover { 
+            background: #2563EB;
+            transform: translateY(-1px);
+        }
+
+        .price-objection-btn:active { transform: translateY(0); }
+        .price-objection-btn svg { width: 18px; height: 18px; }
+        
+        /* ========== OUTCOME SCREEN ========== */
+        .outcome-screen {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px 24px;
+        }
+        
+        .outcome-question {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 40px;
+            color: var(--text);
+        }
+        
+        .outcome-buttons {
+            display: flex;
+            gap: 16px;
+            width: 100%;
+            max-width: 320px;
+        }
+        
+        .outcome-btn {
+            flex: 1;
+            padding: 20px 24px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .outcome-btn svg { width: 32px; height: 32px; }
+        
+        .outcome-btn.yes {
+            background: var(--success-soft);
+            border: 2px solid var(--success);
+            color: #059669;
+        }
+        
+        .outcome-btn.yes:hover {
+            background: var(--success);
+            color: white;
+        }
+        
+        .outcome-btn.no {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            color: var(--text-secondary);
+        }
+        
+        .outcome-btn.no:hover {
+            background: var(--border);
+            color: var(--text);
+        }
+        
+        /* ========== REVIEW SCREEN ========== */
+        .review-screen {
+            padding: 24px;
+            overflow-y: auto;
+        }
+        
+        .review-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .review-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--success-soft);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+        }
+        
+        .review-icon svg {
+            width: 32px;
+            height: 32px;
+            color: var(--success);
+        }
+        
+        .review-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+        
+        .review-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .review-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 32px;
+            padding: 20px;
+            background: var(--surface);
+            border-radius: 14px;
+        }
+        
+        .stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .review-section-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        
+        .review-card {
+            background: var(--surface);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.15s ease;
+        }
+        
+        .review-card:hover { border-color: var(--border); }
+        
+        .review-card.selected {
+            border-color: var(--accent-dark);
+            background: var(--accent-soft);
+        }
+        
+        .review-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .review-card-number {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--accent-dark);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .review-card-check {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+        }
+        
+        .review-card.selected .review-card-check {
+            background: var(--accent-dark);
+            border-color: var(--accent-dark);
+        }
+        
+        .review-card-check svg {
+            width: 12px;
+            height: 12px;
+            color: white;
+            opacity: 0;
+        }
+        
+        .review-card.selected .review-card-check svg { opacity: 1; }
+        
+        .review-card-text {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text);
+        }
+        
+        .review-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        
+        .review-helper {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        
+        .review-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        
+        .review-btn {
+            flex: 1;
+            padding: 16px 20px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        
+        .review-btn.primary {
+            background: var(--text);
+            color: white;
+            border: none;
+        }
+        
+        .review-btn.secondary {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        
+        .review-btn:hover { opacity: 0.9; }
+        
+        /* ========== NO-CLOSE SCREEN ========== */
+        .noclose-screen {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px 24px;
+        }
+        
+        .noclose-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--surface);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .noclose-icon svg {
+            width: 32px;
+            height: 32px;
+            color: var(--text-muted);
+        }
+        
+        .noclose-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+        
+        .noclose-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            max-width: 280px;
+        }
+        
+        .noclose-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+        }
+        
+        .objection-select {
+            width: 100%;
+            max-width: 300px;
+            padding: 14px 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            color: var(--text);
+            background: transparent;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            margin-bottom: 32px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+            min-height: 50px;
+            transition: all 0.2s ease;
+        }
+        
+        .objection-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        
+        .noclose-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .noclose-btn {
+            padding: 16px 24px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        
+        .noclose-btn.primary {
+            background: var(--text);
+            color: white;
+            border: none;
+        }
+        
+        .noclose-btn.secondary {
+            background: var(--surface);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        
+        .noclose-btn:hover { opacity: 0.9; }
+        
+        /* ========== RESPONSIVE ========== */
+        @media (min-width: 768px) {
+            .header { padding: 20px 32px; }
+            .teleprompter { padding: 40px; }
+            .review-screen, .outcome-screen, .noclose-screen, .identify-screen, .start-screen, .connecting-screen {
+                max-width: 500px;
+                margin: 0 auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Landscape Blocker -->
+    <div class="landscape-blocker">
+        <div class="landscape-blocker-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="4" y="2" width="16" height="20" rx="2"/>
+            </svg>
+        </div>
+        <h2>Rotate Your Device</h2>
+        <p>Coachd works best in portrait mode</p>
+    </div>
+    
+    <div class="app" id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <button class="back-btn" onclick="handleBack()" aria-label="Go back">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                </button>
+                <span class="logo">Coachd<span class="ai">.ai</span></span>
+            </div>
+            <div class="header-right">
+                <div class="agent-badge" id="agentBadge">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span id="agentBadgeName"></span>
+                </div>
+                <span class="timer" id="timer">0:00</span>
+                <div class="status-indicator" id="statusIndicator">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="12" cy="12" r="10"/>
+                    </svg>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Identify Screen -->
+        <div class="screen identify-screen active" id="identifyScreen">
+            <div class="identify-card">
+                <div class="identify-header">
+                    <div class="identify-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </div>
+                    <h1 class="identify-title">Agent Setup</h1>
+                    <p class="identify-subtitle">One-time setup to get started</p>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Your Full Name</label>
+                    <input type="text" class="form-input" id="agentName" placeholder="e.g. Marcus Johnson" autocomplete="name">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Your Phone Number</label>
+                    <input type="tel" class="form-input" id="agentPhone" placeholder="(404) 555-1234" autocomplete="tel">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Agency</label>
+                    <select class="form-select" id="agencySelect">
+                        <option value="">Select your agency...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Agent ID <span class="form-optional">(optional)</span></label>
+                    <input type="text" class="form-input" id="agentId" placeholder="e.g. AGT-001">
+                </div>
+                
+                <div class="form-error" id="identifyError">Please fill in all required fields</div>
+                
+                <button class="identify-btn" onclick="Coachd.saveIdentity()">Continue</button>
+            </div>
+        </div>
+        
+        <!-- Start Screen -->
+        <div class="screen start-screen" id="startScreen">
+            <div class="start-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                </svg>
+            </div>
+            <h1 class="start-title">Ready to Coach</h1>
+            <p class="start-subtitle">We'll call your phone. Answer and dial your client using 3-way calling.</p>
+            
+            <div class="start-phone-display" id="phoneDisplay">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91"/>
+                </svg>
+                <span id="phoneDisplayNumber">(404) 555-1234</span>
+            </div>
+            
+            <!-- Call Type Selector -->
+            <div class="call-type-selector">
+                <div class="call-type-label">Call Type</div>
+                <div class="call-type-buttons">
+                    <button class="call-type-btn active" data-type="phone" onclick="Coachd.setCallType('phone')">Phone</button>
+                    <button class="call-type-btn" data-type="presentation" onclick="Coachd.setCallType('presentation')">Presentation</button>
+                </div>
+                <div class="call-type-hint" id="callTypeHint">Setting appointments (2-3 min)</div>
+            </div>
+            
+            <button class="start-btn" id="startBtn" onclick="Coachd.startCall()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                </svg>
+                Start Coaching
+            </button>
+            <button class="change-agent" onclick="Coachd.changeAgent()">Not you? Change settings</button>
+        </div>
+        
+        <!-- Connecting Screen -->
+        <div class="screen connecting-screen" id="connectingScreen">
+            <div class="connecting-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                </svg>
+            </div>
+            <h1 class="connecting-title">Calling Your Phone...</h1>
+            <p class="connecting-subtitle">Answer the call to connect with Coachd</p>
+            <button class="connecting-cancel" onclick="Coachd.cancelCall()">Cancel</button>
+        </div>
+        
+        <!-- Call Screen -->
+        <div class="screen call-screen" id="callScreen">
+            <div class="teleprompter" id="teleprompter" onclick="Coachd.dismissGuidance()">
+                <div class="listening-state" id="listeningState">
+                    <div class="listening-bars">
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                    </div>
+                    <div class="listening-text">Listening...</div>
+                    <div class="listening-hint">3-way in your client now</div>
+                </div>
+                
+                <div class="guidance-state" id="guidanceState">
+                    <div class="guidance-text" id="guidanceText"></div>
+                    <div class="dismiss-hint">tap anywhere to dismiss</div>
+                </div>
+            </div>
+            
+            <!-- Price Objection Button -->
+            <div class="price-objection-container" id="priceObjectionContainer">
+                <button class="price-objection-btn" onclick="Coachd.handlePriceObjection()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                    They Can't Afford It — Reduce Coverage
+                </button>
+            </div>
+            
+            <!-- Live Captions -->
+            <div class="live-captions" id="liveCaptions">
+                <div class="captions-header">
+                    <div class="captions-dot" id="captionsDot"></div>
+                    <span class="captions-label">Live Transcript</span>
+                </div>
+                <div class="captions-content">
+                    <div class="caption-line" id="agentCaptionLine">
+                        <span class="caption-speaker agent">Agent</span>
+                        <span class="caption-text waiting" id="agentCaptionText">Waiting for speech...</span>
+                    </div>
+                    <div class="caption-line" id="callerCaptionLine">
+                        <span class="caption-speaker caller">Client</span>
+                        <span class="caption-text waiting" id="callerCaptionText">Waiting for speech...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="call-footer">
+                <button class="end-btn" onclick="Coachd.endCall()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/>
+                        <line x1="23" y1="1" x2="1" y2="23"/>
+                    </svg>
+                    End Session
+                </button>
+            </div>
+        </div>
+        
+        <!-- Outcome Screen -->
+        <div class="screen outcome-screen" id="outcomeScreen">
+            <h1 class="outcome-question">Did you close?</h1>
+            <div class="outcome-buttons">
+                <button class="outcome-btn yes" onclick="Coachd.recordOutcome(true)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    Yes
+                </button>
+                <button class="outcome-btn no" onclick="Coachd.recordOutcome(false)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    No
+                </button>
+            </div>
+        </div>
+        
+        <!-- Review Screen (after closing) -->
+        <div class="screen review-screen" id="reviewScreen">
+            <div class="review-header">
+                <div class="review-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                </div>
+                <h1 class="review-title">Great work! 🎉</h1>
+                <p class="review-subtitle">Quick review to improve coaching</p>
+            </div>
+            
+            <div class="review-stats">
+                <div class="stat">
+                    <div class="stat-value" id="statDuration">0:00</div>
+                    <div class="stat-label">Duration</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="statTips">0</div>
+                    <div class="stat-label">Tips</div>
+                </div>
+            </div>
+            
+            <p class="review-section-title">Which tip helped most?</p>
+            <p class="review-helper">Tap to select (optional)</p>
+            
+            <div id="reviewCards"></div>
+            
+            <div class="review-actions">
+                <button class="review-btn secondary" onclick="Coachd.goHome()">Done</button>
+                <button class="review-btn primary" onclick="Coachd.submitAndNewCall()">Next Call</button>
+            </div>
+        </div>
+        
+        <!-- No-Close Screen -->
+        <div class="screen noclose-screen" id="nocloseScreen">
+            <div class="noclose-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                </svg>
+            </div>
+            <h1 class="noclose-title">What stopped the sale?</h1>
+            <p class="noclose-subtitle">Help us coach you better next time</p>
+            
+            <label class="noclose-label">Final Objection</label>
+            <select class="objection-select" id="finalObjection">
+                <option value="">Select objection...</option>
+                <option value="price">Price / Can't afford it</option>
+                <option value="spouse">Need to talk to spouse</option>
+                <option value="think">Need to think about it</option>
+                <option value="coverage">Already has coverage</option>
+                <option value="not_interested">Not interested</option>
+                <option value="callback">Requested callback</option>
+                <option value="no_answer">No answer / Voicemail</option>
+                <option value="other">Other</option>
+            </select>
+            
+            <div class="noclose-actions">
+                <button class="noclose-btn primary" onclick="Coachd.submitAndNewCall()">Next Call</button>
+                <button class="noclose-btn secondary" onclick="Coachd.goHome()">Done for Now</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    const Coachd = (function() {
+        'use strict';
+        
+        // ==================== CONFIG ====================
+        const CONFIG = {
+            telnyxStartEndpoint: '/api/telnyx/start-call',
+            telnyxEndEndpoint: '/api/telnyx/end-call',
+            telnyxSessionEndpoint: '/api/telnyx/session',
+            agenciesEndpoint: '/api/agencies',
+            outcomeEndpoint: '/api/call-outcomes',
+            captionFadeDelay: 4000,
+            pollInterval: 2000
+        };
+        
+        // ==================== STATE ====================
+        const state = {
+            sessionId: null,
+            agentName: null,
+            agentPhone: null,
+            agentId: null,
+            agency: null,
+            callType: 'phone',
+            isInCall: false,
+            seconds: 0,
+            timerInterval: null,
+            guidanceHistory: [],
+            selectedTipIndex: null,
+            callOutcome: null,
+            downCloseLevel: 0,
+            ws: null,
+            agentFadeTimer: null,
+            callerFadeTimer: null,
+            streamingGuidance: '',
+            clientContext: {
+                product: 'whole_life',
+                age: null,
+                occupation: null,
+                married: null,
+                kids: null,
+                kidsCount: null,
+                tobacco: null,
+                budget: null
+            }
+        };
+        
+        // ==================== DOM ====================
+        const dom = {
+            get identifyScreen() { return document.getElementById('identifyScreen'); },
+            get startScreen() { return document.getElementById('startScreen'); },
+            get connectingScreen() { return document.getElementById('connectingScreen'); },
+            get callScreen() { return document.getElementById('callScreen'); },
+            get outcomeScreen() { return document.getElementById('outcomeScreen'); },
+            get reviewScreen() { return document.getElementById('reviewScreen'); },
+            get nocloseScreen() { return document.getElementById('nocloseScreen'); },
+            get startBtn() { return document.getElementById('startBtn'); },
+            get timer() { return document.getElementById('timer'); },
+            get statusIndicator() { return document.getElementById('statusIndicator'); },
+            get teleprompter() { return document.getElementById('teleprompter'); },
+            get listeningState() { return document.getElementById('listeningState'); },
+            get guidanceState() { return document.getElementById('guidanceState'); },
+            get guidanceText() { return document.getElementById('guidanceText'); },
+            get statDuration() { return document.getElementById('statDuration'); },
+            get statTips() { return document.getElementById('statTips'); },
+            get reviewCards() { return document.getElementById('reviewCards'); },
+            get finalObjection() { return document.getElementById('finalObjection'); },
+            get agentName() { return document.getElementById('agentName'); },
+            get agentPhone() { return document.getElementById('agentPhone'); },
+            get agencySelect() { return document.getElementById('agencySelect'); },
+            get agentId() { return document.getElementById('agentId'); },
+            get identifyError() { return document.getElementById('identifyError'); },
+            get agentBadge() { return document.getElementById('agentBadge'); },
+            get agentBadgeName() { return document.getElementById('agentBadgeName'); },
+            get phoneDisplay() { return document.getElementById('phoneDisplay'); },
+            get phoneDisplayNumber() { return document.getElementById('phoneDisplayNumber'); },
+            get captionsDot() { return document.getElementById('captionsDot'); },
+            get agentCaptionLine() { return document.getElementById('agentCaptionLine'); },
+            get callerCaptionLine() { return document.getElementById('callerCaptionLine'); },
+            get agentCaptionText() { return document.getElementById('agentCaptionText'); },
+            get callerCaptionText() { return document.getElementById('callerCaptionText'); },
+            get callTypeHint() { return document.getElementById('callTypeHint'); },
+            get priceObjectionContainer() { return document.getElementById('priceObjectionContainer'); }
+        };
+        
+        // ==================== INIT ====================
+        async function init() {
+            console.log('🚀 Coachd.ai Live Call (Telnyx) - VERSION: 2025-12-21-telnyx-v1');
+            await loadAgencies();
+            loadClientContext();
+            checkExistingIdentity();
+        }
+        
+        function loadClientContext() {
+            const saved = sessionStorage.getItem('coachd_context');
+            if (saved) {
+                try {
+                    const ctx = JSON.parse(saved);
+                    Object.keys(ctx).forEach(key => {
+                        if (ctx[key] !== null && ctx[key] !== undefined) {
+                            state.clientContext[key] = ctx[key];
+                        }
+                    });
+                    console.log('[Context] Loaded from Quick Prep:', state.clientContext);
+                } catch (e) {
+                    console.log('[Context] No saved context found');
+                }
+            }
+        }
+        
+        async function loadAgencies() {
+            try {
+                const resp = await fetch(CONFIG.agenciesEndpoint);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const agencies = data.agencies || [];
+                    agencies.forEach(a => {
+                        const opt = document.createElement('option');
+                        opt.value = a.code;
+                        opt.textContent = a.name;
+                        dom.agencySelect.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                // Fallback agencies
+                const fallback = [
+                    { code: 'ADERHOLT', name: 'Aderholt Agency' },
+                    { code: 'BROOKS', name: 'Brooks Agency' }
+                ];
+                fallback.forEach(a => {
+                    const opt = document.createElement('option');
+                    opt.value = a.code;
+                    opt.textContent = a.name;
+                    dom.agencySelect.appendChild(opt);
+                });
+            }
+        }
+        
+        function checkExistingIdentity() {
+            const saved = localStorage.getItem('coachd_agent');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    state.agentName = data.name;
+                    state.agentPhone = data.phone;
+                    state.agentId = data.agentId;
+                    state.agency = data.agency;
+                    showAgentBadge();
+                    updatePhoneDisplay();
+                    showScreen('startScreen');
+                } catch (e) {
+                    showScreen('identifyScreen');
+                }
+            } else {
+                showScreen('identifyScreen');
+            }
+        }
+        
+        function formatPhoneDisplay(phone) {
+            const digits = phone.replace(/\D/g, '').slice(-10);
+            if (digits.length === 10) {
+                return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+            }
+            return phone;
+        }
+        
+        function updatePhoneDisplay() {
+            if (state.agentPhone) {
+                dom.phoneDisplayNumber.textContent = formatPhoneDisplay(state.agentPhone);
+            }
+        }
+        
+        function saveIdentity() {
+            const name = dom.agentName.value.trim();
+            const phone = dom.agentPhone.value.trim();
+            const agency = dom.agencySelect.value;
+            const agentId = dom.agentId.value.trim();
+            
+            // Validate phone number (at least 10 digits)
+            const phoneDigits = phone.replace(/\D/g, '');
+            if (!name || !agency || phoneDigits.length < 10) {
+                dom.identifyError.textContent = 'Please enter your name, phone number, and agency';
+                dom.identifyError.classList.add('show');
+                return;
+            }
+            
+            dom.identifyError.classList.remove('show');
+            
+            state.agentName = name;
+            state.agentPhone = phone;
+            state.agency = agency;
+            state.agentId = agentId || null;
+            
+            localStorage.setItem('coachd_agent', JSON.stringify({
+                name: state.agentName,
+                phone: state.agentPhone,
+                agency: state.agency,
+                agentId: state.agentId
+            }));
+            
+            showAgentBadge();
+            updatePhoneDisplay();
+            showScreen('startScreen');
+        }
+        
+        function showAgentBadge() {
+            const firstName = state.agentName.split(' ')[0];
+            dom.agentBadgeName.textContent = firstName;
+            dom.agentBadge.classList.add('show');
+        }
+        
+        function changeAgent() {
+            localStorage.removeItem('coachd_agent');
+            state.agentName = null;
+            state.agentPhone = null;
+            state.agentId = null;
+            state.agency = null;
+            dom.agentBadge.classList.remove('show');
+            dom.agentName.value = '';
+            dom.agentPhone.value = '';
+            dom.agentId.value = '';
+            dom.agencySelect.value = '';
+            showScreen('identifyScreen');
+        }
+        
+        // ==================== CALL TYPE ====================
+        function setCallType(type) {
+            state.callType = type;
+            document.querySelectorAll('.call-type-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.type === type);
+            });
+            const hints = {
+                phone: 'Setting appointments (2-3 min)',
+                presentation: 'Full sales presentation (30-45 min)'
+            };
+            dom.callTypeHint.textContent = hints[type];
+        }
+        
+        // ==================== PRICE OBJECTION / DOWN-CLOSE ====================
+        function showPriceObjectionButton() {
+            dom.priceObjectionContainer.classList.add('visible');
+        }
+        
+        function hidePriceObjectionButton() {
+            dom.priceObjectionContainer.classList.remove('visible');
+        }
+        
+        function handlePriceObjection() {
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                hidePriceObjectionButton();
+                
+                if (state.downCloseLevel < 5) {
+                    state.downCloseLevel++;
+                }
+                
+                state.ws.send(JSON.stringify({
+                    type: 'down_close',
+                    data: { level: state.downCloseLevel }
+                }));
+            }
+        }
+        
+        // ==================== UTILS ====================
+        function formatTime(s) {
+            const m = Math.floor(s / 60);
+            const sec = s % 60;
+            return `${m}:${sec.toString().padStart(2, '0')}`;
+        }
+        
+        function setStatus(status) {
+            const el = dom.statusIndicator;
+            el.className = 'status-indicator ' + (status || '');
+            
+            const icons = {
+                listening: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>`,
+                connecting: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>`,
+                ringing: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72"/>
+                </svg>`,
+                error: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>`,
+                '': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <circle cx="12" cy="12" r="10"/>
+                </svg>`
+            };
+            
+            el.innerHTML = icons[status] || icons[''];
+        }
+        
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+        
+        function startTimer() {
+            state.seconds = 0;
+            state.timerInterval = setInterval(() => {
+                state.seconds++;
+                dom.timer.textContent = formatTime(state.seconds);
+            }, 1000);
+        }
+        
+        function stopTimer() {
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+                state.timerInterval = null;
+            }
+        }
+        
+        // ==================== TELNYX CALL FLOW ====================
+        async function startCall() {
+            dom.startBtn.disabled = true;
+            setStatus('connecting');
+            showScreen('connectingScreen');
+            
+            try {
+                // Call the Telnyx API to initiate call to agent
+                const response = await fetch(CONFIG.telnyxStartEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        agent_phone: state.agentPhone
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok || !data.success) {
+                    throw new Error(data.detail || data.error || 'Failed to start call');
+                }
+                
+                state.sessionId = data.session_id;
+                console.log('[Telnyx] Call initiated, session:', state.sessionId);
+                
+                setStatus('ringing');
+                
+                // Connect WebSocket for real-time updates
+                await connectWebSocket();
+                
+            } catch (e) {
+                console.error('Start call failed:', e);
+                setStatus('error');
+                showScreen('startScreen');
+                alert('Failed to start call: ' + e.message);
+            }
+            
+            dom.startBtn.disabled = false;
+        }
+        
+        async function connectWebSocket() {
+            return new Promise((resolve, reject) => {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws/telnyx/session/${state.sessionId}`;
+                
+                console.log('[WS] Connecting to:', wsUrl);
+                state.ws = new WebSocket(wsUrl);
+                
+                state.ws.onopen = () => {
+                    console.log('[WS] Connected');
+                    resolve();
+                };
+                
+                state.ws.onclose = () => {
+                    console.log('[WS] Disconnected');
+                    if (state.isInCall) {
+                        // Unexpected disconnect during call
+                        endCall();
+                    }
+                };
+                
+                state.ws.onerror = (err) => {
+                    console.error('[WS] Error:', err);
+                    reject(err);
+                };
+                
+                state.ws.onmessage = (e) => {
+                    try {
+                        const msg = JSON.parse(e.data);
+                        handleMessage(msg);
+                    } catch (err) {
+                        console.error('[WS] Parse error:', err);
+                    }
+                };
+                
+                setTimeout(() => {
+                    if (state.ws.readyState !== WebSocket.OPEN) {
+                        reject(new Error('WebSocket timeout'));
+                    }
+                }, 10000);
+            });
+        }
+        
+        function handleMessage(msg) {
+            console.log('[MSG]', msg.type);
+            
+            switch (msg.type) {
+                case 'session_state':
+                    handleSessionState(msg.data);
+                    break;
+                case 'status_update':
+                    handleStatusUpdate(msg.data);
+                    break;
+                case 'ready':
+                    // Agent connected, call is live
+                    onCallConnected();
+                    break;
+                case 'transcript':
+                    handleTranscript(msg);
+                    break;
+                case 'guidance':
+                    handleGuidance(msg);
+                    break;
+                case 'guidance_start':
+                    handleGuidanceStart(msg);
+                    break;
+                case 'guidance_chunk':
+                    handleGuidanceChunk(msg);
+                    break;
+                case 'guidance_complete':
+                    handleGuidanceComplete(msg);
+                    break;
+                case 'price_objection':
+                    showPriceObjectionButton();
+                    break;
+                case 'call_ended':
+                    endCall();
+                    break;
+                case 'error':
+                    console.error('Server error:', msg.message);
+                    break;
+            }
+        }
+        
+        function handleSessionState(data) {
+            console.log('[Session State]', data.status);
+            
+            if (data.status === 'agent_connected' || data.status === 'in_progress') {
+                onCallConnected();
+            } else if (data.status === 'ended' || data.status === 'failed') {
+                endCall();
+            }
+        }
+        
+        function handleStatusUpdate(data) {
+            console.log('[Status Update]', data.status);
+            
+            if (data.status === 'agent_connected' || data.status === 'in_progress') {
+                onCallConnected();
+            }
+        }
+        
+        function onCallConnected() {
+            if (state.isInCall) return; // Already handled
+            
+            state.isInCall = true;
+            state.guidanceHistory = [];
+            state.selectedTipIndex = null;
+            state.callOutcome = null;
+            state.downCloseLevel = 0;
+            
+            resetCaptions();
+            showScreen('callScreen');
+            startTimer();
+            setStatus('listening');
+            hidePriceObjectionButton();
+            
+            // Keep screen awake
+            if ('wakeLock' in navigator) {
+                navigator.wakeLock.request('screen').catch(() => {});
+            }
+            
+            console.log('[Call] Connected and listening');
+        }
+        
+        function cancelCall() {
+            if (state.sessionId) {
+                fetch(CONFIG.telnyxEndEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: state.sessionId })
+                }).catch(() => {});
+            }
+            
+            if (state.ws) {
+                state.ws.close();
+            }
+            
+            state.sessionId = null;
+            setStatus('');
+            showScreen('startScreen');
+        }
+        
+        function endCall() {
+            state.isInCall = false;
+            
+            if (state.sessionId) {
+                fetch(CONFIG.telnyxEndEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: state.sessionId })
+                }).catch(() => {});
+            }
+            
+            if (state.ws) {
+                state.ws.close();
+                state.ws = null;
+            }
+            
+            stopTimer();
+            setStatus('');
+            showScreen('outcomeScreen');
+            state.sessionId = null;
+        }
+        
+        // ==================== TRANSCRIPTS ====================
+        function handleTranscript(msg) {
+            const text = msg.text || '';
+            const isFinal = msg.is_final;
+            const speaker = msg.speaker || 'agent';
+            
+            updateCaption(speaker, text, !isFinal);
+            
+            if (isFinal && speaker === 'caller' && text.length > 3) {
+                extractClientInfo(text);
+            }
+        }
+        
+        function extractClientInfo(text) {
+            let updated = false;
+            
+            // Age extraction
+            const agePatterns = [
+                /i(?:'m| am)\s*(\d{1,2})(?:\s*years?\s*old)?/i,
+                /(?:^|\s)(\d{1,2})\s*years?\s*old/i,
+                /age\s*(?:is\s*)?(\d{1,2})/i
+            ];
+            for (const pattern of agePatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    const age = parseInt(match[1]);
+                    if (age >= 18 && age <= 100 && age !== state.clientContext.age) {
+                        state.clientContext.age = age;
+                        updated = true;
+                    }
+                    break;
+                }
+            }
+            
+            // Marital status
+            if (!state.clientContext.married || state.clientContext.married === 'N') {
+                if (/\b(my wife|my husband|my spouse|i'm married|i am married|we're married)\b/i.test(text)) {
+                    state.clientContext.married = 'Y';
+                    updated = true;
+                }
+            }
+            
+            // Kids
+            const kidsPatterns = [
+                /(?:have|got)\s*(\d+|one|two|three|four|five|six)\s*(?:kids?|children|child)/i,
+                /(\d+|one|two|three|four|five|six)\s*(?:kids?|children)/i,
+                /\b(my kids|my children|our kids|our children)\b/i
+            ];
+            for (const pattern of kidsPatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    state.clientContext.kids = 'Y';
+                    const numWords = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
+                    const countMatch = match[1];
+                    if (countMatch) {
+                        const count = numWords[countMatch.toLowerCase()] || parseInt(countMatch);
+                        if (count && count > 0 && count < 20) {
+                            state.clientContext.kidsCount = count;
+                        }
+                    }
+                    updated = true;
+                    break;
+                }
+            }
+            
+            // Budget
+            const budgetPatterns = [
+                /(?:only|maybe|about|around|do|afford|pay|spend)\s*\$(\d+)/i,
+                /\$(\d+)\s*(?:a|per)?\s*month/i,
+                /(\d+)\s*(?:dollars|bucks)\s*(?:a|per)?\s*month/i,
+                /budget\s*(?:is|of)?\s*\$?(\d+)/i
+            ];
+            for (const pattern of budgetPatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    const budget = parseInt(match[1]);
+                    if (budget >= 10 && budget <= 500 && budget !== state.clientContext.budget) {
+                        state.clientContext.budget = budget;
+                        updated = true;
+                    }
+                    break;
+                }
+            }
+            
+            if (updated) {
+                sendContextUpdate();
+            }
+        }
+        
+        function sendContextUpdate() {
+            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                const contextData = {
+                    call_type: state.callType,
+                    agency: state.agency,
+                    product: state.clientContext.product,
+                    age: state.clientContext.age,
+                    occupation: state.clientContext.occupation,
+                    family: buildFamilyString(),
+                    budget: state.clientContext.budget
+                };
+                
+                state.ws.send(JSON.stringify({
+                    type: 'context',
+                    data: contextData
+                }));
+            }
+        }
+        
+        function buildFamilyString() {
+            const parts = [];
+            if (state.clientContext.married === 'Y') {
+                parts.push('married');
+            } else {
+                parts.push('single');
+            }
+            if (state.clientContext.kids === 'Y') {
+                if (state.clientContext.kidsCount) {
+                    parts.push(`${state.clientContext.kidsCount} kids`);
+                } else {
+                    parts.push('has kids');
+                }
+            }
+            return parts.join(', ') || null;
+        }
+        
+        // ==================== CAPTIONS ====================
+        function updateCaption(speaker, text, isInterim) {
+            const captionLine = speaker === 'agent' ? dom.agentCaptionLine : dom.callerCaptionLine;
+            const captionText = speaker === 'agent' ? dom.agentCaptionText : dom.callerCaptionText;
+            const fadeTimerKey = speaker === 'agent' ? 'agentFadeTimer' : 'callerFadeTimer';
+            
+            if (state[fadeTimerKey]) {
+                clearTimeout(state[fadeTimerKey]);
+                state[fadeTimerKey] = null;
+            }
+            
+            captionLine.classList.remove('faded');
+            dom.captionsDot.classList.add('active');
+            
+            captionText.classList.remove('waiting', 'interim');
+            
+            if (isInterim) {
+                captionText.classList.add('interim');
+            }
+            
+            captionText.textContent = text || 'Waiting for speech...';
+            
+            if (!isInterim && text) {
+                state[fadeTimerKey] = setTimeout(() => {
+                    captionLine.classList.add('faded');
+                    
+                    if (dom.agentCaptionLine.classList.contains('faded') && 
+                        dom.callerCaptionLine.classList.contains('faded')) {
+                        dom.captionsDot.classList.remove('active');
+                    }
+                }, CONFIG.captionFadeDelay);
+            }
+        }
+        
+        function resetCaptions() {
+            if (state.agentFadeTimer) clearTimeout(state.agentFadeTimer);
+            if (state.callerFadeTimer) clearTimeout(state.callerFadeTimer);
+            state.agentFadeTimer = null;
+            state.callerFadeTimer = null;
+            
+            dom.agentCaptionLine.classList.remove('faded');
+            dom.callerCaptionLine.classList.remove('faded');
+            dom.agentCaptionText.textContent = 'Waiting for speech...';
+            dom.callerCaptionText.textContent = 'Waiting for speech...';
+            dom.agentCaptionText.classList.add('waiting');
+            dom.callerCaptionText.classList.add('waiting');
+            dom.agentCaptionText.classList.remove('interim');
+            dom.callerCaptionText.classList.remove('interim');
+            dom.captionsDot.classList.remove('active');
+        }
+        
+        // ==================== GUIDANCE ====================
+        function handleGuidance(msg) {
+            const text = msg.guidance || msg.text || '';
+            if (!text) return;
+            
+            const sayThis = extractSayThis(text);
+            
+            state.guidanceHistory.push({
+                text: sayThis,
+                raw: text,
+                timestamp: Date.now()
+            });
+            
+            showGuidance(sayThis);
+            
+            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+        }
+        
+        function handleGuidanceStart(msg) {
+            const content = msg.full_text || msg.chunk || '';
+            if (!content) return;
+            
+            state.streamingGuidance = content;
+            
+            dom.listeningState.style.display = 'none';
+            dom.guidanceText.innerHTML = formatGuidanceText(content);
+            dom.guidanceState.classList.add('active');
+            
+            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+        }
+        
+        function handleGuidanceChunk(msg) {
+            const content = msg.full_text || (state.streamingGuidance + (msg.chunk || ''));
+            if (!content) return;
+            
+            state.streamingGuidance = content;
+            dom.guidanceText.innerHTML = formatGuidanceText(content);
+        }
+        
+        function handleGuidanceComplete(msg) {
+            const fullText = msg.guidance || state.streamingGuidance || '';
+            const sayThis = extractSayThis(fullText);
+            
+            state.guidanceHistory.push({
+                text: sayThis,
+                raw: fullText,
+                timestamp: Date.now()
+            });
+            
+            const displayText = sayThis || fullText;
+            if (displayText) {
+                dom.guidanceText.innerHTML = formatGuidanceText(displayText);
+            }
+            
+            dom.listeningState.style.display = 'none';
+            dom.guidanceState.classList.add('active');
+            
+            state.streamingGuidance = '';
+        }
+        
+        function formatGuidanceText(text) {
+            if (!text) return '';
+            
+            let formatted = text.replace(/(\$[\d,]+|\d+%|\d+,\d+)/g, '<strong>$1</strong>');
+            
+            const quotedMatch = formatted.match(/"([^"]+)"/);
+            if (quotedMatch) {
+                formatted = formatted.replace(
+                    `"${quotedMatch[1]}"`, 
+                    `<span class="say-this">"${quotedMatch[1]}"</span>`
+                );
+            }
+            
+            return formatted;
+        }
+        
+        function extractSayThis(text) {
+            const quotedMatch = text.match(/"([^"]+)"/);
+            if (quotedMatch) return quotedMatch[1];
+            
+            const sayMatch = text.match(/SAY THIS[:\s]*(.+?)(?=\n|WHY|$)/is);
+            if (sayMatch) return sayMatch[1].trim().replace(/^[""]|[""]$/g, '');
+            
+            return text
+                .replace(/^[🎯💬📝🔑]\s*/gm, '')
+                .replace(/^DETECTED:.*?\n/i, '')
+                .replace(/^WHY:.*$/ims, '')
+                .replace(/^SAY THIS:\s*/i, '')
+                .trim() || text;
+        }
+        
+        function showGuidance(text) {
+            dom.listeningState.style.display = 'none';
+            dom.guidanceState.classList.remove('active');
+            
+            let formattedText = text.replace(/(\$[\d,]+|\d+%|\d+,\d+)/g, '<strong>$1</strong>');
+            
+            const quotedMatch = formattedText.match(/"([^"]+)"/);
+            if (quotedMatch) {
+                formattedText = formattedText.replace(
+                    `"${quotedMatch[1]}"`, 
+                    `<span class="say-this">"${quotedMatch[1]}"</span>`
+                );
+            }
+            
+            dom.guidanceText.innerHTML = formattedText;
+            
+            requestAnimationFrame(() => {
+                dom.guidanceState.classList.add('active');
+            });
+        }
+        
+        function dismissGuidance() {
+            dom.guidanceState.classList.remove('active');
+            dom.listeningState.style.display = 'flex';
+            hidePriceObjectionButton();
+            dom.guidanceText.innerHTML = '';
+            state.streamingGuidance = '';
+        }
+        
+        // ==================== OUTCOME ====================
+        function recordOutcome(closed) {
+            state.callOutcome = closed;
+            
+            if (closed) {
+                showReviewScreen();
+            } else {
+                showScreen('nocloseScreen');
+            }
+        }
+        
+        function showReviewScreen() {
+            dom.statDuration.textContent = formatTime(state.seconds);
+            dom.statTips.textContent = state.guidanceHistory.length;
+            
+            if (state.guidanceHistory.length === 0) {
+                dom.reviewCards.innerHTML = '<div class="review-empty">No tips were triggered during this call.</div>';
+            } else {
+                dom.reviewCards.innerHTML = state.guidanceHistory.map((item, i) => `
+                    <div class="review-card" data-index="${i}" onclick="Coachd.selectTip(${i})">
+                        <div class="review-card-header">
+                            <span class="review-card-number">Tip ${i + 1}</span>
+                            <div class="review-card-check">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                                    <polyline points="20 6 9 17 4 12"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="review-card-text">${item.text}</div>
+                    </div>
+                `).join('');
+            }
+            
+            showScreen('reviewScreen');
+        }
+        
+        function selectTip(index) {
+            document.querySelectorAll('.review-card').forEach(c => c.classList.remove('selected'));
+            
+            if (state.selectedTipIndex === index) {
+                state.selectedTipIndex = null;
+            } else {
+                state.selectedTipIndex = index;
+                document.querySelector(`.review-card[data-index="${index}"]`).classList.add('selected');
+            }
+        }
+        
+        async function submitOutcome() {
+            const payload = {
+                session_id: state.sessionId,
+                duration_seconds: state.seconds,
+                outcome: state.callOutcome ? 'closed' : 'not_closed',
+                guidance_count: state.guidanceHistory.length,
+                guidance_used: state.guidanceHistory.map(g => g.text),
+                most_helpful_index: state.selectedTipIndex,
+                most_helpful_text: state.selectedTipIndex !== null ? state.guidanceHistory[state.selectedTipIndex]?.text : null,
+                final_objection: !state.callOutcome ? dom.finalObjection.value : null,
+                timestamp: new Date().toISOString(),
+                agency: state.agency,
+                agent_name: state.agentName,
+                agent_id: state.agentId,
+                call_type: state.callType,
+                down_close_level: state.downCloseLevel
+            };
+            
+            try {
+                await fetch(CONFIG.outcomeEndpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } catch (e) {
+                console.error('Failed to submit outcome:', e);
+            }
+        }
+        
+        async function submitAndNewCall() {
+            await submitOutcome();
+            newCall();
+        }
+        
+        function newCall() {
+            dom.timer.textContent = '0:00';
+            dom.finalObjection.value = '';
+            state.guidanceHistory = [];
+            state.selectedTipIndex = null;
+            state.downCloseLevel = 0;
+            state.sessionId = null;
+            dismissGuidance();
+            resetCaptions();
+            showScreen('startScreen');
+        }
+        
+        function goHome() {
+            submitOutcome();
+            window.location.href = '/';
+        }
+        
+        function handleBack() {
+            if (state.isInCall) {
+                if (confirm('End this session?')) endCall();
+            } else if (dom.connectingScreen.classList.contains('active')) {
+                cancelCall();
+            } else if (dom.reviewScreen.classList.contains('active') || 
+                       dom.nocloseScreen.classList.contains('active') ||
+                       dom.outcomeScreen.classList.contains('active')) {
+                newCall();
+            } else if (dom.startScreen.classList.contains('active')) {
+                goHome();
+            } else if (dom.identifyScreen.classList.contains('active')) {
+                window.location.href = '/';
+            }
+        }
+        
+        // Initialize
+        init();
+        
+        // ==================== PUBLIC API ====================
+        return {
+            startCall,
+            cancelCall,
+            endCall,
+            dismissGuidance,
+            recordOutcome,
+            selectTip,
+            submitAndNewCall,
+            goHome,
+            handleBack,
+            saveIdentity,
+            changeAgent,
+            setCallType,
+            handlePriceObjection,
+            getState: () => state
+        };
+    })();
+    
+    function handleBack() {
+        Coachd.handleBack();
+    }
+    </script>
+</body>
+</html>
