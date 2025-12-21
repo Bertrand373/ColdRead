@@ -8,6 +8,7 @@ import logging
 import requests
 import base64
 import json
+import os
 from typing import Optional
 
 from .config import settings
@@ -15,9 +16,18 @@ from .config import settings
 logger = logging.getLogger(__name__)
 
 
+def get_telnyx_phone() -> str:
+    """Get Telnyx phone number with fallback to os.environ"""
+    phone = settings.telnyx_phone_number
+    if not phone:
+        phone = os.environ.get("TELNYX_PHONE_NUMBER", "")
+        logger.warning(f"[Telnyx] Using os.environ fallback for phone: {phone}")
+    return phone
+
+
 def is_telnyx_configured() -> bool:
     """Check if Telnyx is properly configured"""
-    return bool(settings.telnyx_api_key and settings.telnyx_phone_number)
+    return bool(settings.telnyx_api_key and get_telnyx_phone())
 
 
 def _encode_client_state(data: dict) -> str:
@@ -38,7 +48,13 @@ def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
     Call the agent using Telnyx API.
     When agent answers, Telnyx hits our webhook which returns TeXML instructions.
     """
+    from_number = get_telnyx_phone()
+    
+    # Debug: Log the phone number being used
+    logger.info(f"[Telnyx] Initiating call with from_number: '{from_number}'")
+    
     if not is_telnyx_configured():
+        logger.error(f"[Telnyx] Not configured - api_key: {bool(settings.telnyx_api_key)}, phone: {bool(from_number)}")
         return {"success": False, "error": "Telnyx not configured"}
     
     try:
@@ -50,7 +66,7 @@ def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
             },
             json={
                 "to": agent_phone,
-                "from": settings.telnyx_phone_number,
+                "from": from_number,
                 "url": f"{settings.base_url}/api/telnyx/agent-answered?session_id={session_id}",
                 "method": "POST"
             }
@@ -170,7 +186,7 @@ def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id
     if not is_telnyx_configured():
         return {"success": False, "error": "Telnyx not configured"}
     
-    from_number = agent_caller_id if agent_caller_id else settings.telnyx_phone_number
+    from_number = agent_caller_id if agent_caller_id else get_telnyx_phone()
     
     try:
         response = requests.post(

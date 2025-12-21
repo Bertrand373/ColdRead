@@ -4,6 +4,7 @@ Manages environment variables and application settings
 """
 
 from pydantic_settings import BaseSettings
+from pydantic import Field
 from typing import Optional
 import os
 
@@ -12,16 +13,16 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
     
     # API Keys
-    anthropic_api_key: str = ""
-    deepgram_api_key: str = ""
+    anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
+    deepgram_api_key: str = Field(default="", alias="DEEPGRAM_API_KEY")
     
     # Telnyx Configuration (TeXML Application)
-    telnyx_api_key: str = ""
-    telnyx_phone_number: str = ""
-    telnyx_app_id: str = ""  # TeXML Application ID (for outbound calls)
+    telnyx_api_key: str = Field(default="", alias="TELNYX_API_KEY")
+    telnyx_phone_number: str = Field(default="", alias="TELNYX_PHONE_NUMBER")
+    telnyx_app_id: str = Field(default="", alias="TELNYX_APP_ID")
     
     # Base URL for webhooks (your custom domain)
-    base_url: str = "https://coachd.ai"
+    base_url: str = Field(default="https://coachd.ai", alias="BASE_URL")
     
     # Application
     app_name: str = "Coachd"
@@ -46,6 +47,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        populate_by_name = True
 
 
 # Global settings instance
