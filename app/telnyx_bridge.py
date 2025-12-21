@@ -43,7 +43,7 @@ def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
     
     try:
         response = requests.post(
-            "https://api.telnyx.com/v2/texml/calls",
+            f"https://api.telnyx.com/v2/texml/calls/{settings.telnyx_app_id}",
             headers={
                 "Authorization": f"Bearer {settings.telnyx_api_key}",
                 "Content-Type": "application/json"
@@ -51,7 +51,6 @@ def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
             json={
                 "to": agent_phone,
                 "from": settings.telnyx_phone_number,
-                "connection_id": settings.telnyx_app_id,
                 "url": f"{settings.base_url}/api/telnyx/agent-answered?session_id={session_id}",
                 "method": "POST"
             }
@@ -175,7 +174,7 @@ def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id
     
     try:
         response = requests.post(
-            "https://api.telnyx.com/v2/texml/calls",
+            f"https://api.telnyx.com/v2/texml/calls/{settings.telnyx_app_id}",
             headers={
                 "Authorization": f"Bearer {settings.telnyx_api_key}",
                 "Content-Type": "application/json"
@@ -183,7 +182,6 @@ def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id
             json={
                 "to": client_phone,
                 "from": from_number,
-                "connection_id": settings.telnyx_app_id,
                 "url": f"{settings.base_url}/api/telnyx/client-answered?session_id={session_id}",
                 "method": "POST"
             }
