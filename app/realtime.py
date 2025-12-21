@@ -53,7 +53,6 @@ class RealtimeTranscriber:
         self.connection = None
         self.transcript_buffer = ""
         self.last_guidance_time = 0
-        self.last_trigger_text = ""  # Track last trigger to prevent semantic duplicates
         self.call_context = CallContext()  # Legacy fallback
         self.state_machine = None  # V2: Full state tracking
         self.rag_engine = None
@@ -61,6 +60,10 @@ class RealtimeTranscriber:
         self._loop = None
         self._generating_guidance = False  # Prevent concurrent guidance generation
         self._agency = None  # Track agency for RAG context and billing
+        
+        # Duplicate prevention: track interim triggers to skip matching finals
+        self._pending_interim_text = None
+        self._pending_interim_time = 0
         
         # ============ USAGE TRACKING ============
         self._session_id = str(uuid.uuid4())  # Unique session ID for tracking
@@ -302,40 +305,6 @@ class RealtimeTranscriber:
         except Exception as e:
             print(f"[RT] Error handling transcript: {e}", flush=True)
     
-    def _is_semantic_duplicate(self, new_text: str) -> bool:
-        """Check if new trigger text is semantically similar to the last trigger"""
-        if not self.last_trigger_text:
-            return False
-        
-        # Reset tracking if it's been more than 3 seconds since last trigger
-        # This allows the same objection to re-trigger if client repeats it
-        # (meaning agent's response didn't land and they need a different approach)
-        time_since_last = time.time() - self.last_guidance_time
-        if time_since_last > 3.0:
-            if self.last_trigger_text:
-                print(f"[RT] Resetting duplicate tracking (>{time_since_last:.1f}s since last trigger)", flush=True)
-            self.last_trigger_text = ""
-            return False
-        
-        # Simple heuristic: if the new text starts the same way or is a substring
-        new_lower = new_text.lower().strip()
-        last_lower = self.last_trigger_text.lower().strip()
-        
-        # Check if one is a prefix/extension of the other
-        if new_lower.startswith(last_lower[:30]) or last_lower.startswith(new_lower[:30]):
-            return True
-        
-        # Check word overlap (if >70% words match, it's likely the same utterance)
-        new_words = set(new_lower.split())
-        last_words = set(last_lower.split())
-        
-        if len(new_words) > 0 and len(last_words) > 0:
-            overlap = len(new_words & last_words) / max(len(new_words), len(last_words))
-            if overlap > 0.7:
-                return True
-        
-        return False
-    
     def _check_for_guidance_trigger(self, latest_transcript: str, is_final: bool = True):
         """Check if we should trigger guidance generation"""
         # Don't generate if already generating
@@ -382,28 +351,41 @@ class RealtimeTranscriber:
         
         has_hot_trigger = any(kw in text_lower for kw in hot_triggers)
         
-        # HOT TRIGGERS: 1.5 second cooldown (react fast to objections)
-        # WORD COUNT: 3 second cooldown (normal flow)
+        # HOT TRIGGERS: Fire fast on interim, skip matching final
         if has_hot_trigger:
-            # Reduced cooldown for hot triggers - react fast!
-            if now - self.last_guidance_time < 1.5:
+            # Basic cooldown
+            if now - self.last_guidance_time < 1.0:
                 return
             
-            # Check for semantic duplicate (interim/final of same utterance)
-            if self._is_semantic_duplicate(latest_transcript):
-                print(f"[RT] Skipping duplicate trigger: '{latest_transcript[:50]}...'", flush=True)
-                return
+            # DUPLICATE PREVENTION: Check if this final matches a recent interim we already handled
+            if is_final and self._pending_interim_text:
+                time_since_interim = now - self._pending_interim_time
+                if time_since_interim < 2.0:
+                    # Check if this final matches the pending interim (70% word overlap)
+                    final_words = set(text_lower.split())
+                    interim_words = set(self._pending_interim_text.lower().split())
+                    if final_words and interim_words:
+                        overlap = len(final_words & interim_words) / max(len(final_words), len(interim_words))
+                        if overlap > 0.7:
+                            print(f"[RT] Skipping final (matches interim from {time_since_interim:.1f}s ago)", flush=True)
+                            self._pending_interim_text = None  # Clear pending
+                            return
             
             print(f"[RT] 🔥 HOT TRIGGER detected: '{latest_transcript[:50]}...' - generating immediately", flush=True)
             
-            # CRITICAL: Set timestamp IMMEDIATELY to prevent race condition
-            # (before async call, so second trigger sees it)
-            self.last_guidance_time = now
-            self.last_trigger_text = latest_transcript
+            # If this is an interim, store it so we can skip the matching final
+            if not is_final:
+                self._pending_interim_text = latest_transcript
+                self._pending_interim_time = now
+            else:
+                self._pending_interim_text = None  # Clear on final
             
-            # Add this transcript to buffer so guidance has content to work with
+            # CRITICAL: Add this transcript to buffer so guidance has content to work with
             if latest_transcript.strip():
-                self.transcript_buffer = latest_transcript
+                self.transcript_buffer = latest_transcript  # Use triggering text directly
+            
+            # Set timestamp immediately to prevent race condition with async
+            self.last_guidance_time = now
             self._schedule_async(self._generate_guidance())
             return
         
@@ -419,7 +401,7 @@ class RealtimeTranscriber:
         
         # Generate guidance if enough words accumulated
         if word_count > self.MIN_WORDS_FOR_GUIDANCE:
-            self.last_guidance_time = now  # Set immediately for word-count triggers too
+            self.last_guidance_time = now  # Set immediately
             self._schedule_async(self._generate_guidance())
                    
     def _handle_error(self, *args, **kwargs):
