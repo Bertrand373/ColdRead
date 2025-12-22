@@ -18,11 +18,17 @@ logger = logging.getLogger(__name__)
 
 def get_telnyx_phone() -> str:
     """Get Telnyx phone number directly from environment"""
+    # TEMPORARY HARDCODE FOR DEBUGGING
+    hardcoded = "+14048000441"
+    
     # Read directly from os.environ to avoid pydantic issues
     phone = os.environ.get("TELNYX_PHONE_NUMBER", "")
-    if not phone:
-        phone = settings.telnyx_phone_number
-    return phone
+    print(f"[TELNYX_BRIDGE] os.environ.get('TELNYX_PHONE_NUMBER') = '{phone}' (len={len(phone)})")
+    print(f"[TELNYX_BRIDGE] 'TELNYX_PHONE_NUMBER' in os.environ = {'TELNYX_PHONE_NUMBER' in os.environ}")
+    print(f"[TELNYX_BRIDGE] Using hardcoded number for testing: {hardcoded}")
+    
+    # Return hardcoded for now to test if API works
+    return hardcoded
 
 
 def get_telnyx_api_key() -> str:
@@ -68,12 +74,24 @@ def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
     api_key = get_telnyx_api_key()
     app_id = get_telnyx_app_id()
     
-    # Debug: Log the phone number being used
+    # Debug: Log everything
+    print(f"[TELNYX] initiate_agent_call called")
+    print(f"[TELNYX] from_number = '{from_number}'")
+    print(f"[TELNYX] app_id = '{app_id}'")
+    print(f"[TELNYX] api_key = '{api_key[:20]}...' (truncated)")
     logger.info(f"[Telnyx] Initiating call with from_number: '{from_number}', app_id: '{app_id}'")
     
     if not is_telnyx_configured():
         logger.error(f"[Telnyx] Not configured - api_key: {bool(api_key)}, phone: {bool(from_number)}")
         return {"success": False, "error": "Telnyx not configured"}
+    
+    request_payload = {
+        "to": agent_phone,
+        "from": from_number,
+        "url": f"{settings.base_url}/api/telnyx/agent-answered?session_id={session_id}",
+        "method": "POST"
+    }
+    print(f"[TELNYX] Request payload: {request_payload}")
     
     try:
         response = requests.post(
@@ -82,12 +100,7 @@ def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json"
             },
-            json={
-                "to": agent_phone,
-                "from": from_number,
-                "url": f"{settings.base_url}/api/telnyx/agent-answered?session_id={session_id}",
-                "method": "POST"
-            }
+            json=request_payload
         )
         
         if response.status_code in [200, 201]:
