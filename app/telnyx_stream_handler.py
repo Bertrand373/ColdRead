@@ -250,13 +250,13 @@ class TelnyxStreamHandler:
             # Unknown event
             print(f"[TelnyxStream] Unknown event: {event} - message: {message}", flush=True)
     
-    def _on_open(self, *args, **kwargs):
+    async def _on_open(self, *args, **kwargs):
         """Deepgram connection opened"""
         logger.info(f"[TelnyxStream] Deepgram connection open")
         print(f"[TelnyxStream] Deepgram WebSocket OPEN - ready for audio", flush=True)
     
-    def _on_transcript(self, *args, **kwargs):
-        """Handle transcript from Deepgram (called from Deepgram's thread)"""
+    async def _on_transcript(self, *args, **kwargs):
+        """Handle transcript from Deepgram (async handler)"""
         try:
             result = kwargs.get('result') or (args[1] if len(args) > 1 else None)
             if not result:
@@ -296,16 +296,14 @@ class TelnyxStreamHandler:
             if self._roles_locked and speaker_id is not None:
                 speaker_role = self._get_other_speaker_role(speaker_id)
             
-            # Schedule async broadcast (thread-safe)
-            if self._loop and self._loop.is_running():
-                asyncio.run_coroutine_threadsafe(
-                    self._process_transcript(transcript, is_final, speaker_role, speaker_id),
-                    self._loop
-                )
+            # Process transcript directly (we're already async)
+            await self._process_transcript(transcript, is_final, speaker_role, speaker_id)
                 
         except Exception as e:
             logger.error(f"[TelnyxStream] Error in transcript handler: {e}")
             print(f"[TelnyxStream] Transcript error: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
     
     def _identify_speaker(self, speaker_id: Optional[int], transcript: str = "") -> str:
         """
@@ -545,7 +543,7 @@ class TelnyxStreamHandler:
         """Send message to all frontend WebSocket clients for this session"""
         await session_manager._broadcast_to_session(self.session_id, message)
     
-    def _on_error(self, *args, **kwargs):
+    async def _on_error(self, *args, **kwargs):
         """Handle Deepgram error"""
         error = kwargs.get('error') or (args[1] if len(args) > 1 else "Unknown error")
         logger.error(f"[TelnyxStream] Deepgram error: {error}")
@@ -553,7 +551,7 @@ class TelnyxStreamHandler:
         # Don't set is_running to False - let audio continue flowing
         # The error might be recoverable
     
-    def _on_close(self, *args, **kwargs):
+    async def _on_close(self, *args, **kwargs):
         """Handle Deepgram connection close"""
         logger.info(f"[TelnyxStream] Deepgram connection closed")
         print(f"[TelnyxStream] Deepgram WebSocket CLOSED", flush=True)

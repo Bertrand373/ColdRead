@@ -132,25 +132,21 @@ def generate_agent_conference_texml(session_id: str) -> str:
     """
     stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
     full_stream_url = f"{stream_url}/ws/telnyx/stream/{session_id}"
-    conference_name = f"coachd_{session_id}"
     
     print(f"[TeXML] Generating for session {session_id}", flush=True)
     print(f"[TeXML] base_url: {settings.base_url}", flush=True)
     print(f"[TeXML] stream_url: {full_stream_url}", flush=True)
     
-    # Use Conference to keep call alive
-    # - startConferenceOnEnter="true" - starts immediately when agent joins
-    # - endConferenceOnExit="true" - ends when agent hangs up
-    # - waitUrl="" - silence instead of hold music
-    # - beep="false" - no annoying beep
+    # Use Record to keep call alive - it listens indefinitely until hangup
+    # maxLength=3600 = 1 hour max
+    # timeout=60 = wait 60 seconds of silence before stopping (but we have audio)
+    # playBeep=false = no beep sound
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Start>
         <Stream url="{full_stream_url}" track="both_tracks" />
     </Start>
-    <Dial>
-        <Conference beep="false" startConferenceOnEnter="true" endConferenceOnExit="true" waitUrl="">{conference_name}</Conference>
-    </Dial>
+    <Record maxLength="3600" timeout="60" playBeep="false" />
 </Response>"""
     
     return texml
