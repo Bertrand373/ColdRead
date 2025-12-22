@@ -214,7 +214,13 @@ async def telnyx_stream_websocket(websocket: WebSocket, session_id: str):
     handler = None
     try:
         # Get or create stream handler for this session
-        handler = await get_or_create_handler(session_id)
+        try:
+            handler = await get_or_create_handler(session_id)
+        except Exception as e:
+            print(f"[TelnyxStream] Failed to create handler: {e}")
+            # Continue without handler - at least keep connection alive
+            # Audio won't be transcribed but call continues
+            handler = None
         
         # Update session status
         await session_manager.update_session(session_id, status=CallStatus.IN_PROGRESS)
@@ -224,7 +230,10 @@ async def telnyx_stream_websocket(websocket: WebSocket, session_id: str):
             try:
                 message = await websocket.receive_text()
                 data = json.loads(message)
-                await handler.handle_telnyx_message(data)
+                
+                if handler:
+                    await handler.handle_telnyx_message(data)
+                # If no handler, just consume messages silently
                 
             except json.JSONDecodeError as e:
                 print(f"[TelnyxStream] Invalid JSON: {e}")

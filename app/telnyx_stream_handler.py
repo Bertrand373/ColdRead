@@ -103,10 +103,6 @@ class TelnyxStreamHandler:
         """Initialize Deepgram connection with diarization"""
         logger.info(f"[TelnyxStream] Starting for session {self.session_id}")
         
-        if not settings.deepgram_api_key:
-            logger.error("[TelnyxStream] No Deepgram API key configured")
-            return False
-        
         self._loop = asyncio.get_running_loop()
         self._session_start_time = time.time()
         
@@ -115,13 +111,29 @@ class TelnyxStreamHandler:
         if session:
             self._agency = getattr(session, 'agency', None)
         
-        # Initialize RAG engine
+        # Initialize RAG engine (optional - continue without it)
         try:
             self._rag_engine = get_rag_engine()
-            self._state_machine = CallStateMachine()
-            logger.info(f"[TelnyxStream] RAG engine initialized")
         except Exception as e:
             logger.warning(f"[TelnyxStream] RAG engine not available: {e}")
+            self._rag_engine = None
+        
+        # Initialize state machine (optional - continue without it)
+        try:
+            self._state_machine = CallStateMachine(session_id=self.session_id)
+        except Exception as e:
+            logger.warning(f"[TelnyxStream] State machine not available: {e}")
+            self._state_machine = None
+        
+        # Initialize Deepgram (optional - continue without it for basic call flow)
+        if not settings.deepgram_api_key:
+            logger.warning("[TelnyxStream] No Deepgram API key - transcription disabled")
+            self.is_running = True
+            await self._broadcast_to_frontend({
+                "type": "ready",
+                "message": "Call connected (transcription unavailable)"
+            })
+            return True
         
         try:
             self.deepgram = DeepgramClient(settings.deepgram_api_key)
@@ -141,7 +153,6 @@ class TelnyxStreamHandler:
                 punctuate=True,
                 interim_results=True,
                 utterance_end_ms=1000,
-                vad_events=True,
                 # DIARIZATION - identify different speakers
                 diarize=True,
                 # Audio format from Telnyx (after μ-law to PCM conversion)
@@ -163,12 +174,26 @@ class TelnyxStreamHandler:
                 
                 return True
             else:
-                logger.error(f"[TelnyxStream] Failed to start Deepgram")
-                return False
+                logger.error(f"[TelnyxStream] Failed to start Deepgram - continuing without transcription")
+                self.deepgram = None
+                self.connection = None
+                self.is_running = True
+                await self._broadcast_to_frontend({
+                    "type": "ready",
+                    "message": "Call connected (transcription unavailable)"
+                })
+                return True
                 
         except Exception as e:
-            logger.error(f"[TelnyxStream] Error starting Deepgram: {e}")
-            return False
+            logger.error(f"[TelnyxStream] Error starting Deepgram: {e} - continuing without transcription")
+            self.deepgram = None
+            self.connection = None
+            self.is_running = True
+            await self._broadcast_to_frontend({
+                "type": "ready",
+                "message": "Call connected (transcription unavailable)"
+            })
+            return True
     
     async def handle_telnyx_message(self, message: dict):
         """

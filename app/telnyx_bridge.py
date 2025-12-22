@@ -120,29 +120,27 @@ def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
 
 def generate_agent_conference_texml(session_id: str) -> str:
     """
-    Generate TeXML to put the agent into the conference with streaming.
+    Generate TeXML for agent call with audio streaming.
     Called when agent answers the call.
+    
+    Architecture for native 3-way:
+    - Agent answers our call
+    - We start streaming audio to capture everything
+    - Agent uses phone's native 3-way to call client  
+    - Client audio comes through mixed on agent's connection
+    - We transcribe the mixed audio stream
     """
-    conference_name = f"coachd_{session_id}"
     stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
     
+    # Use Gather to keep call alive - it waits for DTMF indefinitely
+    # while streaming audio bidirectionally
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Say voice="Polly.Joanna">Coachd ready. Dial your client now.</Say>
     <Start>
         <Stream url="{stream_url}/ws/telnyx/stream/{session_id}" track="both_tracks" />
     </Start>
-    <Dial>
-        <Conference 
-            startConferenceOnEnter="true"
-            endConferenceOnExit="false"
-            record="record-from-start"
-            recordingStatusCallback="{settings.base_url}/api/telnyx/recording-complete?session_id={session_id}"
-            statusCallback="{settings.base_url}/api/telnyx/conference-status?session_id={session_id}"
-            statusCallbackEvent="start end join leave">
-            {conference_name}
-        </Conference>
-    </Dial>
+    <Gather input="dtmf" timeout="3600" numDigits="1">
+    </Gather>
 </Response>"""
     
     return texml
