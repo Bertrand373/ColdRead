@@ -164,32 +164,30 @@ class TelnyxStreamHandler:
             
             print(f"[TelnyxStream] Starting Deepgram with options: model=nova-2, diarize=True, sample_rate={self.DEEPGRAM_SAMPLE_RATE}", flush=True)
             
-            started = self.connection.start(options)
-            print(f"[TelnyxStream] Deepgram connection.start() returned: {started}", flush=True)
-            if started:
-                self.is_running = True
-                logger.info(f"[TelnyxStream] Deepgram connected with diarization")
-                
-                # Notify frontend that we're ready
-                await self._broadcast_to_frontend({
-                    "type": "ready",
-                    "message": "Live transcription active"
-                })
-                
-                return True
-            else:
-                logger.error(f"[TelnyxStream] Failed to start Deepgram - continuing without transcription")
-                self.deepgram = None
-                self.connection = None
-                self.is_running = True
-                await self._broadcast_to_frontend({
-                    "type": "ready",
-                    "message": "Call connected (transcription unavailable)"
-                })
-                return True
+            # In Deepgram SDK 3.x, start() returns None but connection is still valid
+            # We check if it throws an exception instead
+            self.connection.start(options)
+            print(f"[TelnyxStream] Deepgram connection started (SDK 3.x)", flush=True)
+            
+            # Give Deepgram a moment to establish
+            await asyncio.sleep(0.5)
+            
+            self.is_running = True
+            logger.info(f"[TelnyxStream] Deepgram connected with diarization")
+            
+            # Notify frontend that we're ready
+            await self._broadcast_to_frontend({
+                "type": "ready",
+                "message": "Live transcription active"
+            })
+            
+            return True
                 
         except Exception as e:
             logger.error(f"[TelnyxStream] Error starting Deepgram: {e} - continuing without transcription")
+            print(f"[TelnyxStream] Deepgram error: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
             self.deepgram = None
             self.connection = None
             self.is_running = True
@@ -221,29 +219,30 @@ class TelnyxStreamHandler:
             media = message.get("media", {})
             payload = media.get("payload")
             
-            if payload and self.connection and self.is_running:
+            if payload:
                 try:
                     # Decode base64 μ-law audio
                     ulaw_audio = base64.b64decode(payload)
                     self._total_audio_bytes += len(ulaw_audio)
                     
-                    # Log occasionally
-                    if self._total_audio_bytes % 16000 < 200:  # ~every second
-                        print(f"[TelnyxStream] Audio received: {self._total_audio_bytes} total bytes", flush=True)
-                    
                     # Convert μ-law to linear PCM (16-bit)
                     pcm_audio = audioop.ulaw2lin(ulaw_audio, 2)
                     
-                    # Send to Deepgram
-                    self.connection.send(pcm_audio)
+                    # Send to Deepgram if connected
+                    if self.connection and self.is_running:
+                        self.connection.send(pcm_audio)
+                        
+                        # Log occasionally
+                        if self._total_audio_bytes % 16000 < 200:  # ~every second
+                            print(f"[TelnyxStream] Sent to Deepgram: {self._total_audio_bytes} total bytes", flush=True)
+                    else:
+                        # Got audio but no Deepgram connection
+                        if self._total_audio_bytes % 32000 < 400:
+                            print(f"[TelnyxStream] Audio received (no Deepgram): {self._total_audio_bytes} bytes", flush=True)
                     
                 except Exception as e:
                     logger.error(f"[TelnyxStream] Error processing audio: {e}")
-            elif payload and not self.connection:
-                # Got audio but no Deepgram connection
-                self._total_audio_bytes += len(base64.b64decode(payload))
-                if self._total_audio_bytes % 32000 < 400:
-                    print(f"[TelnyxStream] Audio received (no transcription): {self._total_audio_bytes} bytes", flush=True)
+                    print(f"[TelnyxStream] Audio error: {e}", flush=True)
                     
         elif event == "stop":
             logger.info(f"[TelnyxStream] Stream stopped")
@@ -256,6 +255,7 @@ class TelnyxStreamHandler:
     def _on_open(self, *args, **kwargs):
         """Deepgram connection opened"""
         logger.info(f"[TelnyxStream] Deepgram connection open")
+        print(f"[TelnyxStream] Deepgram WebSocket OPEN - ready for audio", flush=True)
     
     def _on_transcript(self, *args, **kwargs):
         """Handle transcript from Deepgram (called from Deepgram's thread)"""
@@ -276,6 +276,9 @@ class TelnyxStreamHandler:
             
             if not transcript:
                 return
+            
+            # Log transcript
+            print(f"[TelnyxStream] TRANSCRIPT ({'FINAL' if is_final else 'interim'}): {transcript[:50]}...", flush=True)
             
             # Get speaker from diarization
             words = alt.words if hasattr(alt, 'words') else []
@@ -304,6 +307,7 @@ class TelnyxStreamHandler:
                 
         except Exception as e:
             logger.error(f"[TelnyxStream] Error in transcript handler: {e}")
+            print(f"[TelnyxStream] Transcript error: {e}", flush=True)
     
     def _identify_speaker(self, speaker_id: Optional[int], transcript: str = "") -> str:
         """
@@ -547,12 +551,16 @@ class TelnyxStreamHandler:
         """Handle Deepgram error"""
         error = kwargs.get('error') or (args[1] if len(args) > 1 else "Unknown error")
         logger.error(f"[TelnyxStream] Deepgram error: {error}")
-        self.is_running = False
+        print(f"[TelnyxStream] Deepgram ERROR: {error}", flush=True)
+        # Don't set is_running to False - let audio continue flowing
+        # The error might be recoverable
     
     def _on_close(self, *args, **kwargs):
         """Handle Deepgram connection close"""
         logger.info(f"[TelnyxStream] Deepgram connection closed")
-        self.is_running = False
+        print(f"[TelnyxStream] Deepgram WebSocket CLOSED", flush=True)
+        # Only stop if we initiated the close
+        # self.is_running = False
     
     async def stop(self):
         """Stop the stream handler and log usage"""

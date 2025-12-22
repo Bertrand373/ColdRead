@@ -137,15 +137,15 @@ def generate_agent_conference_texml(session_id: str) -> str:
     print(f"[TeXML] base_url: {settings.base_url}", flush=True)
     print(f"[TeXML] stream_url: {full_stream_url}", flush=True)
     
-    # Use Gather to keep call alive - it waits for DTMF indefinitely
-    # while streaming audio bidirectionally
+    # Use very long Pause to keep call alive (3600 seconds = 1 hour)
+    # The Stream runs in parallel, capturing all audio
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Start>
         <Stream url="{full_stream_url}" track="both_tracks" />
     </Start>
-    <Gather input="dtmf" timeout="3600" numDigits="1">
-    </Gather>
+    <Pause length="3600"/>
+    <Pause length="3600"/>
 </Response>"""
     
     return texml
