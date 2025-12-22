@@ -5,7 +5,6 @@ All Telnyx webhook handlers and API endpoints for TeXML integration
 
 import logging
 import uuid
-import os
 from datetime import datetime
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import Response
@@ -62,15 +61,6 @@ async def start_call(data: StartCallRequest):
     Start a new coaching session.
     App calls the agent, then agent 3-ways in their client.
     """
-    # Debug: Log env vars directly
-    env_phone = os.environ.get("TELNYX_PHONE_NUMBER", "NOT_SET")
-    env_key = os.environ.get("TELNYX_API_KEY", "NOT_SET")[:20] if os.environ.get("TELNYX_API_KEY") else "NOT_SET"
-    env_app = os.environ.get("TELNYX_APP_ID", "NOT_SET")
-    logger.info(f"[DEBUG] TELNYX_PHONE_NUMBER from os.environ: '{env_phone}'")
-    logger.info(f"[DEBUG] TELNYX_API_KEY from os.environ: '{env_key}...'")
-    logger.info(f"[DEBUG] TELNYX_APP_ID from os.environ: '{env_app}'")
-    print(f"[DEBUG] TELNYX_PHONE_NUMBER from os.environ: '{env_phone}'")
-    
     if not is_telnyx_configured():
         raise HTTPException(status_code=503, detail="Telnyx not configured")
     
