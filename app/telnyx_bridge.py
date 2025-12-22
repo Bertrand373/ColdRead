@@ -17,17 +17,33 @@ logger = logging.getLogger(__name__)
 
 
 def get_telnyx_phone() -> str:
-    """Get Telnyx phone number with fallback to os.environ"""
-    phone = settings.telnyx_phone_number
+    """Get Telnyx phone number directly from environment"""
+    # Read directly from os.environ to avoid pydantic issues
+    phone = os.environ.get("TELNYX_PHONE_NUMBER", "")
     if not phone:
-        phone = os.environ.get("TELNYX_PHONE_NUMBER", "")
-        logger.warning(f"[Telnyx] Using os.environ fallback for phone: {phone}")
+        phone = settings.telnyx_phone_number
     return phone
+
+
+def get_telnyx_api_key() -> str:
+    """Get Telnyx API key directly from environment"""
+    key = os.environ.get("TELNYX_API_KEY", "")
+    if not key:
+        key = settings.telnyx_api_key
+    return key
+
+
+def get_telnyx_app_id() -> str:
+    """Get Telnyx App ID directly from environment"""
+    app_id = os.environ.get("TELNYX_APP_ID", "")
+    if not app_id:
+        app_id = settings.telnyx_app_id
+    return app_id
 
 
 def is_telnyx_configured() -> bool:
     """Check if Telnyx is properly configured"""
-    return bool(settings.telnyx_api_key and get_telnyx_phone())
+    return bool(get_telnyx_api_key() and get_telnyx_phone())
 
 
 def _encode_client_state(data: dict) -> str:
@@ -49,19 +65,21 @@ def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
     When agent answers, Telnyx hits our webhook which returns TeXML instructions.
     """
     from_number = get_telnyx_phone()
+    api_key = get_telnyx_api_key()
+    app_id = get_telnyx_app_id()
     
     # Debug: Log the phone number being used
-    logger.info(f"[Telnyx] Initiating call with from_number: '{from_number}'")
+    logger.info(f"[Telnyx] Initiating call with from_number: '{from_number}', app_id: '{app_id}'")
     
     if not is_telnyx_configured():
-        logger.error(f"[Telnyx] Not configured - api_key: {bool(settings.telnyx_api_key)}, phone: {bool(from_number)}")
+        logger.error(f"[Telnyx] Not configured - api_key: {bool(api_key)}, phone: {bool(from_number)}")
         return {"success": False, "error": "Telnyx not configured"}
     
     try:
         response = requests.post(
-            f"https://api.telnyx.com/v2/texml/calls/{settings.telnyx_app_id}",
+            f"https://api.telnyx.com/v2/texml/calls/{app_id}",
             headers={
-                "Authorization": f"Bearer {settings.telnyx_api_key}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json"
             },
             json={
@@ -187,12 +205,14 @@ def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id
         return {"success": False, "error": "Telnyx not configured"}
     
     from_number = agent_caller_id if agent_caller_id else get_telnyx_phone()
+    api_key = get_telnyx_api_key()
+    app_id = get_telnyx_app_id()
     
     try:
         response = requests.post(
-            f"https://api.telnyx.com/v2/texml/calls/{settings.telnyx_app_id}",
+            f"https://api.telnyx.com/v2/texml/calls/{app_id}",
             headers={
-                "Authorization": f"Bearer {settings.telnyx_api_key}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json"
             },
             json={
@@ -240,7 +260,7 @@ def hangup_call(call_control_id: str) -> dict:
         response = requests.post(
             f"https://api.telnyx.com/v2/calls/{call_control_id}/actions/hangup",
             headers={
-                "Authorization": f"Bearer {settings.telnyx_api_key}",
+                "Authorization": f"Bearer {get_telnyx_api_key()}",
                 "Content-Type": "application/json"
             }
         )
@@ -273,7 +293,7 @@ def get_recording_url(recording_id: str) -> Optional[str]:
         response = requests.get(
             f"https://api.telnyx.com/v2/recordings/{recording_id}",
             headers={
-                "Authorization": f"Bearer {settings.telnyx_api_key}"
+                "Authorization": f"Bearer {get_telnyx_api_key()}"
             }
         )
         
