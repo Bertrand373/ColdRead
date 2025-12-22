@@ -589,7 +589,6 @@ class TelnyxStreamHandler:
                     timeout=3.0
                 )
                 print(f"[TelnyxStream] Deepgram connection closed", flush=True)
-                )
             except Exception as e:
                 logger.error(f"[TelnyxStream] Error closing Deepgram: {e}")
             finally:
