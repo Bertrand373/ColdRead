@@ -2131,6 +2131,11 @@
                 case 'transcript':
                     handleTranscript(msg);
                     break;
+                case 'speakers_identified':
+                    // Agent intro detected - roles are now locked
+                    console.log('✅ Speakers identified:', msg.message);
+                    setStatus('Coaching active');
+                    break;
                 case 'guidance':
                     handleGuidance(msg);
                     break;
@@ -2250,11 +2255,19 @@
         function handleTranscript(msg) {
             const text = msg.text || '';
             const isFinal = msg.is_final;
-            const speaker = msg.speaker || 'agent';
+            let speaker = msg.speaker || 'agent';
+            const rolesLocked = msg.roles_locked;
+            
+            // Before roles are locked, show everything as neutral "agent" line
+            // This prevents false CLIENT labels before we know who's who
+            if (!rolesLocked && speaker === 'unknown') {
+                speaker = 'agent';  // Show in agent line until we identify speakers
+            }
             
             updateCaption(speaker, text, !isFinal);
             
-            if (isFinal && speaker === 'caller' && text.length > 3) {
+            // Only extract client info from confirmed client speech
+            if (isFinal && speaker === 'caller' && text.length > 3 && rolesLocked) {
                 extractClientInfo(text);
             }
         }

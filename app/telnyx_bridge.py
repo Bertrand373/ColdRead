@@ -137,16 +137,16 @@ def generate_agent_conference_texml(session_id: str) -> str:
     print(f"[TeXML] base_url: {settings.base_url}", flush=True)
     print(f"[TeXML] stream_url: {full_stream_url}", flush=True)
     
-    # Use Record to keep call alive - it listens indefinitely until hangup
-    # maxLength=3600 = 1 hour max
-    # timeout=60 = wait 60 seconds of silence before stopping (but we have audio)
-    # playBeep=false = no beep sound
+    # Use Record to keep call alive
+    # - maxLength="7200" = 2 hours max
+    # - timeout="3600" = 1 hour silence timeout
+    # - playBeep="false" = no beep
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Start>
         <Stream url="{full_stream_url}" track="both_tracks" />
     </Start>
-    <Record maxLength="3600" timeout="60" playBeep="false" />
+    <Record maxLength="7200" timeout="3600" playBeep="false" />
 </Response>"""
     
     return texml

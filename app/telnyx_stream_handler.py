@@ -275,35 +275,123 @@ class TelnyxStreamHandler:
             if not transcript:
                 return
             
-            # Log transcript
-            print(f"[TelnyxStream] TRANSCRIPT ({'FINAL' if is_final else 'interim'}): {transcript[:50]}...", flush=True)
-            
-            # Get speaker from diarization
+            # Get speaker from diarization (0 or 1)
             words = alt.words if hasattr(alt, 'words') else []
             speaker_id = None
             
             if words:
-                # Get speaker from first word with speaker info
                 for word in words:
                     if hasattr(word, 'speaker') and word.speaker is not None:
                         speaker_id = word.speaker
                         break
             
-            # Identify speaker - pass transcript for intro detection
-            speaker_role = self._identify_speaker(speaker_id, transcript if is_final else "")
+            # Determine speaker role - use intro detection
+            speaker_role = self._determine_speaker_role_with_intro(speaker_id, transcript if is_final else "")
             
-            # If roles are locked and this is a different speaker, get their role
-            if self._roles_locked and speaker_id is not None:
-                speaker_role = self._get_other_speaker_role(speaker_id)
+            # Log transcript
+            print(f"[TelnyxStream] TRANSCRIPT ({speaker_role}, {'FINAL' if is_final else 'interim'}): {transcript[:80]}", flush=True)
             
-            # Process transcript directly (we're already async)
-            await self._process_transcript(transcript, is_final, speaker_role, speaker_id)
+            # Process transcript
+            await self._process_transcript_smart(transcript, is_final, speaker_role, speaker_id)
                 
         except Exception as e:
             logger.error(f"[TelnyxStream] Error in transcript handler: {e}")
             print(f"[TelnyxStream] Transcript error: {e}", flush=True)
             import traceback
             traceback.print_exc()
+    
+    def _determine_speaker_role_with_intro(self, speaker_id: int, transcript: str = "") -> str:
+        """
+        Determine if speaker is agent or client based on agent introduction.
+        
+        Strategy:
+        - Wait for agent intro phrase ("this is [name] with Globe Life/Liberty National")
+        - Speaker who says intro = Agent
+        - Other speaker = Client
+        - Before intro detected: all speakers labeled "unknown" (no guidance triggers)
+        """
+        if speaker_id is None:
+            return "unknown"
+        
+        # If roles already locked, use stored mapping
+        if self._roles_locked:
+            if speaker_id == self._agent_speaker_id:
+                return "agent"
+            else:
+                return "client"
+        
+        # Roles NOT locked yet - check if this transcript contains agent introduction
+        if transcript and self._check_for_agent_intro(transcript):
+            # FOUND AGENT! Lock roles
+            self._agent_speaker_id = speaker_id
+            self._roles_locked = True
+            
+            print(f"[TelnyxStream] 🔒 AGENT IDENTIFIED! Speaker {speaker_id} said intro", flush=True)
+            print(f"[TelnyxStream] 🔒 Intro: '{transcript[:60]}...'", flush=True)
+            print(f"[TelnyxStream] 🔒 Roles locked - guidance will trigger on other speaker", flush=True)
+            
+            # Notify frontend
+            asyncio.create_task(self._broadcast_to_frontend({
+                "type": "speakers_identified",
+                "message": "Agent identified - live coaching active"
+            }))
+            
+            return "agent"
+        
+        # Not locked yet - return unknown (guidance won't trigger)
+        return "unknown"
+    
+    async def _process_transcript_smart(self, transcript: str, is_final: bool, speaker_role: str, speaker_id: int):
+        """Process transcript and trigger guidance ONLY on client speech"""
+        
+        # Map speaker role to UI label
+        # Before roles locked: show as neutral "unknown"
+        # After roles locked: show agent/caller correctly
+        if speaker_role == "unknown":
+            ui_speaker = "unknown"  # Frontend can display as "Speaker" or similar
+        elif speaker_role == "client":
+            ui_speaker = "caller"
+        else:
+            ui_speaker = "agent"
+        
+        # Broadcast to frontend
+        await self._broadcast_to_frontend({
+            "type": "transcript",
+            "text": transcript,
+            "speaker": ui_speaker,
+            "is_final": is_final,
+            "roles_locked": self._roles_locked
+        })
+        
+        # Only trigger guidance on FINAL transcripts from CLIENT (after roles locked)
+        if not is_final:
+            return
+        
+        if speaker_role != "client":
+            # Agent or unknown speaking - no guidance
+            return
+        
+        # Check for objection triggers from client
+        transcript_lower = transcript.lower()
+        should_trigger = False
+        trigger_phrase = None
+        
+        for trigger in self.HOT_TRIGGERS:
+            if trigger in transcript_lower:
+                should_trigger = True
+                trigger_phrase = trigger
+                break
+        
+        # Also trigger on longer client statements (potential objections)
+        word_count = len(transcript.split())
+        if word_count >= 10 and not should_trigger:
+            should_trigger = True
+            trigger_phrase = f"{word_count} words"
+        
+        if should_trigger:
+            print(f"[TelnyxStream] 🎯 GUIDANCE TRIGGER from CLIENT: '{trigger_phrase}'", flush=True)
+            if self._rag_engine:
+                await self._generate_guidance(transcript)
     
     def _identify_speaker(self, speaker_id: Optional[int], transcript: str = "") -> str:
         """
