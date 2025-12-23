@@ -209,6 +209,7 @@
             display: none;
             flex: 1;
             flex-direction: column;
+            min-height: 0;  /* iOS flex scroll fix */
         }
         
         .screen.active { display: flex; }
@@ -475,18 +476,15 @@
         
         /* ========== CALL SCREEN ========== */
         .call-screen { 
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
             display: flex;
             flex-direction: column;
+            height: 100%;
+            min-height: 0;  /* iOS flex scroll fix */
             overflow: hidden;
         }
         
         .teleprompter {
-            flex: 1 1 0;  /* Grow, shrink, and start from 0 */
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -495,19 +493,17 @@
             text-align: center;
             cursor: pointer;
             transition: background 0.2s;
-            /* iOS Safari scroll fix - CRITICAL */
+            /* iOS Safari scroll fix */
             overflow-y: auto;
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
-            min-height: 0;  /* Allow flex item to shrink below content size */
-            position: relative;
+            min-height: 0;  /* Critical for flex + overflow */
         }
         
         /* When guidance is showing, start from top so user can scroll */
         .teleprompter.has-guidance {
             justify-content: flex-start;
             padding-top: 24px;
-            padding-bottom: 60px;  /* Extra padding for scroll content */
         }
         
         .teleprompter:active { background: var(--surface); }
