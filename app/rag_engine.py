@@ -852,6 +852,86 @@ Respond in JSON format:
             }
 
 
+    # ============ V4: CONTEXTUALIZED GLOBE LIFE SCRIPTS ============
+    
+    def contextualize_script(
+        self,
+        objection_type: str,
+        transcript: str,
+        down_close_level: int = 0,
+        agency: Optional[str] = None,
+        session_id: Optional[str] = None
+    ) -> Generator[str, None, None]:
+        """
+        Contextualize a Globe Life script using Sonnet.
+        
+        Takes the locked script template and fills in context slots
+        based on the transcript. Never changes the script structure.
+        
+        Args:
+            objection_type: Type of objection (price, stall, covered, spouse)
+            transcript: Full conversation transcript for context extraction
+            down_close_level: Current down-close level (0-5) for price objections
+            agency: Agency code for usage tracking
+            session_id: Session ID for usage tracking
+        
+        Yields:
+            Contextualized script tokens
+        """
+        from .globe_life_scripts import get_script, CONTEXTUALIZE_PROMPT
+        
+        # Get the locked script template
+        script_data = get_script(objection_type, down_close_level)
+        template = script_data.get("template", "")
+        fallback = script_data.get("fallback", template)
+        
+        # If template is same as fallback (no context slots), just return fallback
+        if template == fallback or "{" not in template:
+            yield fallback
+            return
+        
+        # Build the contextualization prompt
+        prompt = CONTEXTUALIZE_PROMPT.format(
+            template=template,
+            transcript=transcript[-4000:]  # Last 4k chars for context
+        )
+        
+        messages = [{"role": "user", "content": prompt}]
+        
+        # Use Sonnet for quality contextualization
+        model = settings.claude_model
+        
+        try:
+            with self.client.messages.stream(
+                model=model,
+                max_tokens=500,
+                messages=messages
+            ) as stream:
+                for text in stream.text_stream:
+                    yield text
+                
+                final_message = stream.get_final_message()
+                
+                log_claude_usage(
+                    input_tokens=final_message.usage.input_tokens,
+                    output_tokens=final_message.usage.output_tokens,
+                    agency_code=agency,
+                    session_id=session_id,
+                    model=model,
+                    operation='contextualize_script'
+                )
+        except Exception as e:
+            # On any error, yield the fallback script
+            print(f"[RAG] Contextualization failed, using fallback: {e}", flush=True)
+            yield fallback
+    
+    def get_fallback_script(self, objection_type: str, down_close_level: int = 0) -> str:
+        """Get the vanilla fallback script (no AI needed)."""
+        from .globe_life_scripts import get_script
+        script_data = get_script(objection_type, down_close_level)
+        return script_data.get("fallback", "I understand your concern. Can you tell me more?")
+
+
 # Singleton instance
 _rag_instance: Optional[RAGEngine] = None
 

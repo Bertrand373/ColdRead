@@ -9,8 +9,11 @@ Production-ready with:
 - OPTIMIZED: Reduced latency for real-time feel
 - BILLING: Complete usage tracking for Deepgram and Claude
 - V3: Phrase-based objection detection with buying signal blocking
-- V3: Two-tier model routing (Haiku for speed, Sonnet for complexity)
-- V3: Bridge phrases for smooth UX during AI generation
+- V4: Globe Life locked scripts with Sonnet contextualization
+  - Scripts are verbatim from Globe Life training docs
+  - Sonnet fills in context slots (names, family, details from transcript)
+  - Never changes script structure - just personalizes
+  - Makes new agents sound like senior agents
 """
 
 import asyncio
@@ -310,81 +313,68 @@ class RealtimeTranscriber:
             print(f"[RT] Error handling transcript: {e}", flush=True)
     
     def _check_for_guidance_trigger(self, latest_transcript: str, is_final: bool = True):
-        """Check if we should trigger guidance generation using phrase-based detection"""
+        """Check if we should trigger guidance generation using phrase-based detection.
+        
+        OBJECTIONS ONLY - No word-count fallback. Silent until objection detected.
+        """
         # Don't generate if already generating
         if self._generating_guidance:
             return
         
         now = time.time()
         
-        # ============ V3: PHRASE-BASED DETECTION ============
-        # Quick check first - if no potential triggers, skip full detection
+        # Quick check first - if no potential triggers, stay silent
         if not has_any_trigger(latest_transcript):
-            # Fall through to word-count trigger below
-            pass
-        else:
-            # Run full phrase detection
-            detection = detect_objection(latest_transcript, self._call_type)
-            
-            # If buying signal detected, DO NOT fire objection handling
-            if detection.is_buying_signal:
-                print(f"[RT] ✅ Buying signal detected - NOT triggering objection handling", flush=True)
-                return
-            
-            # If objection detected
-            if detection.detected:
-                # Basic cooldown
-                if now - self.last_guidance_time < 1.0:
-                    return
-                
-                # DUPLICATE PREVENTION: Check if this final matches a recent interim
-                if is_final and self._pending_interim_text:
-                    time_since_interim = now - self._pending_interim_time
-                    if time_since_interim < 2.0:
-                        text_lower = latest_transcript.lower()
-                        final_words = set(text_lower.split())
-                        interim_words = set(self._pending_interim_text.lower().split())
-                        if final_words and interim_words:
-                            overlap = len(final_words & interim_words) / max(len(final_words), len(interim_words))
-                            if overlap > 0.7:
-                                print(f"[RT] Skipping final (matches interim from {time_since_interim:.1f}s ago)", flush=True)
-                                self._pending_interim_text = None
-                                return
-                
-                print(f"[RT] 🎯 OBJECTION DETECTED: {detection.objection_type} - '{latest_transcript[:50]}...'", flush=True)
-                
-                # If this is an interim, store it so we can skip the matching final
-                if not is_final:
-                    self._pending_interim_text = latest_transcript
-                    self._pending_interim_time = now
-                else:
-                    self._pending_interim_text = None
-                
-                # Update transcript buffer with triggering text
-                if latest_transcript.strip():
-                    self.transcript_buffer = latest_transcript
-                
-                # Set timestamp immediately to prevent race condition
-                self.last_guidance_time = now
-                
-                # Schedule guidance generation with detection result
-                self._schedule_async(self._generate_guidance_v3(detection, latest_transcript))
-                return
+            return
         
-        # For non-trigger situations, only check on FINAL transcripts
+        # Run full phrase detection
+        detection = detect_objection(latest_transcript, self._call_type)
+        
+        # If buying signal detected, DO NOT fire objection handling
+        if detection.is_buying_signal:
+            print(f"[RT] ✅ Buying signal detected - staying silent", flush=True)
+            return
+        
+        # If no objection detected, stay silent
+        if not detection.detected:
+            return
+        
+        # Basic cooldown
+        if now - self.last_guidance_time < 1.0:
+            return
+        
+        # DUPLICATE PREVENTION: Check if this final matches a recent interim
+        if is_final and self._pending_interim_text:
+            time_since_interim = now - self._pending_interim_time
+            if time_since_interim < 2.0:
+                text_lower = latest_transcript.lower()
+                final_words = set(text_lower.split())
+                interim_words = set(self._pending_interim_text.lower().split())
+                if final_words and interim_words:
+                    overlap = len(final_words & interim_words) / max(len(final_words), len(interim_words))
+                    if overlap > 0.7:
+                        print(f"[RT] Skipping final (matches interim from {time_since_interim:.1f}s ago)", flush=True)
+                        self._pending_interim_text = None
+                        return
+        
+        print(f"[RT] 🎯 OBJECTION DETECTED: {detection.objection_type} - '{latest_transcript[:50]}...'", flush=True)
+        
+        # If this is an interim, store it so we can skip the matching final
         if not is_final:
-            return
-            
-        # Standard cooldown for word-count based triggers
-        if now - self.last_guidance_time < self.GUIDANCE_COOLDOWN_SECONDS:
-            return
-            
-        word_count = len(self.transcript_buffer.split())
+            self._pending_interim_text = latest_transcript
+            self._pending_interim_time = now
+        else:
+            self._pending_interim_text = None
         
-        # Generate guidance if enough words accumulated
-        if word_count > self.MIN_WORDS_FOR_GUIDANCE:
-            self.last_guidance_time = now
-            self._schedule_async(self._generate_guidance())
+        # Update transcript buffer with triggering text
+        if latest_transcript.strip():
+            self.transcript_buffer = latest_transcript
+        
+        # Set timestamp immediately to prevent race condition
+        self.last_guidance_time = now
+        
+        # Schedule guidance generation with detection result
+        self._schedule_async(self._generate_guidance_v3(detection, latest_transcript))
                    
     def _handle_error(self, *args, **kwargs):
         """Handle Deepgram errors"""
@@ -410,12 +400,14 @@ class RealtimeTranscriber:
     
     async def _generate_guidance_v3(self, detection: DetectionResult, trigger_text: str):
         """
-        Generate guidance using the new routing system.
+        Generate guidance using the V4 system.
         
         Routes:
         1. Phone + known objection → Globe Life rebuttal (instant, no AI)
-        2. Presentation + known objection → Bridge phrase + Haiku
-        3. Complex objection → Bridge phrase + Sonnet + RAG
+        2. Presentation objection → Bridge phrase + Contextualized Globe Life script
+           - Script template is locked verbatim from Globe Life docs
+           - Sonnet fills in context slots from transcript (names, family, details)
+           - Makes new agents sound like senior agents
         """
         if not self.rag_engine:
             print(f"[RT] No RAG engine, skipping guidance", flush=True)
@@ -489,7 +481,15 @@ class RealtimeTranscriber:
             self.transcript_buffer = ""
     
     async def _stream_ai_guidance(self, detection: DetectionResult, trigger_text: str):
-        """Stream AI-generated guidance with appropriate model and context."""
+        """
+        Stream contextualized Globe Life script.
+        
+        V4 Approach:
+        - Get locked Globe Life script template for this objection
+        - Send to Sonnet to fill in context slots from transcript
+        - Never changes script structure, just personalizes
+        - Fallback to vanilla script if AI fails
+        """
         full_text = ""
         first_chunk = True
         batch_buffer = ""
@@ -497,42 +497,30 @@ class RealtimeTranscriber:
         BATCH_INTERVAL = 0.08  # 80ms batching for smooth streaming
         
         try:
-            # Get call state
-            call_state = self.state_machine.get_state_for_claude() if self.state_machine else {}
+            # Get full transcript for context extraction
+            transcript = ""
+            down_close_level = 0
             
-            # Choose generation method based on routing
-            if detection.skip_rag and detection.use_fast_model:
-                # FAST PATH: Haiku with lean prompt (known objections)
-                print(f"[RT] ⚡ Using FAST path (Haiku, skip RAG) for {detection.objection_type}", flush=True)
-                guidance_stream = self.rag_engine.generate_guidance_fast(
-                    call_state,
-                    detection.objection_type,
-                    trigger_text,
-                    agency=self._agency,
-                    session_id=self._session_id
-                )
-            elif detection.use_fast_model:
-                # MEDIUM PATH: Haiku with full context
-                print(f"[RT] 🚀 Using MEDIUM path (Haiku, with RAG) for {detection.objection_type}", flush=True)
-                guidance_stream = self.rag_engine.generate_guidance_stream_v2(
-                    call_state,
-                    trigger_text,
-                    agency=self._agency,
-                    session_id=self._session_id,
-                    use_fast_model=True
-                )
-            else:
-                # THOROUGH PATH: Sonnet with full context and RAG
-                print(f"[RT] 🔍 Using THOROUGH path (Sonnet, with RAG) for {detection.objection_type}", flush=True)
-                guidance_stream = self.rag_engine.generate_guidance_stream_v2(
-                    call_state,
-                    trigger_text,
-                    agency=self._agency,
-                    session_id=self._session_id,
-                    use_fast_model=False
-                )
+            if self.state_machine:
+                state = self.state_machine.get_state_for_claude()
+                transcript = state.get("recent_transcript", "")
+                down_close_level = state.get("down_close_level", 0)
             
-            # Stream guidance
+            # If no transcript, use trigger text
+            if not transcript:
+                transcript = self.transcript_buffer or trigger_text
+            
+            print(f"[RT] 📜 Contextualizing {detection.objection_type} script (down_close={down_close_level}, transcript={len(transcript)} chars)", flush=True)
+            
+            # Stream contextualized script
+            guidance_stream = self.rag_engine.contextualize_script(
+                objection_type=detection.objection_type,
+                transcript=transcript,
+                down_close_level=down_close_level,
+                agency=self._agency,
+                session_id=self._session_id
+            )
+            
             for chunk in guidance_stream:
                 if chunk:
                     full_text += chunk
@@ -579,9 +567,31 @@ class RealtimeTranscriber:
                 })
                 
         except Exception as e:
-            print(f"[RT] Error streaming AI guidance: {e}", flush=True)
+            print(f"[RT] Error streaming guidance, using fallback: {e}", flush=True)
             import traceback
             traceback.print_exc()
+            
+            # Fallback to vanilla script
+            try:
+                fallback = self.rag_engine.get_fallback_script(
+                    detection.objection_type, 
+                    down_close_level if 'down_close_level' in dir() else 0
+                )
+                await self.on_guidance({
+                    "type": "guidance_start",
+                    "chunk": fallback,
+                    "full_text": fallback,
+                    "is_complete": False
+                })
+                await self.on_guidance({
+                    "type": "guidance_complete",
+                    "guidance": fallback,
+                    "trigger": trigger_text,
+                    "objection_type": detection.objection_type,
+                    "fallback": True
+                })
+            except Exception as fallback_error:
+                print(f"[RT] Fallback also failed: {fallback_error}", flush=True)
     
     # ============ LEGACY GUIDANCE (word-count triggered) ============
     
