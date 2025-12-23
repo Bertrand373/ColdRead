@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Coachd.ai | Live Call</title>
-    <!-- VERSION: 2025-12-22-v4-secure-agency-gate -->
+    <!-- VERSION: 2025-12-23-v4-bridge-speaker-id -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -583,6 +583,22 @@
         @keyframes blink {
             0%, 45% { opacity: 1; }
             50%, 100% { opacity: 0; }
+        }
+        
+        /* Bridge phrase + loading indicator */
+        .bridge-text {
+            color: var(--text);
+        }
+        
+        .loading-dots {
+            color: var(--accent-dark);
+            animation: loadingPulse 1.2s ease-in-out infinite;
+            margin-left: 8px;
+        }
+        
+        @keyframes loadingPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
         }
         
         .dismiss-hint {
@@ -1520,6 +1536,7 @@
             callOutcome: null,
             streamingGuidance: '',  // Accumulates text during streaming guidance
             guidanceRenderPending: false,  // Throttle flag for smooth DOM updates
+            hasVibratedForCurrentGuidance: false,  // Prevent double notification
             // Agent identity
             agentName: null,
             agentId: null,
@@ -2078,6 +2095,9 @@
                 case 'price_objection':
                     showPriceObjectionButton();
                     break;
+                case 'bridge':
+                    handleBridge(msg);
+                    break;
                 case 'error':
                     console.error('Server error:', msg.message);
                     break;
@@ -2315,6 +2335,23 @@
         }
         
         // ==================== GUIDANCE ====================
+        function handleBridge(msg) {
+            const text = msg.text || '';
+            if (!text) return;
+            
+            // Show bridge phrase immediately with loading indicator
+            dom.listeningState.style.display = 'none';
+            dom.guidanceText.innerHTML = `<span class="bridge-text">${text}</span><span class="loading-dots"> ● ● ●</span>`;
+            dom.guidanceState.classList.add('active');
+            
+            // Single notification for the objection
+            playNotify();
+            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+            
+            // Mark that we've already notified for this guidance
+            state.hasVibratedForCurrentGuidance = true;
+        }
+        
         function handleGuidance(msg) {
             const text = msg.guidance || msg.text || '';
             if (!text) return;
@@ -2329,8 +2366,12 @@
             
             showGuidance(sayThis);
             
-            playNotify();
-            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+            // Only notify if we haven't already (e.g., from bridge)
+            if (!state.hasVibratedForCurrentGuidance) {
+                playNotify();
+                if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+            }
+            state.hasVibratedForCurrentGuidance = false;
         }
         
         // ==================== STREAMING GUIDANCE HANDLERS ====================
@@ -2363,9 +2404,11 @@
             dom.guidanceState.classList.add('active');
             console.log('[GUIDANCE_START] Added active class to guidanceState');
             
-            // Play notification
-            playNotify();
-            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+            // Only notify if we haven't already (e.g., from bridge)
+            if (!state.hasVibratedForCurrentGuidance) {
+                playNotify();
+                if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+            }
             console.log('[GUIDANCE_START] Played notification');
         }
         
@@ -2493,6 +2536,7 @@
             // Clear text content
             dom.guidanceText.innerHTML = '';
             state.streamingGuidance = '';
+            state.hasVibratedForCurrentGuidance = false;
             
             console.log('[DISMISS] Panel hidden, text cleared');
         }

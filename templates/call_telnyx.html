@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Coachd.ai | Live Call</title>
-    <!-- VERSION: 2025-12-22-telnyx-v2-secure-agency-gate -->
+    <!-- VERSION: 2025-12-23-v4-bridge-speaker-id -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -733,6 +733,22 @@
         @keyframes blink {
             0%, 45% { opacity: 1; }
             50%, 100% { opacity: 0; }
+        }
+        
+        /* Bridge phrase + loading indicator */
+        .bridge-text {
+            color: var(--text);
+        }
+        
+        .loading-dots {
+            color: var(--accent-dark);
+            animation: loadingPulse 1.2s ease-in-out infinite;
+            margin-left: 8px;
+        }
+        
+        @keyframes loadingPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
         }
         
         .dismiss-hint {
@@ -1771,6 +1787,7 @@
             agentFadeTimer: null,
             callerFadeTimer: null,
             streamingGuidance: '',
+            hasVibratedForCurrentGuidance: false,
             clientContext: {
                 product: 'whole_life',
                 age: null,
@@ -2261,6 +2278,9 @@
                 case 'price_objection':
                     showPriceObjectionButton();
                     break;
+                case 'bridge':
+                    handleBridge(msg);
+                    break;
                 case 'call_ended':
                     endCall();
                     break;
@@ -2546,6 +2566,22 @@
         }
         
         // ==================== GUIDANCE ====================
+        function handleBridge(msg) {
+            const text = msg.text || '';
+            if (!text) return;
+            
+            // Show bridge phrase immediately with loading indicator
+            dom.listeningState.style.display = 'none';
+            dom.guidanceText.innerHTML = `<span class="bridge-text">${text}</span><span class="loading-dots"> ● ● ●</span>`;
+            dom.guidanceState.classList.add('active');
+            
+            // Single vibrate for the objection
+            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+            
+            // Mark that we've already vibrated for this guidance
+            state.hasVibratedForCurrentGuidance = true;
+        }
+        
         function handleGuidance(msg) {
             const text = msg.guidance || msg.text || '';
             if (!text) return;
@@ -2560,7 +2596,11 @@
             
             showGuidance(sayThis);
             
-            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+            // Only vibrate if we haven't already (e.g., from bridge)
+            if (!state.hasVibratedForCurrentGuidance && navigator.vibrate) {
+                navigator.vibrate([50, 30, 50]);
+            }
+            state.hasVibratedForCurrentGuidance = false;
         }
         
         function handleGuidanceStart(msg) {
@@ -2573,7 +2613,10 @@
             dom.guidanceText.innerHTML = formatGuidanceText(content);
             dom.guidanceState.classList.add('active');
             
-            if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+            // Only vibrate if we haven't already (e.g., from bridge)
+            if (!state.hasVibratedForCurrentGuidance && navigator.vibrate) {
+                navigator.vibrate([50, 30, 50]);
+            }
         }
         
         function handleGuidanceChunk(msg) {
@@ -2663,6 +2706,7 @@
             hidePriceObjectionButton();
             dom.guidanceText.innerHTML = '';
             state.streamingGuidance = '';
+            state.hasVibratedForCurrentGuidance = false;
         }
         
         // ==================== OUTCOME ====================
