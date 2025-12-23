@@ -486,10 +486,13 @@
             text-align: center;
             cursor: pointer;
             transition: background 0.2s;
+            /* iOS Safari scroll fix */
+            height: 0;  /* Force flex to calculate height properly */
+            min-height: 0;
             overflow-y: auto;
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
-            min-height: 0;  /* Important for flex + overflow to work */
+            position: relative;  /* Establish scroll context */
         }
         
         /* When guidance is showing, start from top so user can scroll */
@@ -548,6 +551,7 @@
             width: 100%;
             max-width: 600px;
             padding-bottom: 40px;
+            flex-shrink: 0;  /* iOS fix: prevent collapse */
         }
         
         .guidance-state.active { 

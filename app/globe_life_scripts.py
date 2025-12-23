@@ -36,6 +36,20 @@ So let me ask you, do you feel this is something that your family needs? Do you 
         "template": """Of course, I understand wanting to discuss this with {spouse_name}. But let me ask you - what do YOU think about it so far? {personalized_hook}""",
         "fallback": """Of course, I understand wanting to discuss this together. But let me ask you - what do YOU think about it so far? Does the coverage make sense for your family's needs?""",
     },
+
+    "need": {
+        "name": "Don't Need It / Invincible",
+        "template": """That's a fair question, and I appreciate you being direct with me. Let me ask you this - do you know what the average cost of a funeral is today? It's around $15,000 and going up every year. {personalized_hook}
+
+Here's the thing - it's not about whether something WILL happen, it's about making sure {family_reference} isn't left with a financial burden IF something does. The question isn't really "do I need this?" - it's "would {family_reference} be able to handle $15,000 in funeral costs, plus the mortgage, plus all the bills, if your income suddenly stopped?"
+
+The people who need this coverage the most are often the ones who think they don't - because they're healthy, they're working, they're taking care of their family. That's exactly why NOW is the best time to lock in your rate. Does that make sense?""",
+        "fallback": """That's a fair question, and I appreciate you being direct with me. Let me ask you this - do you know what the average cost of a funeral is today? It's around $15,000 and going up every year.
+
+Here's the thing - it's not about whether something WILL happen, it's about making sure your family isn't left with a financial burden IF something does. The question isn't really "do I need this?" - it's "would your family be able to handle $15,000 in funeral costs, plus the mortgage, plus all the bills, if your income suddenly stopped?"
+
+The people who need this coverage the most are often the ones who think they don't - because they're healthy, they're working, they're taking care of their family. That's exactly why NOW is the best time to lock in your rate. Does that make sense?""",
+    },
 }
 
 
