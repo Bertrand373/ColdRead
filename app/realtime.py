@@ -34,26 +34,51 @@ class RealtimeTranscriber:
     """Handles real-time audio transcription via Deepgram"""
     
     # ============ LATENCY-OPTIMIZED CONFIGURATION ============
-    # Target: ~800ms to first visible guidance text
-    #
-    # Timing chain:
-    #   Deepgram interim transcript → 200-400ms
-    #   Phrase detection           → <5ms (local, no AI)
-    #   Bridge phrase              → 0ms (instant)
-    #   RAG search (if needed)     → 200-300ms (skipped for known objections)
-    #   Claude first token         → 400ms (Haiku) / 600ms (Sonnet)
-    #   WebSocket to browser       → 50ms
-    #   Total first visible:       → ~700-1000ms
-    #
     GUIDANCE_TIMEOUT_SECONDS = 8.0   # Max time for AI guidance generation
     GUIDANCE_COOLDOWN_SECONDS = 3.0  # Cooldown for word-count triggers
-    # Note: Hot triggers use 1.0s cooldown (hardcoded in _check_for_guidance_trigger)
     MIN_WORDS_FOR_GUIDANCE = 12      # Minimum words before non-trigger guidance
+    
+    # Objection cooldown - don't re-trigger same objection type within this window
+    OBJECTION_COOLDOWN_SECONDS = 10.0
+    
+    # Agent identification window - look for intro in first N seconds
+    AGENT_ID_WINDOW_SECONDS = 90.0
     
     # Audio format constants for duration calculation
     SAMPLE_RATE = 16000  # 16kHz
     BYTES_PER_SAMPLE = 2  # 16-bit linear PCM = 2 bytes per sample
     CHANNELS = 1  # Mono
+    
+    # Agent intro patterns - if speaker says these, they're the agent
+    AGENT_INTRO_PATTERNS = [
+        "globe life",
+        "liberty national",
+        "your insurance company",
+        "this is calling from",
+        "calling about your policy",
+        "calling about your coverage",
+        "home office asked",
+        "home office has asked",
+        "with globe life",
+        "with liberty national",
+    ]
+    
+    # Agent quote patterns - if objection contains these, agent is quoting client
+    AGENT_QUOTE_PATTERNS = [
+        "you're saying",
+        "you are saying",
+        "i hear that you",
+        "you mentioned",
+        "so if you",
+        "what you're telling me",
+        "sounds like you",
+        "it sounds like you",
+        "you said",
+        "you feel like",
+        "you think that",
+        "i understand you",
+        "i understand that you",
+    ]
     
     def __init__(self, on_transcript: Callable, on_guidance: Callable):
         self.on_transcript = on_transcript
@@ -73,6 +98,14 @@ class RealtimeTranscriber:
         # Duplicate prevention: track interim triggers to skip matching finals
         self._pending_interim_text = None
         self._pending_interim_time = 0
+        
+        # V4: Track handled objections to prevent rapid re-triggers
+        self._last_objection_type = None
+        self._last_objection_time = 0
+        
+        # V4: Speaker identification
+        self._agent_speaker_id = None  # None until identified
+        self._call_start_time = None   # Track when call started
         
         # ============ USAGE TRACKING ============
         self._session_id = str(uuid.uuid4())  # Unique session ID for tracking
@@ -150,9 +183,13 @@ class RealtimeTranscriber:
                 endpointing=300,
                 sample_rate=self.SAMPLE_RATE,
                 encoding="linear16",
-                channels=self.CHANNELS
+                channels=self.CHANNELS,
+                diarize=True,  # V4: Enable speaker diarization
             )
-            print(f"[RT] Options configured, starting connection...", flush=True)
+            print(f"[RT] Options configured (diarize=True), starting connection...", flush=True)
+            
+            # Track call start time for agent identification window
+            self._call_start_time = time.time()
             
             # Start the connection in an executor to prevent blocking
             try:
@@ -290,13 +327,30 @@ class RealtimeTranscriber:
                     transcript = alternatives[0].transcript
                     is_final = result.is_final
                     
+                    # V4: Extract speaker ID if diarization is enabled
+                    speaker_id = None
+                    words = alternatives[0].words if hasattr(alternatives[0], 'words') else []
+                    if words and len(words) > 0 and hasattr(words[0], 'speaker'):
+                        speaker_id = words[0].speaker
+                    
                     if transcript:
                         # Send transcript to client (thread-safe)
                         self._schedule_async(self.on_transcript({
                             "type": "transcript",
                             "text": transcript,
-                            "is_final": is_final
+                            "is_final": is_final,
+                            "speaker": speaker_id
                         }))
+                        
+                        # V4: Speaker identification and filtering
+                        if not self._process_speaker(transcript, speaker_id):
+                            # This is agent speech - skip objection detection
+                            # But still buffer for context
+                            if is_final:
+                                self.transcript_buffer += " " + transcript
+                                if self.state_machine:
+                                    self.state_machine.add_transcript(transcript, is_final=True)
+                            return
                         
                         # Check for trigger keywords on BOTH interim AND final
                         # This lets us react MID-SENTENCE to objections
@@ -312,10 +366,57 @@ class RealtimeTranscriber:
         except Exception as e:
             print(f"[RT] Error handling transcript: {e}", flush=True)
     
+    def _process_speaker(self, transcript: str, speaker_id: int) -> bool:
+        """
+        Process speaker identification.
+        Returns True if this is CLIENT speech (should check for objections).
+        Returns False if this is AGENT speech (should ignore for objections).
+        
+        If diarization doesn't return speaker IDs, falls back to pattern matching only.
+        """
+        text_lower = transcript.lower()
+        now = time.time()
+        
+        # If we haven't identified the agent yet, look for intro patterns
+        if self._agent_speaker_id is None and self._call_start_time:
+            time_since_start = now - self._call_start_time
+            
+            # Only look for agent intro in the first 90 seconds
+            if time_since_start <= self.AGENT_ID_WINDOW_SECONDS:
+                for pattern in self.AGENT_INTRO_PATTERNS:
+                    if pattern in text_lower:
+                        # Only set agent ID if we have a valid speaker_id
+                        if speaker_id is not None:
+                            self._agent_speaker_id = speaker_id
+                            print(f"[RT] 🎤 AGENT IDENTIFIED: Speaker {speaker_id} (said '{pattern}')", flush=True)
+                        else:
+                            print(f"[RT] 🎤 Agent intro detected but no speaker ID available", flush=True)
+                        return False  # This is agent speech regardless
+        
+        # If we've identified the agent AND have a speaker_id, filter their speech
+        if self._agent_speaker_id is not None and speaker_id is not None:
+            if speaker_id == self._agent_speaker_id:
+                return False  # Agent speech - ignore for objections
+        
+        # This is client speech (or we can't determine speaker)
+        # The AGENT_QUOTE_PATTERNS in _check_for_guidance_trigger act as backup filter
+        return True
+    
+    def _is_agent_quoting(self, transcript: str) -> bool:
+        """Check if this transcript contains agent quoting the client."""
+        text_lower = transcript.lower()
+        for pattern in self.AGENT_QUOTE_PATTERNS:
+            if pattern in text_lower:
+                return True
+        return False
+    
     def _check_for_guidance_trigger(self, latest_transcript: str, is_final: bool = True):
         """Check if we should trigger guidance generation using phrase-based detection.
         
-        OBJECTIONS ONLY - No word-count fallback. Silent until objection detected.
+        V4: 
+        - Objections only (no word-count fallback)
+        - Filters out agent quotes
+        - Prevents rapid re-triggers of same objection type
         """
         # Don't generate if already generating
         if self._generating_guidance:
@@ -325,6 +426,11 @@ class RealtimeTranscriber:
         
         # Quick check first - if no potential triggers, stay silent
         if not has_any_trigger(latest_transcript):
+            return
+        
+        # V4: Check if agent is quoting the client (backup filter)
+        if self._is_agent_quoting(latest_transcript):
+            print(f"[RT] 🔇 Agent quote detected - ignoring: '{latest_transcript[:40]}...'", flush=True)
             return
         
         # Run full phrase detection
@@ -339,32 +445,22 @@ class RealtimeTranscriber:
         if not detection.detected:
             return
         
-        # Basic cooldown
-        if now - self.last_guidance_time < 1.0:
-            return
+        # V4: OBJECTION TYPE COOLDOWN - Don't re-trigger same objection type
+        if self._last_objection_type == detection.objection_type:
+            time_since_last = now - self._last_objection_time
+            if time_since_last < self.OBJECTION_COOLDOWN_SECONDS:
+                print(f"[RT] ⏳ Same objection type '{detection.objection_type}' within {time_since_last:.1f}s - skipping", flush=True)
+                return
         
-        # DUPLICATE PREVENTION: Check if this final matches a recent interim
-        if is_final and self._pending_interim_text:
-            time_since_interim = now - self._pending_interim_time
-            if time_since_interim < 2.0:
-                text_lower = latest_transcript.lower()
-                final_words = set(text_lower.split())
-                interim_words = set(self._pending_interim_text.lower().split())
-                if final_words and interim_words:
-                    overlap = len(final_words & interim_words) / max(len(final_words), len(interim_words))
-                    if overlap > 0.7:
-                        print(f"[RT] Skipping final (matches interim from {time_since_interim:.1f}s ago)", flush=True)
-                        self._pending_interim_text = None
-                        return
+        # Basic time cooldown (any objection)
+        if now - self.last_guidance_time < 2.0:
+            return
         
         print(f"[RT] 🎯 OBJECTION DETECTED: {detection.objection_type} - '{latest_transcript[:50]}...'", flush=True)
         
-        # If this is an interim, store it so we can skip the matching final
-        if not is_final:
-            self._pending_interim_text = latest_transcript
-            self._pending_interim_time = now
-        else:
-            self._pending_interim_text = None
+        # Track this objection type
+        self._last_objection_type = detection.objection_type
+        self._last_objection_time = now
         
         # Update transcript buffer with triggering text
         if latest_transcript.strip():
