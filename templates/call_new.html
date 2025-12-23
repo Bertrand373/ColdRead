@@ -2354,13 +2354,18 @@
         // ==================== GUIDANCE ====================
         function handleBridge(msg) {
             const text = msg.text || '';
-            if (!text) return;
+            console.log('[BRIDGE] Received bridge message, text:', text);
+            if (!text) {
+                console.log('[BRIDGE] No text in bridge message, returning');
+                return;
+            }
             
             // Show bridge phrase immediately with loading indicator
             dom.listeningState.style.display = 'none';
             dom.teleprompter.classList.add('has-guidance');
             dom.guidanceText.innerHTML = `<span class="bridge-text">${text}</span><span class="loading-dots"> ● ● ●</span>`;
             dom.guidanceState.classList.add('active');
+            console.log('[BRIDGE] Displayed bridge text:', text);
             
             // Single notification for the objection
             playNotify();
@@ -2449,9 +2454,11 @@
             
             const fullText = msg.guidance || state.streamingGuidance || '';
             console.log('[GUIDANCE_COMPLETE] Full text length:', fullText.length);
+            console.log('[GUIDANCE_COMPLETE] Full text preview:', fullText.substring(0, 100) + '...');
             
             const sayThis = extractSayThis(fullText);
-            console.log('[GUIDANCE_COMPLETE] Extracted sayThis:', sayThis.substring(0, 50) + '...');
+            console.log('[GUIDANCE_COMPLETE] Extracted sayThis length:', sayThis.length);
+            console.log('[GUIDANCE_COMPLETE] Extracted sayThis preview:', sayThis.substring(0, 100) + '...');
             
             // Store in history
             state.guidanceHistory.push({
@@ -2464,7 +2471,7 @@
             const displayText = sayThis || fullText;
             if (displayText) {
                 dom.guidanceText.innerHTML = formatGuidanceText(displayText);
-                console.log('[GUIDANCE_COMPLETE] Set final text');
+                console.log('[GUIDANCE_COMPLETE] Set final text, length:', displayText.length);
             }
             
             // Ensure panel is visible
@@ -2494,12 +2501,18 @@
         }
         
         function extractSayThis(text) {
+            // Only extract quoted text if it's substantial (actual script, not objection echo)
+            // Short quotes like "do I need this?" are the objection, not the response
             const quotedMatch = text.match(/"([^"]+)"/);
-            if (quotedMatch) return quotedMatch[1];
+            if (quotedMatch && quotedMatch[1].length > 60 && !quotedMatch[1].endsWith('?')) {
+                return quotedMatch[1];
+            }
             
             const sayMatch = text.match(/SAY THIS[:\s]*(.+?)(?=\n|WHY|$)/is);
             if (sayMatch) return sayMatch[1].trim().replace(/^[""]|[""]$/g, '');
             
+            // For Globe Life contextualized scripts, return the full text
+            // (they don't have SAY THIS markers, just the script itself)
             return text
                 .replace(/^[🎯💬📝🔑]\s*/gm, '')
                 .replace(/^DETECTED:.*?\n/i, '')
