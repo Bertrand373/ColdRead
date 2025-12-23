@@ -322,11 +322,18 @@ PRESENTATION_OBJECTIONS = {
             "more than i expected", "more than i thought",
             "more than i was thinking", "wasn't expecting that",
             "out of my budget", "over my budget",
+            "not in my budget", "not in the budget", "outside my budget",
             "don't have the money", "don't have that kind",
             "tight right now", "money is tight", "things are tight",
             "can't do that much", "can't swing that",
             "that's steep", "pretty steep",
             "stretching it", "higher than i thought",
+            # NEW: Uncertainty about affording
+            "don't know if i can afford",
+            "not sure i can afford",
+            "not sure if i can afford",
+            "don't think i can afford",
+            "wondering if i can afford",
             # NEW: Filler word variations (THE BUG FIX!)
             "can't really afford",
             "can't quite afford",
@@ -738,6 +745,13 @@ def detect_objection(text: str, call_type: str = "presentation") -> DetectionRes
         "can't do", "cannot do", "couldn't do",
         "can't swing", "cannot swing",
         "not afford", "never afford",
+        # NEW: Uncertainty patterns that negate buying signals
+        "don't know if i can", "don't know if we can",
+        "not sure if i can", "not sure if we can",
+        "not sure i can", "not sure we can",  # Without "if"
+        "don't think i can", "don't think we can",
+        "doubt i can", "doubt we can",
+        "wondering if i can", "if i can even",
     ]
     
     has_negated_signal = any(neg in text_lower for neg in negated_signals)
