@@ -174,12 +174,32 @@ PRESENTATION_OBJECTIONS = {
         "phrases": [
             "need to talk to my wife",
             "need to talk to my husband",
+            "have to talk to my wife",
+            "have to talk to my husband",
+            "talk to my wife about it",
+            "talk to my husband about it",
+            "talk to my wife about this",
+            "talk to my husband about this",
+            "discuss it with my wife",
+            "discuss it with my husband",
+            "discuss with my spouse",
             "have to check with",
+            "need to check with",
             "let me ask my",
             "run it by my",
             "we decide together",
             "can't decide without",
             "my spouse needs to",
+            "my wife needs to",
+            "my husband needs to",
+            "see what my wife thinks",
+            "see what my husband thinks",
+            "wife would kill me",
+            "husband would kill me",
+            "talk to my wife first",
+            "talk to my husband first",
+            "ask my wife",
+            "ask my husband",
         ],
         "bridge": "Of course, that makes sense...",
         "use_fast_model": True,
@@ -246,6 +266,33 @@ PRESENTATION_OBJECTIONS = {
         "use_fast_model": False,  # Sonnet for trust issues
         "skip_rag": False,
     },
+    
+    "need": {
+        "phrases": [
+            "don't know if i need",
+            "don't think i need",
+            "do i really need",
+            "do i even need",
+            "don't really need",
+            "don't need life insurance",
+            "don't need insurance",
+            "not sure i need",
+            "don't see the point",
+            "what's the point",
+            "why do i need",
+            "why would i need",
+            "is this necessary",
+            "is it necessary",
+            "don't see why",
+            "i'm young",
+            "i'm healthy",
+            "nothing's going to happen",
+            "won't need it",
+        ],
+        "bridge": "That's a fair question...",
+        "use_fast_model": True,
+        "skip_rag": True,
+    },
 }
 
 
@@ -263,12 +310,25 @@ def detect_objection(text: str, call_type: str = "presentation") -> DetectionRes
     text_lower = text.lower().strip()
     
     # STEP 1: Check for buying signals FIRST (blocks objection detection)
-    for signal in BUYING_SIGNALS:
-        if signal in text_lower:
-            return DetectionResult(
-                detected=False,
-                is_buying_signal=True
-            )
+    # BUT: Don't match "i can afford" inside "i can't afford"
+    # Check for NEGATED versions of buying signals first
+    negated_signals = [
+        "can't afford", "cannot afford", "couldn't afford",
+        "can't do", "cannot do", "couldn't do",
+        "can't swing", "cannot swing",
+        "not afford", "never afford",
+    ]
+    
+    # If text contains a negated buying signal, skip buying signal check entirely
+    has_negated_signal = any(neg in text_lower for neg in negated_signals)
+    
+    if not has_negated_signal:
+        for signal in BUYING_SIGNALS:
+            if signal in text_lower:
+                return DetectionResult(
+                    detected=False,
+                    is_buying_signal=True
+                )
     
     # STEP 2: For phone calls, check Globe Life rebuttals
     if call_type == "phone":
@@ -317,6 +377,7 @@ def has_any_trigger(text: str) -> bool:
         "scam", "catch", "legit",
         "how long", "busy", "at work",
         "health", "pre-existing", "qualify",
+        "need", "point", "necessary", "why do i", "why would i",  # Added for invincible objection
     ]
     
     return any(kw in text_lower for kw in quick_triggers)

@@ -487,11 +487,13 @@
             cursor: pointer;
             transition: background 0.2s;
             overflow-y: auto;
+            overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
+            min-height: 0;  /* Important for flex + overflow to work */
         }
         
-        /* When guidance is showing, allow scrolling from top */
-        .teleprompter:has(.guidance-state.active) {
+        /* When guidance is showing, start from top so user can scroll */
+        .teleprompter.has-guidance {
             justify-content: flex-start;
             padding-top: 40px;
         }
@@ -545,9 +547,7 @@
             align-items: center;
             width: 100%;
             max-width: 600px;
-            max-height: 100%;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
+            padding-bottom: 40px;
         }
         
         .guidance-state.active { 
@@ -1588,6 +1588,7 @@
             get outcomeScreen() { return document.getElementById('outcomeScreen'); },
             get reviewScreen() { return document.getElementById('reviewScreen'); },
             get nocloseScreen() { return document.getElementById('nocloseScreen'); },
+            get teleprompter() { return document.getElementById('teleprompter'); },
             get listeningState() { return document.getElementById('listeningState'); },
             get guidanceState() { return document.getElementById('guidanceState'); },
             get guidanceText() { return document.getElementById('guidanceText'); },
@@ -2353,6 +2354,7 @@
             
             // Show bridge phrase immediately with loading indicator
             dom.listeningState.style.display = 'none';
+            dom.teleprompter.classList.add('has-guidance');
             dom.guidanceText.innerHTML = `<span class="bridge-text">${text}</span><span class="loading-dots"> ● ● ●</span>`;
             dom.guidanceState.classList.add('active');
             
@@ -2404,8 +2406,9 @@
             // Store streaming state
             state.streamingGuidance = content;
             
-            // Hide listening state
+            // Hide listening state and enable scrolling
             dom.listeningState.style.display = 'none';
+            dom.teleprompter.classList.add('has-guidance');
             console.log('[GUIDANCE_START] Hid listening state');
             
             // Set the text
@@ -2511,6 +2514,9 @@
             dom.listeningState.style.display = 'none';
             dom.guidanceState.classList.remove('active'); // Reset for re-trigger animation
             
+            // Enable scrolling from top
+            dom.teleprompter.classList.add('has-guidance');
+            
             // Format text: bold numbers/money and highlight "SAY THIS" content
             let formattedText = text
                 .replace(/(\$[\d,]+|\d+%|\d+,\d+)/g, '<strong>$1</strong>');
@@ -2543,6 +2549,7 @@
             
             dom.guidanceState.classList.remove('active');
             dom.listeningState.style.display = 'flex';
+            dom.teleprompter.classList.remove('has-guidance');
             hidePriceObjectionButton();
             
             // Clear text content

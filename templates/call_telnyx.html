@@ -631,11 +631,13 @@
             cursor: pointer;
             transition: background 0.2s;
             overflow-y: auto;
+            overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
+            min-height: 0;  /* Important for flex + overflow to work */
         }
         
-        /* When guidance is showing, allow scrolling from top */
-        .teleprompter:has(.guidance-state.active) {
+        /* When guidance is showing, start from top so user can scroll */
+        .teleprompter.has-guidance {
             justify-content: flex-start;
             padding-top: 40px;
         }
@@ -695,9 +697,7 @@
             align-items: center;
             width: 100%;
             max-width: 600px;
-            max-height: 100%;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
+            padding-bottom: 40px;
         }
         
         .guidance-state.active { 
@@ -2583,6 +2583,7 @@
             
             // Show bridge phrase immediately with loading indicator
             dom.listeningState.style.display = 'none';
+            dom.teleprompter.classList.add('has-guidance');
             dom.guidanceText.innerHTML = `<span class="bridge-text">${text}</span><span class="loading-dots"> ● ● ●</span>`;
             dom.guidanceState.classList.add('active');
             
@@ -2621,6 +2622,7 @@
             state.streamingGuidance = content;
             
             dom.listeningState.style.display = 'none';
+            dom.teleprompter.classList.add('has-guidance');
             dom.guidanceText.innerHTML = formatGuidanceText(content);
             dom.guidanceState.classList.add('active');
             
@@ -2693,6 +2695,7 @@
         function showGuidance(text) {
             dom.listeningState.style.display = 'none';
             dom.guidanceState.classList.remove('active');
+            dom.teleprompter.classList.add('has-guidance');
             
             let formattedText = text.replace(/(\$[\d,]+|\d+%|\d+,\d+)/g, '<strong>$1</strong>');
             
@@ -2714,6 +2717,7 @@
         function dismissGuidance() {
             dom.guidanceState.classList.remove('active');
             dom.listeningState.style.display = 'flex';
+            dom.teleprompter.classList.remove('has-guidance');
             hidePriceObjectionButton();
             dom.guidanceText.innerHTML = '';
             state.streamingGuidance = '';
