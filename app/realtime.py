@@ -114,6 +114,14 @@ class RealtimeTranscriber:
         # V5: Full transcript for context-aware routing
         self._full_transcript = ""  # Accumulates entire call transcript
         
+        # V5: Call recording data (for post-call analysis)
+        self._call_recording = {
+            "objections_detected": [],      # List of {type, text, timestamp, match_type}
+            "guidance_shown": [],           # List of {type, text, timestamp, down_close_level}
+            "down_close_max_level": 0,      # Highest level reached
+            "detection_misses": [],         # Potential objections that didn't trigger (for review)
+        }
+        
         # V4: Speaker identification
         self._agent_speaker_id = None  # None until identified
         self._call_start_time = None   # Track when call started
@@ -476,6 +484,10 @@ class RealtimeTranscriber:
             return
         
         print(f"[RT] 🎯 OBJECTION DETECTED: {detection.objection_type} - '{latest_transcript[:50]}...'", flush=True)
+        print(f"[RT]    ├─ match_type: {detection.match_type}", flush=True)
+        print(f"[RT]    ├─ is_price_followup: {detection.is_price_followup}", flush=True)
+        print(f"[RT]    ├─ skip_to_floor: {detection.skip_to_floor}", flush=True)
+        print(f"[RT]    └─ bridge: '{detection.bridge_phrase}'", flush=True)
         
         # Track this objection type
         self._last_objection_type = detection.objection_type
@@ -546,19 +558,37 @@ class RealtimeTranscriber:
             obj_count = self._objection_counts[obj_type]
             print(f"[RT] 📊 Objection '{obj_type}' count: {obj_count}", flush=True)
             
+            # V5: Record objection for post-call analysis
+            self._call_recording["objections_detected"].append({
+                "type": obj_type,
+                "text": trigger_text[:200],
+                "timestamp": time.time() - (self._session_start_time or time.time()),
+                "match_type": detection.match_type,
+                "is_followup": detection.is_price_followup,
+                "count": obj_count,
+            })
+            
             # ============ DOWN-CLOSE LEVEL MANAGEMENT ============
             if detection.skip_to_floor:
                 # Client asked for minimum - jump to level 5
                 self._down_close_level = 5
                 print(f"[RT] ⏬ Skip to floor requested - level set to 5", flush=True)
+                print(f"[RT]    └─ Trigger: '{trigger_text[:60]}...'", flush=True)
             elif detection.is_price_followup and self._down_close_level < 5:
                 # Client pushing back on reduced price - advance level
+                old_level = self._down_close_level
                 self._down_close_level += 1
-                print(f"[RT] ⬇️ Price follow-up - auto-advancing to level {self._down_close_level}", flush=True)
+                print(f"[RT] ⬇️ Price follow-up - auto-advancing level {old_level} → {self._down_close_level}", flush=True)
+                print(f"[RT]    └─ Trigger: '{trigger_text[:60]}...'", flush=True)
             elif obj_type == "price" and self._down_close_level == 0:
                 # First price objection - set to level 1
                 self._down_close_level = 1
                 print(f"[RT] 💰 First price objection - level set to 1", flush=True)
+            
+            # Track max level reached for call recording
+            if self._down_close_level > self._call_recording["down_close_max_level"]:
+                self._call_recording["down_close_max_level"] = self._down_close_level
+                print(f"[RT] 📈 New max down-close level: {self._down_close_level}", flush=True)
             
             # Calculate remaining options for UI
             remaining = 5 - self._down_close_level if self._down_close_level > 0 else 4
@@ -598,17 +628,32 @@ class RealtimeTranscriber:
             # Should we use AI personalization?
             use_ai = has_context or obj_count >= 2  # Use AI if: has context OR repeat objection
             
-            print(f"[RT] 📝 Context check: {transcript_length} chars, use_ai={use_ai}, repeat={obj_count >= 2}", flush=True)
+            print(f"[RT] 📝 Context check:", flush=True)
+            print(f"[RT]    ├─ transcript_length: {transcript_length} chars", flush=True)
+            print(f"[RT]    ├─ min_required: {self.MIN_CONTEXT_FOR_AI} chars", flush=True)
+            print(f"[RT]    ├─ has_context: {has_context}", flush=True)
+            print(f"[RT]    ├─ repeat_objection: {obj_count >= 2} (count={obj_count})", flush=True)
+            print(f"[RT]    └─ use_ai: {use_ai}", flush=True)
             
             # ============ ROUTE 2: Presentation - No context → Instant Template ============
             if not use_ai and detection.skip_rag:
-                print(f"[RT] ⚡ Instant template - no context to personalize", flush=True)
+                print(f"[RT] ⚡ INSTANT TEMPLATE - no context to personalize", flush=True)
+                print(f"[RT]    └─ Serving fallback script for '{obj_type}' level {self._down_close_level}", flush=True)
                 
                 # Get fallback script (no AI)
                 fallback = self.rag_engine.get_fallback_script(
                     detection.objection_type,
                     self._down_close_level
                 )
+                
+                # Record guidance for post-call analysis
+                self._call_recording["guidance_shown"].append({
+                    "type": obj_type,
+                    "mode": "instant_template",
+                    "down_close_level": self._down_close_level,
+                    "timestamp": time.time() - (self._session_start_time or time.time()),
+                    "text_preview": fallback[:100],
+                })
                 
                 # Send instantly (no bridge needed)
                 await self.on_guidance({
@@ -644,6 +689,9 @@ class RealtimeTranscriber:
                 return
             
             # ============ ROUTE 3: Presentation - Has context → Bridge + AI ============
+            
+            print(f"[RT] 🤖 AI PERSONALIZATION - contextualizing script", flush=True)
+            print(f"[RT]    └─ Will use {len(self._full_transcript)} chars of context", flush=True)
             
             # Send bridge phrase IMMEDIATELY (if available)
             if detection.bridge_phrase:
@@ -1079,4 +1127,50 @@ Based on the conversation so far, give the agent EXACTLY what to say to present 
             "audio_duration_seconds": current_duration,
             "is_running": self.is_running,
             "transcript_buffer_words": len(self.transcript_buffer.split())
+        }
+    
+    def get_call_recording(self) -> dict:
+        """
+        Get complete call recording data for post-call analysis.
+        
+        Call this when the call ends to capture everything for storage.
+        This data can be used to:
+        - Find missed objection phrases
+        - Identify winning rebuttals
+        - Track agent performance
+        - Improve detection over time
+        """
+        bytes_per_second = self.SAMPLE_RATE * self.BYTES_PER_SAMPLE * self.CHANNELS
+        duration = self._total_audio_bytes / bytes_per_second if self._total_audio_bytes > 0 else 0
+        
+        return {
+            # Identifiers
+            "session_id": self._session_id,
+            "agency": self._agency,
+            "call_type": self._call_type,
+            
+            # Timing
+            "duration_seconds": round(duration, 1),
+            "started_at": self._session_start_time,
+            
+            # Full transcript (for phrase mining)
+            "transcript": self._full_transcript.strip(),
+            "transcript_length": len(self._full_transcript),
+            
+            # Detection data
+            "objections_detected": self._call_recording["objections_detected"],
+            "objection_counts": self._objection_counts.copy(),
+            "total_objections": sum(self._objection_counts.values()),
+            
+            # Down-close progression
+            "down_close_max_level": self._call_recording["down_close_max_level"],
+            "down_close_final_level": self._down_close_level,
+            
+            # Guidance shown
+            "guidance_shown": self._call_recording["guidance_shown"],
+            "guidance_count": len(self._call_recording["guidance_shown"]),
+            
+            # For future: outcome will be added by frontend
+            # "outcome": "closed" | "no_close" | "callback" | etc.
+            # "final_objection": "spouse" | "price" | etc.
         }

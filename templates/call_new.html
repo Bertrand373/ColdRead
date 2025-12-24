@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Coachd.ai | Live Call</title>
-    <!-- VERSION: 2025-12-24-v5-elite-detection -->
+    <!-- VERSION: 2025-12-24-v7-auto-detection-only -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -485,7 +485,7 @@
         /* GRID LAYOUT only when active - more reliable than flex for scrollable content */
         .call-screen.active {
             display: grid;
-            grid-template-rows: 1fr auto auto auto;  /* teleprompter | price-btn | captions | footer */
+            grid-template-rows: 1fr auto auto;  /* teleprompter | captions | footer */
             grid-template-columns: 1fr;
         }
         
@@ -560,7 +560,7 @@
             flex-direction: column;
             align-items: center;
             width: 100%;
-            max-width: 600px;
+            max-width: 900px;  /* Wider for desktop readability */
             padding-bottom: 40px;
             flex-shrink: 0;  /* iOS fix: prevent collapse */
         }
@@ -1182,43 +1182,6 @@
         }
 
         /* ========== PRICE OBJECTION BUTTON ========== */
-        .price-objection-container {
-            display: none;
-            padding: 12px 20px;
-            background: var(--accent-soft);
-            border-top: 1px solid var(--border);
-            flex-shrink: 0;
-        }
-
-        .price-objection-container.visible { display: block; }
-
-        .price-objection-btn {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 14px 20px;
-            background: var(--accent-dark);
-            color: white;
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.95rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-        }
-
-        .price-objection-btn:hover { 
-            background: #2563EB;
-            transform: translateY(-1px);
-        }
-
-        .price-objection-btn:active { transform: translateY(0); }
-        .price-objection-btn svg { width: 18px; height: 18px; }
-        
         /* Down-Close Level Indicator */
         .down-close-indicator {
             display: none;
@@ -1447,14 +1410,6 @@
                 <div class="down-close-message" id="downCloseMessage">Keep going — find the yes.</div>
             </div>
             
-            <!-- Price Objection Button (shown when needed) -->
-            <div class="price-objection-container" id="priceObjectionContainer">
-                <button class="price-objection-btn" onclick="Coachd.handlePriceObjection()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-                    They Can't Afford It — Reduce Coverage
-                </button>
-            </div>
-            
             <!-- Live Captions -->
             <div class="live-captions" id="liveCaptions">
                 <div class="captions-header">
@@ -1642,14 +1597,8 @@
             callerFadeTimer: null,
             // Call type and down-close tracking
             callType: 'phone',
-            downCloseLevel: 0,
-            // V5: Bridge timing
-            bridgeShownAt: null,      // Timestamp when bridge was displayed
-            pendingGuidance: null,    // Queued guidance if bridge still showing
+            downCloseLevel: 0
         };
-        
-        // V5: Minimum bridge display time (ms)
-        const BRIDGE_MIN_DISPLAY_MS = 800;
         
         // ==================== DOM ====================
         const dom = {
@@ -1683,7 +1632,6 @@
             get agentCaptionText() { return document.getElementById('agentCaptionText'); },
             get callerCaptionText() { return document.getElementById('callerCaptionText'); },
             get callTypeHint() { return document.getElementById('callTypeHint'); },
-            get priceObjectionContainer() { return document.getElementById('priceObjectionContainer'); },
             // V5: Down-close indicator
             get downCloseIndicator() { return document.getElementById('downCloseIndicator'); },
             get downCloseBadge() { return document.getElementById('downCloseBadge'); },
@@ -1894,21 +1842,17 @@
         // Down-close levels tracked for backend sync
         const MAX_DOWN_CLOSE_LEVELS = 5;
         
-        function showPriceObjectionButton() {
-            dom.priceObjectionContainer.classList.add('visible');
-        }
-        
-        function hidePriceObjectionButton() {
-            dom.priceObjectionContainer.classList.remove('visible');
-        }
-        
         // V5: Handle down-close level indicator from backend
         function handleDownCloseLevel(msg) {
             const level = msg.level || 0;
             const remaining = msg.remaining || (5 - level);
             const isFloor = msg.is_floor || level === 5;
             
-            console.log(`[DOWN_CLOSE] Level ${level}/5, ${remaining} remaining, floor=${isFloor}`);
+            console.log(`[DOWN_CLOSE] ====================================`);
+            console.log(`[DOWN_CLOSE] Level: ${level}/5`);
+            console.log(`[DOWN_CLOSE] Remaining: ${remaining} options`);
+            console.log(`[DOWN_CLOSE] Is Floor: ${isFloor}`);
+            console.log(`[DOWN_CLOSE] ====================================`);
             
             // Update state
             state.downCloseLevel = level;
@@ -1943,26 +1887,6 @@
             dom.downCloseIndicator.classList.remove('active');
             dom.downCloseBadge.classList.remove('floor');
             dom.downCloseMessage.classList.remove('floor-message');
-        }
-        
-        function handlePriceObjection() {
-            // Request contextual down-close guidance from Claude
-            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-                // Hide button immediately (prevents double-tap, shows action registered)
-                hidePriceObjectionButton();
-                
-                // Increment level
-                if (state.downCloseLevel < 5) {
-                    state.downCloseLevel++;
-                }
-                
-                // Request contextual guidance from backend
-                // The streaming handlers (handleGuidanceStart/Chunk/Complete) will display it
-                state.ws.send(JSON.stringify({
-                    type: 'down_close',
-                    data: { level: state.downCloseLevel }
-                }));
-            }
         }
         
         // ==================== UTILS ====================
@@ -2224,10 +2148,6 @@
                     console.log('[MSG] guidance_complete received, guidance length:', (msg.guidance || '').length);
                     handleGuidanceComplete(msg);
                     break;
-                // Price objection detected - show down-close button
-                case 'price_objection':
-                    showPriceObjectionButton();
-                    break;
                 // V5: Down-close level update
                 case 'down_close_level':
                     handleDownCloseLevel(msg);
@@ -2474,29 +2394,22 @@
         
         // ==================== GUIDANCE ====================
         function handleBridge(msg) {
+            // Bridge is optional - agents can naturally say "I understand..." themselves
+            // If backend sends one, show it briefly, but guidance will overwrite immediately
             const text = msg.text || '';
-            console.log('[BRIDGE] Received bridge message, text:', text);
-            if (!text) {
-                console.log('[BRIDGE] No text in bridge message, returning');
-                return;
-            }
+            console.log('[BRIDGE] Received:', text || '(empty)');
             
-            // V5: Record when bridge was shown (for minimum display time)
-            state.bridgeShownAt = Date.now();
-            state.pendingGuidance = null;  // Clear any pending guidance
+            if (!text) return;
             
-            // Show bridge phrase immediately with loading indicator
+            // Show bridge with loading indicator (will be overwritten by guidance)
             dom.listeningState.style.display = 'none';
             dom.teleprompter.classList.add('has-guidance');
             dom.guidanceText.innerHTML = `<span class="bridge-text">${text}</span><span class="loading-dots"> ● ● ●</span>`;
             dom.guidanceState.classList.add('active');
-            console.log('[BRIDGE] Displayed bridge text at', state.bridgeShownAt);
             
-            // Single notification for the objection
+            // Notification
             playNotify();
             if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
-            
-            // Mark that we've already notified for this guidance
             state.hasVibratedForCurrentGuidance = true;
         }
         
@@ -2526,39 +2439,21 @@
         // These handle real-time token streaming for ~1 second first-visible latency
         
         function handleGuidanceStart(msg) {
-            console.log('[GUIDANCE_START] Called');
+            console.log('[GUIDANCE_START] ====================================');
+            console.log('[GUIDANCE_START] Received guidance');
             
             // Get the content to display
             const content = msg.full_text || msg.chunk || '';
-            console.log('[GUIDANCE_START] Content to display:', content.substring(0, 50) + '...');
+            console.log('[GUIDANCE_START] Content length:', content.length);
+            console.log('[GUIDANCE_START] Preview:', content.substring(0, 80) + '...');
             
             if (!content) {
                 console.log('[GUIDANCE_START] No content, returning');
+                console.log('[GUIDANCE_START] ====================================');
                 return;
             }
             
-            // V5: Check if bridge is still showing and needs more time
-            if (state.bridgeShownAt) {
-                const elapsed = Date.now() - state.bridgeShownAt;
-                const remaining = BRIDGE_MIN_DISPLAY_MS - elapsed;
-                
-                if (remaining > 0) {
-                    console.log(`[GUIDANCE_START] Bridge shown ${elapsed}ms ago, waiting ${remaining}ms more`);
-                    // Queue this guidance to show after bridge minimum time
-                    state.pendingGuidance = msg;
-                    setTimeout(() => {
-                        if (state.pendingGuidance === msg) {
-                            console.log('[GUIDANCE_START] Delayed display now executing');
-                            state.bridgeShownAt = null;
-                            displayGuidanceStart(msg);
-                        }
-                    }, remaining);
-                    return;
-                }
-                // Bridge has been shown long enough, clear timing
-                state.bridgeShownAt = null;
-            }
-            
+            console.log('[GUIDANCE_START] ====================================');
             displayGuidanceStart(msg);
         }
         
@@ -2603,29 +2498,40 @@
         }
         
         function handleGuidanceComplete(msg) {
-            console.log('[GUIDANCE_COMPLETE] Called');
+            console.log('[GUIDANCE_COMPLETE] ====================================');
+            console.log('[GUIDANCE_COMPLETE] Guidance delivery complete');
+            console.log('[GUIDANCE_COMPLETE] Objection type:', msg.objection_type || 'unknown');
+            console.log('[GUIDANCE_COMPLETE] Down-close level:', msg.down_close_level || 0);
+            console.log('[GUIDANCE_COMPLETE] Instant:', msg.instant || false);
+            console.log('[GUIDANCE_COMPLETE] Fallback:', msg.fallback || false);
             
             const fullText = msg.guidance || state.streamingGuidance || '';
-            console.log('[GUIDANCE_COMPLETE] Full text length:', fullText.length);
-            console.log('[GUIDANCE_COMPLETE] Full text preview:', fullText.substring(0, 100) + '...');
+            console.log('[GUIDANCE_COMPLETE] Text length:', fullText.length);
+            console.log('[GUIDANCE_COMPLETE] Preview:', fullText.substring(0, 100) + '...');
+            
+            if (!fullText) {
+                console.log('[GUIDANCE_COMPLETE] ⚠️ WARNING: No text to display!');
+                console.log('[GUIDANCE_COMPLETE] ====================================');
+                return;
+            }
+            
+            console.log('[GUIDANCE_COMPLETE] ====================================');
             
             const sayThis = extractSayThis(fullText);
-            console.log('[GUIDANCE_COMPLETE] Extracted sayThis length:', sayThis.length);
-            console.log('[GUIDANCE_COMPLETE] Extracted sayThis preview:', sayThis.substring(0, 100) + '...');
             
             // Store in history
             state.guidanceHistory.push({
                 text: sayThis,
                 raw: fullText,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                objection_type: msg.objection_type,
+                down_close_level: msg.down_close_level
             });
             
-            // Display the final text
+            // Display the final text - prefer sayThis, fallback to full text
             const displayText = sayThis || fullText;
-            if (displayText) {
-                dom.guidanceText.innerHTML = formatGuidanceText(displayText);
-                console.log('[GUIDANCE_COMPLETE] Set final text, length:', displayText.length);
-            }
+            dom.guidanceText.innerHTML = formatGuidanceText(displayText);
+            console.log('[GUIDANCE_COMPLETE] Displayed text length:', displayText.length);
             
             // Ensure panel is visible
             dom.listeningState.style.display = 'none';
@@ -2720,15 +2626,12 @@
             dom.guidanceState.classList.remove('active');
             dom.listeningState.style.display = 'flex';
             dom.teleprompter.classList.remove('has-guidance');
-            hidePriceObjectionButton();
-            hideDownCloseIndicator();  // V5: Hide down-close indicator
+            hideDownCloseIndicator();
             
-            // Clear text content and timing state
+            // Clear text content
             dom.guidanceText.innerHTML = '';
             state.streamingGuidance = '';
             state.hasVibratedForCurrentGuidance = false;
-            state.bridgeShownAt = null;  // V5: Clear bridge timing
-            state.pendingGuidance = null;  // V5: Clear pending guidance
             
             console.log('[DISMISS] Panel hidden, text cleared');
         }
@@ -2762,7 +2665,6 @@
                 
                 showScreen('callScreen');
                 startTimer();
-                hidePriceObjectionButton();
                 
                 if ('wakeLock' in navigator) {
                     try { await navigator.wakeLock.request('screen'); } catch (e) {}
@@ -2939,7 +2841,6 @@
             saveIdentity,
             changeAgent,
             setCallType,
-            handlePriceObjection,
             getState: () => state
         };
     })();
