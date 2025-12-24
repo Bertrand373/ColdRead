@@ -10,10 +10,12 @@ Production-ready with:
 - BILLING: Complete usage tracking for Deepgram and Claude
 - V3: Phrase-based objection detection with buying signal blocking
 - V4: Globe Life locked scripts with Sonnet contextualization
-  - Scripts are verbatim from Globe Life training docs
-  - Sonnet fills in context slots (names, family, details from transcript)
-  - Never changes script structure - just personalizes
-  - Makes new agents sound like senior agents
+- V5: Context-aware routing + auto down-close progression
+  - Instant templates when no context (<100 chars)
+  - AI personalization when context available
+  - Auto-advance down-close on price follow-up
+  - Skip-to-floor detection ("what's the minimum")
+  - Tracks objection counts for escalation
 """
 
 import asyncio
@@ -102,6 +104,15 @@ class RealtimeTranscriber:
         # V4: Track handled objections to prevent rapid re-triggers
         self._last_objection_type = None
         self._last_objection_time = 0
+        
+        # V5: Track objection counts per type (for escalation on repeat)
+        self._objection_counts = {}  # {"price": 2, "spouse": 1, ...}
+        
+        # V5: Down-close level tracking (independent of state_machine)
+        self._down_close_level = 0  # 0-5, where 5 is the floor
+        
+        # V5: Full transcript for context-aware routing
+        self._full_transcript = ""  # Accumulates entire call transcript
         
         # V4: Speaker identification
         self._agent_speaker_id = None  # None until identified
@@ -361,6 +372,7 @@ class RealtimeTranscriber:
                         # Buffer final transcripts for context
                         if is_final:
                             self.transcript_buffer += " " + transcript
+                            self._full_transcript += " " + transcript  # V5: Accumulate full transcript
                             # Feed to state machine for full tracking
                             if self.state_machine:
                                 self.state_machine.add_transcript(transcript, is_final=True)
@@ -501,16 +513,21 @@ class RealtimeTranscriber:
     
     # ============ V3: INTELLIGENT GUIDANCE GENERATION ============
     
+    # Minimum transcript length to use AI personalization
+    MIN_CONTEXT_FOR_AI = 100  # chars
+    
     async def _generate_guidance_v3(self, detection: DetectionResult, trigger_text: str):
         """
-        Generate guidance using the V4 system.
+        Generate guidance using the V5 system.
         
         Routes:
         1. Phone + known objection → Globe Life rebuttal (instant, no AI)
-        2. Presentation objection → Bridge phrase + Contextualized Globe Life script
-           - Script template is locked verbatim from Globe Life docs
-           - Sonnet fills in context slots from transcript (names, family, details)
-           - Makes new agents sound like senior agents
+        2. Presentation + no context (<100 chars) → Instant template (speed)
+        3. Presentation + context (>=100 chars) → Bridge + AI personalization
+        
+        Down-close management:
+        - is_price_followup → auto-advance level
+        - skip_to_floor → jump to level 5
         """
         if not self.rag_engine:
             print(f"[RT] No RAG engine, skipping guidance", flush=True)
@@ -523,6 +540,30 @@ class RealtimeTranscriber:
         self._generating_guidance = True
         
         try:
+            # Track objection count for this type
+            obj_type = detection.objection_type
+            self._objection_counts[obj_type] = self._objection_counts.get(obj_type, 0) + 1
+            obj_count = self._objection_counts[obj_type]
+            print(f"[RT] 📊 Objection '{obj_type}' count: {obj_count}", flush=True)
+            
+            # ============ DOWN-CLOSE LEVEL MANAGEMENT ============
+            if detection.skip_to_floor:
+                # Client asked for minimum - jump to level 5
+                self._down_close_level = 5
+                print(f"[RT] ⏬ Skip to floor requested - level set to 5", flush=True)
+            elif detection.is_price_followup and self._down_close_level < 5:
+                # Client pushing back on reduced price - advance level
+                self._down_close_level += 1
+                print(f"[RT] ⬇️ Price follow-up - auto-advancing to level {self._down_close_level}", flush=True)
+            elif obj_type == "price" and self._down_close_level == 0:
+                # First price objection - set to level 1
+                self._down_close_level = 1
+                print(f"[RT] 💰 First price objection - level set to 1", flush=True)
+            
+            # Calculate remaining options for UI
+            remaining = 5 - self._down_close_level if self._down_close_level > 0 else 4
+            is_floor = self._down_close_level == 5
+            
             # ============ ROUTE 1: Phone call with Globe Life rebuttal ============
             if detection.phone_rebuttal and self._call_type == "phone":
                 print(f"[RT] 📞 Phone rebuttal - serving Globe Life script instantly", flush=True)
@@ -550,7 +591,59 @@ class RealtimeTranscriber:
                 
                 return
             
-            # ============ ROUTE 2 & 3: Presentation - Bridge + AI ============
+            # ============ CONTEXT CHECK FOR PRESENTATION ============
+            transcript_length = len(self._full_transcript.strip())
+            has_context = transcript_length >= self.MIN_CONTEXT_FOR_AI
+            
+            # Should we use AI personalization?
+            use_ai = has_context or obj_count >= 2  # Use AI if: has context OR repeat objection
+            
+            print(f"[RT] 📝 Context check: {transcript_length} chars, use_ai={use_ai}, repeat={obj_count >= 2}", flush=True)
+            
+            # ============ ROUTE 2: Presentation - No context → Instant Template ============
+            if not use_ai and detection.skip_rag:
+                print(f"[RT] ⚡ Instant template - no context to personalize", flush=True)
+                
+                # Get fallback script (no AI)
+                fallback = self.rag_engine.get_fallback_script(
+                    detection.objection_type,
+                    self._down_close_level
+                )
+                
+                # Send instantly (no bridge needed)
+                await self.on_guidance({
+                    "type": "guidance_start",
+                    "chunk": fallback,
+                    "full_text": fallback,
+                    "is_complete": False
+                })
+                
+                # Send down-close info if price objection
+                if obj_type == "price":
+                    await self.on_guidance({
+                        "type": "down_close_level",
+                        "level": self._down_close_level,
+                        "remaining": remaining,
+                        "is_floor": is_floor
+                    })
+                
+                await self.on_guidance({
+                    "type": "guidance_complete",
+                    "guidance": fallback,
+                    "trigger": trigger_text,
+                    "objection_type": detection.objection_type,
+                    "instant": True,
+                    "down_close_level": self._down_close_level
+                })
+                
+                # Record
+                if self.state_machine:
+                    self.state_machine.record_objection(detection.objection_type, trigger_text)
+                    self.state_machine.record_guidance(fallback, trigger_text)
+                
+                return
+            
+            # ============ ROUTE 3: Presentation - Has context → Bridge + AI ============
             
             # Send bridge phrase IMMEDIATELY (if available)
             if detection.bridge_phrase:
@@ -565,14 +658,22 @@ class RealtimeTranscriber:
             if self.state_machine:
                 self.state_machine.record_objection(detection.objection_type, trigger_text)
             
-            # Notify frontend of objection type (for UI updates)
-            if detection.objection_type == "price":
+            # Send down-close level info for price objections
+            if obj_type == "price":
+                await self.on_guidance({
+                    "type": "down_close_level",
+                    "level": self._down_close_level,
+                    "remaining": remaining,
+                    "is_floor": is_floor
+                })
+                
+                # Also send price_objection for button visibility
                 await self.on_guidance({
                     "type": "price_objection",
                     "trigger": trigger_text[:100]
                 })
             
-            # Generate AI guidance
+            # Generate AI guidance with full context
             await self._stream_ai_guidance(detection, trigger_text)
             
         except Exception as e:
@@ -587,9 +688,9 @@ class RealtimeTranscriber:
         """
         Stream contextualized Globe Life script.
         
-        V4 Approach:
+        V5 Approach:
         - Get locked Globe Life script template for this objection
-        - Send to Sonnet to fill in context slots from transcript
+        - Send to AI to fill in context slots from full transcript
         - Never changes script structure, just personalizes
         - Fallback to vanilla script if AI fails
         """
@@ -600,18 +701,15 @@ class RealtimeTranscriber:
         BATCH_INTERVAL = 0.08  # 80ms batching for smooth streaming
         
         try:
-            # Get full transcript for context extraction
-            transcript = ""
-            down_close_level = 0
+            # Use full transcript for better context
+            transcript = self._full_transcript.strip()
             
-            if self.state_machine:
-                state = self.state_machine.get_state_for_claude()
-                transcript = state.get("recent_transcript", "")
-                down_close_level = state.get("down_close_level", 0)
-            
-            # If no transcript, use trigger text
+            # Fallback to buffer if full transcript empty
             if not transcript:
                 transcript = self.transcript_buffer or trigger_text
+            
+            # Use our tracked down-close level
+            down_close_level = self._down_close_level
             
             print(f"[RT] 📜 Contextualizing {detection.objection_type} script (down_close={down_close_level}, transcript={len(transcript)} chars)", flush=True)
             
@@ -666,7 +764,8 @@ class RealtimeTranscriber:
                     "type": "guidance_complete",
                     "guidance": full_text,
                     "trigger": trigger_text,
-                    "objection_type": detection.objection_type
+                    "objection_type": detection.objection_type,
+                    "down_close_level": self._down_close_level
                 })
                 
         except Exception as e:
@@ -678,7 +777,7 @@ class RealtimeTranscriber:
             try:
                 fallback = self.rag_engine.get_fallback_script(
                     detection.objection_type, 
-                    down_close_level if 'down_close_level' in dir() else 0
+                    self._down_close_level
                 )
                 await self.on_guidance({
                     "type": "guidance_start",
@@ -691,7 +790,8 @@ class RealtimeTranscriber:
                     "guidance": fallback,
                     "trigger": trigger_text,
                     "objection_type": detection.objection_type,
-                    "fallback": True
+                    "fallback": True,
+                    "down_close_level": self._down_close_level
                 })
             except Exception as fallback_error:
                 print(f"[RT] Fallback also failed: {fallback_error}", flush=True)

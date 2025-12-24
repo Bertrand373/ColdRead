@@ -1,7 +1,12 @@
 """
-Globe Life Script Templates
+Globe Life Script Templates v2.0
 Locked verbatim scripts from Globe Life training docs.
 AI fills in context slots - NEVER changes the structure.
+
+Down-Close Psychological Arc:
+- Level 1-2: Logical (show options, recalculate)
+- Level 3: Emotional (family impact, peace of mind)
+- Level 4-5: Urgent (don't leave empty-handed, something > nothing)
 """
 
 # =============================================================================
@@ -56,41 +61,70 @@ The people who need this coverage the most are often the ones who think they don
 # =============================================================================
 # DOWN-CLOSE SCRIPTS (Sequential - use based on down_close_level)
 # =============================================================================
+# Psychological Arc:
+# Level 1-2: LOGICAL - Show options, adjust numbers, recalculate
+# Level 3: EMOTIONAL - Focus on family impact, peace of mind
+# Level 4-5: URGENT - Don't leave empty-handed, something is better than nothing
 
 DOWN_CLOSE_SCRIPTS = {
     1: {
-        "name": "Drop 1: Option 1 to Option 2 / $30k to $15k",
+        "name": "Level 1: Full Coverage to Reduced ($30k → $15k)",
         "amount": 15000,
+        "arc": "logical",
         "template": """Ok, I understand. {context_acknowledgment} Let me ask you, you understand how important this is for {family_reference}, right? So here's what we can do: let's adjust the Final Expense benefit to $15,000. That should help cover the cost of a funeral. Your income protection will remain the same, along with your mortgage coverage and the college education benefit. Let's recalculate and see where we're at. Does this make you feel better?""",
         "fallback": """Ok, I understand. Let me ask you, you understand how important this is, right? So here's what we can do: let's adjust the Final Expense benefit to $15,000. That should help cover the cost of a funeral. Your income protection will remain the same, along with your mortgage coverage and the college education benefit. Let's recalculate and see where we're at. Does this make you feel better?""",
     },
 
     2: {
-        "name": "Drop 2: $15k to $10k",
+        "name": "Level 2: Reduced Further ($15k → $10k)",
         "amount": 10000,
+        "arc": "logical",
         "template": """I know you understand how important this is for {family_reference}, so here's what we can do: let's adjust this Final Expense benefit to $10,000. As you recall from the video, the cost of a final expense is between $7,500 and $15,000 currently, so this will make sure you are covered right in the middle of the current cost. That should still help cover the cost of the funeral. Again your income protection will remain the same, along with your mortgage coverage and the college education benefit. Let's recalculate and see where we're at. Does this make you feel better?""",
         "fallback": """I know you understand how important this is, so here's what we can do: let's adjust this Final Expense benefit to $10,000. As you recall from the video, the cost of a final expense is between $7,500 and $15,000 currently, so this will make sure you are covered right in the middle of the current cost. That should still help cover the cost of the funeral. Again your income protection will remain the same, along with your mortgage coverage and the college education benefit. Let's recalculate and see where we're at. Does this make you feel better?""",
     },
 
     3: {
-        "name": "Drop 3: $10k to $7.5k",
+        "name": "Level 3: Essential Coverage ($10k → $7.5k)",
         "amount": 7500,
-        "template": """I understand and I appreciate your concern{context_acknowledgment}. As you recall from the video, the basic cost of a funeral is approximately $7,500. Let's adjust this Final Expense benefit to $7,500 and leave the rest of your coverage as is to protect {family_possessive} income, mortgage, and college education. Let's recalculate and see where we're at. Now you've got to be feeling better about that, right?""",
-        "fallback": """I understand and I appreciate your concern. As you recall from the video, the basic cost of a funeral is approximately $7,500. Let's adjust this Final Expense benefit to $7,500 and leave the rest of your coverage as is to protect your income, mortgage, and college education. Let's recalculate and see where we're at. Now you've got to be feeling better about that, right?""",
+        "arc": "emotional",
+        "template": """I hear you, and I appreciate you being honest with me about where you're at{context_acknowledgment}. Here's what I want you to think about - this isn't just about numbers, it's about making sure {family_reference} doesn't get stuck with a $15,000 bill when they're already grieving.
+
+The basic cost of a funeral is approximately $7,500. Let's adjust your Final Expense benefit to $7,500 and keep the rest of your coverage to protect {family_possessive} income, mortgage, and future. That way, {family_reference} has peace of mind. Let's see where that puts us. Now that's got to feel better, right?""",
+        "fallback": """I hear you, and I appreciate you being honest with me about where you're at. Here's what I want you to think about - this isn't just about numbers, it's about making sure your family doesn't get stuck with a $15,000 bill when they're already grieving.
+
+The basic cost of a funeral is approximately $7,500. Let's adjust your Final Expense benefit to $7,500 and keep the rest of your coverage to protect your income, mortgage, and future. That way, your family has peace of mind. Let's see where that puts us. Now that's got to feel better, right?""",
     },
 
     4: {
-        "name": "Drop 4: Reduce Income Protection to 1 Year",
+        "name": "Level 4: Minimum Protection (1-Year Income)",
         "amount": 7500,
-        "template": """To make sure {family_possessive} needs are covered, we will leave the Final Expense benefit at $7,500 and adjust {income_earner_possessive} income protection from 2 years to 1 year. That way, your needs are still covered, and when things get better, you can always increase them later. Let's recalculate and see where we're at. I'm sure you are feeling much better about that now, right?""",
-        "fallback": """To make sure your needs are covered, we will leave the Final Expense benefit at $7,500 and adjust your income protection from 2 years to 1 year. That way, your needs are still covered, and when things get better, you can always increase them later. Let's recalculate and see where we're at. I'm sure you are feeling much better about that now, right?""",
+        "arc": "urgent",
+        "template": """{client_names}, I don't want you to walk away today with nothing. That wouldn't be right.
+
+Here's what I can do: we'll keep the Final Expense at $7,500 and adjust {income_earner_possessive} income protection from 2 years down to 1 year. That way {family_reference} still has SOMETHING if the worst happens. When things get better financially, you can always increase it.
+
+This is about getting you started with protection TODAY, not waiting until it's too late. Let's see what that looks like - I'm sure you're feeling better about that, right?""",
+        "fallback": """I don't want you to walk away today with nothing. That wouldn't be right.
+
+Here's what I can do: we'll keep the Final Expense at $7,500 and adjust your income protection from 2 years down to 1 year. That way your family still has SOMETHING if the worst happens. When things get better financially, you can always increase it.
+
+This is about getting you started with protection TODAY, not waiting until it's too late. Let's see what that looks like - I'm sure you're feeling better about that, right?""",
     },
 
     5: {
-        "name": "Drop 5: Pick Most Important",
+        "name": "Level 5: Floor - Something > Nothing",
         "amount": None,
-        "template": """{client_names}, if something were to happen unexpectedly, which one of these obligations do you feel you could go without for the immediate time being, knowing that we can add it on later?""",
-        "fallback": """If something were to happen unexpectedly, which one of these obligations do you feel you could go without for the immediate time being, knowing that we can add it on later?""",
+        "arc": "urgent",
+        "template": """{client_names}, let me be real with you. I've sat with families who had nothing when their loved one passed. I've seen what a $15,000 funeral bill does to a family that's already hurting.
+
+We've gone through all the options. I don't want {family_reference} to be in that situation. So tell me - if something were to happen unexpectedly, which ONE of these benefits is most important to protect {family_reference} right now?
+
+We can always add more later when things improve. But let's at least get {family_reference} SOMETHING today. Which one matters most?""",
+        "fallback": """Let me be real with you. I've sat with families who had nothing when their loved one passed. I've seen what a $15,000 funeral bill does to a family that's already hurting.
+
+We've gone through all the options. I don't want your family to be in that situation. So tell me - if something were to happen unexpectedly, which ONE of these benefits is most important to protect your family right now?
+
+We can always add more later when things improve. But let's at least get your family SOMETHING today. Which one matters most?""",
     },
 }
 
@@ -158,7 +192,7 @@ def get_script(objection_type: str, down_close_level: int = 0) -> dict:
         down_close_level: Current down-close level (0-5) for price objections
     
     Returns:
-        dict with 'template' and 'fallback' keys
+        dict with 'template', 'fallback', and optionally 'arc' keys
     """
     # For price objections, use down-close scripts based on level
     if objection_type == "price":
@@ -182,3 +216,28 @@ def get_script(objection_type: str, down_close_level: int = 0) -> dict:
 def get_phone_script(objection_type: str) -> str:
     """Get phone script - no AI needed, return verbatim."""
     return PHONE_SCRIPTS.get(objection_type, "I understand. Let me explain how this works...")
+
+
+def get_down_close_info(level: int) -> dict:
+    """
+    Get info about a down-close level for UI display.
+    
+    Returns:
+        dict with 'name', 'amount', 'arc', 'remaining' keys
+    """
+    if level < 1:
+        level = 1
+    if level > 5:
+        level = 5
+    
+    script = DOWN_CLOSE_SCRIPTS.get(level, DOWN_CLOSE_SCRIPTS[1])
+    remaining = 5 - level
+    
+    return {
+        "level": level,
+        "name": script.get("name", f"Level {level}"),
+        "amount": script.get("amount"),
+        "arc": script.get("arc", "logical"),
+        "remaining": remaining,
+        "is_floor": level == 5,
+    }

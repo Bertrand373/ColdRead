@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Coachd.ai | Live Call</title>
-    <!-- VERSION: 2025-12-23-v4-bridge-speaker-id -->
+    <!-- VERSION: 2025-12-24-v5-elite-detection -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -1218,6 +1218,49 @@
 
         .price-objection-btn:active { transform: translateY(0); }
         .price-objection-btn svg { width: 18px; height: 18px; }
+        
+        /* Down-Close Level Indicator */
+        .down-close-indicator {
+            display: none;
+            background: linear-gradient(135deg, #1e3a5f 0%, #0f1f33 100%);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin: 0 16px 8px 16px;
+            flex-shrink: 0;
+        }
+        .down-close-indicator.active { display: block; }
+        .down-close-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .down-close-badge {
+            background: rgba(96, 165, 250, 0.2);
+            color: #60A5FA;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+        .down-close-badge.floor {
+            background: rgba(239, 68, 68, 0.2);
+            color: #EF4444;
+        }
+        .down-close-title {
+            color: #FFFFFF;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .down-close-message {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+        .down-close-message.floor-message {
+            color: #FCD34D;
+            font-weight: 500;
+        }
 
         /* ========== RESPONSIVE ========== */
         @media (min-width: 768px) {
@@ -1393,6 +1436,15 @@
                     <div class="guidance-text" id="guidanceText"></div>
                     <div class="dismiss-hint">tap anywhere to dismiss</div>
                 </div>
+            </div>
+            
+            <!-- Down-Close Level Indicator -->
+            <div class="down-close-indicator" id="downCloseIndicator">
+                <div class="down-close-header">
+                    <span class="down-close-badge" id="downCloseBadge">Level 1/5</span>
+                    <span class="down-close-title" id="downCloseTitle">4 more options</span>
+                </div>
+                <div class="down-close-message" id="downCloseMessage">Keep going — find the yes.</div>
             </div>
             
             <!-- Price Objection Button (shown when needed) -->
@@ -1590,8 +1642,14 @@
             callerFadeTimer: null,
             // Call type and down-close tracking
             callType: 'phone',
-            downCloseLevel: 0
+            downCloseLevel: 0,
+            // V5: Bridge timing
+            bridgeShownAt: null,      // Timestamp when bridge was displayed
+            pendingGuidance: null,    // Queued guidance if bridge still showing
         };
+        
+        // V5: Minimum bridge display time (ms)
+        const BRIDGE_MIN_DISPLAY_MS = 800;
         
         // ==================== DOM ====================
         const dom = {
@@ -1625,7 +1683,12 @@
             get agentCaptionText() { return document.getElementById('agentCaptionText'); },
             get callerCaptionText() { return document.getElementById('callerCaptionText'); },
             get callTypeHint() { return document.getElementById('callTypeHint'); },
-            get priceObjectionContainer() { return document.getElementById('priceObjectionContainer'); }
+            get priceObjectionContainer() { return document.getElementById('priceObjectionContainer'); },
+            // V5: Down-close indicator
+            get downCloseIndicator() { return document.getElementById('downCloseIndicator'); },
+            get downCloseBadge() { return document.getElementById('downCloseBadge'); },
+            get downCloseTitle() { return document.getElementById('downCloseTitle'); },
+            get downCloseMessage() { return document.getElementById('downCloseMessage'); }
         };
         
         // ==================== INIT ====================
@@ -1837,6 +1900,49 @@
         
         function hidePriceObjectionButton() {
             dom.priceObjectionContainer.classList.remove('visible');
+        }
+        
+        // V5: Handle down-close level indicator from backend
+        function handleDownCloseLevel(msg) {
+            const level = msg.level || 0;
+            const remaining = msg.remaining || (5 - level);
+            const isFloor = msg.is_floor || level === 5;
+            
+            console.log(`[DOWN_CLOSE] Level ${level}/5, ${remaining} remaining, floor=${isFloor}`);
+            
+            // Update state
+            state.downCloseLevel = level;
+            
+            // Update UI
+            if (level > 0) {
+                dom.downCloseIndicator.classList.add('active');
+                dom.downCloseBadge.textContent = `Level ${level}/5`;
+                
+                if (isFloor) {
+                    dom.downCloseBadge.classList.add('floor');
+                    dom.downCloseTitle.textContent = 'Final offer';
+                    dom.downCloseMessage.textContent = '🎯 A small policy is still a WIN';
+                    dom.downCloseMessage.classList.add('floor-message');
+                } else {
+                    dom.downCloseBadge.classList.remove('floor');
+                    dom.downCloseMessage.classList.remove('floor-message');
+                    
+                    if (remaining === 1) {
+                        dom.downCloseTitle.textContent = 'Last option after this';
+                        dom.downCloseMessage.textContent = 'One more level available.';
+                    } else {
+                        dom.downCloseTitle.textContent = `${remaining} more options`;
+                        dom.downCloseMessage.textContent = 'Keep going — find the yes.';
+                    }
+                }
+            }
+        }
+        
+        // V5: Hide down-close indicator
+        function hideDownCloseIndicator() {
+            dom.downCloseIndicator.classList.remove('active');
+            dom.downCloseBadge.classList.remove('floor');
+            dom.downCloseMessage.classList.remove('floor-message');
         }
         
         function handlePriceObjection() {
@@ -2122,6 +2228,10 @@
                 case 'price_objection':
                     showPriceObjectionButton();
                     break;
+                // V5: Down-close level update
+                case 'down_close_level':
+                    handleDownCloseLevel(msg);
+                    break;
                 case 'bridge':
                     handleBridge(msg);
                     break;
@@ -2371,12 +2481,16 @@
                 return;
             }
             
+            // V5: Record when bridge was shown (for minimum display time)
+            state.bridgeShownAt = Date.now();
+            state.pendingGuidance = null;  // Clear any pending guidance
+            
             // Show bridge phrase immediately with loading indicator
             dom.listeningState.style.display = 'none';
             dom.teleprompter.classList.add('has-guidance');
             dom.guidanceText.innerHTML = `<span class="bridge-text">${text}</span><span class="loading-dots"> ● ● ●</span>`;
             dom.guidanceState.classList.add('active');
-            console.log('[BRIDGE] Displayed bridge text:', text);
+            console.log('[BRIDGE] Displayed bridge text at', state.bridgeShownAt);
             
             // Single notification for the objection
             playNotify();
@@ -2422,6 +2536,34 @@
                 console.log('[GUIDANCE_START] No content, returning');
                 return;
             }
+            
+            // V5: Check if bridge is still showing and needs more time
+            if (state.bridgeShownAt) {
+                const elapsed = Date.now() - state.bridgeShownAt;
+                const remaining = BRIDGE_MIN_DISPLAY_MS - elapsed;
+                
+                if (remaining > 0) {
+                    console.log(`[GUIDANCE_START] Bridge shown ${elapsed}ms ago, waiting ${remaining}ms more`);
+                    // Queue this guidance to show after bridge minimum time
+                    state.pendingGuidance = msg;
+                    setTimeout(() => {
+                        if (state.pendingGuidance === msg) {
+                            console.log('[GUIDANCE_START] Delayed display now executing');
+                            state.bridgeShownAt = null;
+                            displayGuidanceStart(msg);
+                        }
+                    }, remaining);
+                    return;
+                }
+                // Bridge has been shown long enough, clear timing
+                state.bridgeShownAt = null;
+            }
+            
+            displayGuidanceStart(msg);
+        }
+        
+        function displayGuidanceStart(msg) {
+            const content = msg.full_text || msg.chunk || '';
             
             // Store streaming state
             state.streamingGuidance = content;
@@ -2579,11 +2721,14 @@
             dom.listeningState.style.display = 'flex';
             dom.teleprompter.classList.remove('has-guidance');
             hidePriceObjectionButton();
+            hideDownCloseIndicator();  // V5: Hide down-close indicator
             
-            // Clear text content
+            // Clear text content and timing state
             dom.guidanceText.innerHTML = '';
             state.streamingGuidance = '';
             state.hasVibratedForCurrentGuidance = false;
+            state.bridgeShownAt = null;  // V5: Clear bridge timing
+            state.pendingGuidance = null;  // V5: Clear pending guidance
             
             console.log('[DISMISS] Panel hidden, text cleared');
         }
