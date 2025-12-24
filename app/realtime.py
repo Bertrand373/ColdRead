@@ -621,81 +621,15 @@ class RealtimeTranscriber:
                 
                 return
             
-            # ============ CONTEXT CHECK FOR PRESENTATION ============
+            # ============ PRESENTATIONS: ALWAYS USE AI ============
+            # AI builds on scripts - that's what makes this tool elite
             transcript_length = len(self._full_transcript.strip())
-            has_context = transcript_length >= self.MIN_CONTEXT_FOR_AI
             
-            # Should we use AI personalization?
-            use_ai = has_context or obj_count >= 2  # Use AI if: has context OR repeat objection
+            print(f"[RT] 🤖 AI MODE - Building response with {transcript_length} chars context", flush=True)
             
-            print(f"[RT] 📝 Context check:", flush=True)
-            print(f"[RT]    ├─ transcript_length: {transcript_length} chars", flush=True)
-            print(f"[RT]    ├─ min_required: {self.MIN_CONTEXT_FOR_AI} chars", flush=True)
-            print(f"[RT]    ├─ has_context: {has_context}", flush=True)
-            print(f"[RT]    ├─ repeat_objection: {obj_count >= 2} (count={obj_count})", flush=True)
-            print(f"[RT]    └─ use_ai: {use_ai}", flush=True)
-            
-            # ============ ROUTE 2: Presentation - No context → Instant Template ============
-            if not use_ai and detection.skip_rag:
-                print(f"[RT] ⚡ INSTANT TEMPLATE - no context to personalize", flush=True)
-                print(f"[RT]    └─ Serving fallback script for '{obj_type}' level {self._down_close_level}", flush=True)
-                
-                # Get fallback script (no AI)
-                fallback = self.rag_engine.get_fallback_script(
-                    detection.objection_type,
-                    self._down_close_level
-                )
-                
-                # Record guidance for post-call analysis
-                self._call_recording["guidance_shown"].append({
-                    "type": obj_type,
-                    "mode": "instant_template",
-                    "down_close_level": self._down_close_level,
-                    "timestamp": time.time() - (self._session_start_time or time.time()),
-                    "text_preview": fallback[:100],
-                })
-                
-                # Send instantly (no bridge needed)
-                await self.on_guidance({
-                    "type": "guidance_start",
-                    "chunk": fallback,
-                    "full_text": fallback,
-                    "is_complete": False
-                })
-                
-                # Send down-close info if price objection
-                if obj_type == "price":
-                    await self.on_guidance({
-                        "type": "down_close_level",
-                        "level": self._down_close_level,
-                        "remaining": remaining,
-                        "is_floor": is_floor
-                    })
-                
-                await self.on_guidance({
-                    "type": "guidance_complete",
-                    "guidance": fallback,
-                    "trigger": trigger_text,
-                    "objection_type": detection.objection_type,
-                    "instant": True,
-                    "down_close_level": self._down_close_level
-                })
-                
-                # Record
-                if self.state_machine:
-                    self.state_machine.record_objection(detection.objection_type, trigger_text)
-                    self.state_machine.record_guidance(fallback, trigger_text)
-                
-                return
-            
-            # ============ ROUTE 3: Presentation - Has context → Bridge + AI ============
-            
-            print(f"[RT] 🤖 AI PERSONALIZATION - contextualizing script", flush=True)
-            print(f"[RT]    └─ Will use {len(self._full_transcript)} chars of context", flush=True)
-            
-            # Send bridge phrase IMMEDIATELY (if available)
+            # Send bridge (loading indicator) IMMEDIATELY
             if detection.bridge_phrase:
-                print(f"[RT] 🌉 Sending bridge phrase: '{detection.bridge_phrase}'", flush=True)
+                print(f"[RT] 🌉 Sending bridge: '{detection.bridge_phrase}'", flush=True)
                 await self.on_guidance({
                     "type": "bridge",
                     "text": detection.bridge_phrase,
@@ -713,12 +647,6 @@ class RealtimeTranscriber:
                     "level": self._down_close_level,
                     "remaining": remaining,
                     "is_floor": is_floor
-                })
-                
-                # Also send price_objection for button visibility
-                await self.on_guidance({
-                    "type": "price_objection",
-                    "trigger": trigger_text[:100]
                 })
             
             # Generate AI guidance with full context

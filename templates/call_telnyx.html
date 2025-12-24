@@ -6,7 +6,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Coachd.ai | Live Call</title>
-    <!-- VERSION: 2025-12-23-v4-bridge-speaker-id -->
+    <!-- VERSION: 2025-12-24-v8-ai-builds-to-close -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -618,10 +618,20 @@
         }
         
         /* ========== CALL SCREEN ========== */
-        .call-screen { position: relative; }
+        .call-screen { 
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* GRID LAYOUT only when active - more reliable than flex for scrollable content */
+        .call-screen.active {
+            display: grid;
+            grid-template-rows: 1fr auto auto;  /* teleprompter | captions | footer */
+            grid-template-columns: 1fr;
+        }
         
         .teleprompter {
-            flex: 1;
+            /* Grid child - takes the 1fr row */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -630,10 +640,11 @@
             text-align: center;
             cursor: pointer;
             transition: background 0.2s;
+            /* CRITICAL: These 3 properties enable scrolling in grid */
+            min-height: 0;
             overflow-y: auto;
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
-            min-height: 0;  /* Important for flex + overflow to work */
         }
         
         /* When guidance is showing, start from top so user can scroll */
@@ -696,8 +707,9 @@
             flex-direction: column;
             align-items: center;
             width: 100%;
-            max-width: 600px;
+            max-width: 900px;  /* Wider for desktop readability */
             padding-bottom: 40px;
+            flex-shrink: 0;  /* iOS fix: prevent collapse */
         }
         
         .guidance-state.active { 
@@ -755,6 +767,13 @@
             color: var(--accent-dark);
             animation: loadingPulse 1.2s ease-in-out infinite;
             margin-left: 8px;
+        }
+        
+        .guidance-loading {
+            font-size: 2rem;
+            color: var(--accent);
+            animation: loadingPulse 1.2s ease-in-out infinite;
+            letter-spacing: 8px;
         }
         
         @keyframes loadingPulse {
@@ -909,43 +928,48 @@
         
         .end-btn svg { width: 18px; height: 18px; }
         
-        /* ========== PRICE OBJECTION BUTTON ========== */
-        .price-objection-container {
+        /* Down-Close Level Indicator */
+        .down-close-indicator {
             display: none;
-            padding: 12px 20px;
-            background: var(--accent-soft);
-            border-top: 1px solid var(--border);
+            background: linear-gradient(135deg, #1e3a5f 0%, #0f1f33 100%);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin: 0 16px 8px 16px;
             flex-shrink: 0;
         }
-
-        .price-objection-container.visible { display: block; }
-
-        .price-objection-btn {
-            width: 100%;
+        .down-close-indicator.active { display: block; }
+        .down-close-header {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 14px 20px;
-            background: var(--accent-dark);
-            color: white;
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.95rem;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .down-close-badge {
+            background: rgba(96, 165, 250, 0.2);
+            color: #60A5FA;
+            font-size: 0.75rem;
             font-weight: 600;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            padding: 3px 8px;
+            border-radius: 6px;
         }
-
-        .price-objection-btn:hover { 
-            background: #2563EB;
-            transform: translateY(-1px);
+        .down-close-badge.floor {
+            background: rgba(239, 68, 68, 0.2);
+            color: #EF4444;
         }
-
-        .price-objection-btn:active { transform: translateY(0); }
-        .price-objection-btn svg { width: 18px; height: 18px; }
+        .down-close-title {
+            color: #FFFFFF;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .down-close-message {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.8rem;
+            line-height: 1.4;
+        }
+        .down-close-message.floor-message {
+            color: #FCD34D;
+            font-weight: 500;
+        }
         
         /* ========== OUTCOME SCREEN ========== */
         .outcome-screen {
@@ -1611,12 +1635,13 @@
                 </div>
             </div>
             
-            <!-- Price Objection Button -->
-            <div class="price-objection-container" id="priceObjectionContainer">
-                <button class="price-objection-btn" onclick="Coachd.handlePriceObjection()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-                    They Can't Afford It — Reduce Coverage
-                </button>
+            <!-- Down-Close Level Indicator -->
+            <div class="down-close-indicator" id="downCloseIndicator">
+                <div class="down-close-header">
+                    <span class="down-close-badge" id="downCloseBadge">Level 1/5</span>
+                    <span class="down-close-title" id="downCloseTitle">4 more options</span>
+                </div>
+                <div class="down-close-message" id="downCloseMessage">Keep going — find the yes.</div>
             </div>
             
             <!-- Live Captions -->
@@ -1845,7 +1870,11 @@
             get agentCaptionText() { return document.getElementById('agentCaptionText'); },
             get callerCaptionText() { return document.getElementById('callerCaptionText'); },
             get callTypeHint() { return document.getElementById('callTypeHint'); },
-            get priceObjectionContainer() { return document.getElementById('priceObjectionContainer'); },
+            // Down-close indicator
+            get downCloseIndicator() { return document.getElementById('downCloseIndicator'); },
+            get downCloseBadge() { return document.getElementById('downCloseBadge'); },
+            get downCloseTitle() { return document.getElementById('downCloseTitle'); },
+            get downCloseMessage() { return document.getElementById('downCloseMessage'); },
             get errorModal() { return document.getElementById('errorModal'); },
             get errorModalTitle() { return document.getElementById('errorModalTitle'); },
             get errorModalMessage() { return document.getElementById('errorModalMessage'); }
@@ -2066,28 +2095,50 @@
             dom.callTypeHint.textContent = hints[type];
         }
         
-        // ==================== PRICE OBJECTION / DOWN-CLOSE ====================
-        function showPriceObjectionButton() {
-            dom.priceObjectionContainer.classList.add('visible');
-        }
-        
-        function hidePriceObjectionButton() {
-            dom.priceObjectionContainer.classList.remove('visible');
-        }
-        
-        function handlePriceObjection() {
-            if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-                hidePriceObjectionButton();
+        // ==================== DOWN-CLOSE INDICATOR ====================
+        function handleDownCloseLevel(msg) {
+            const level = msg.level || 0;
+            const remaining = msg.remaining || (5 - level);
+            const isFloor = msg.is_floor || level === 5;
+            
+            console.log(`[DOWN_CLOSE] ====================================`);
+            console.log(`[DOWN_CLOSE] Level: ${level}/5`);
+            console.log(`[DOWN_CLOSE] Remaining: ${remaining} options`);
+            console.log(`[DOWN_CLOSE] Is Floor: ${isFloor}`);
+            console.log(`[DOWN_CLOSE] ====================================`);
+            
+            // Update state
+            state.downCloseLevel = level;
+            
+            // Update UI
+            if (level > 0) {
+                dom.downCloseIndicator.classList.add('active');
+                dom.downCloseBadge.textContent = `Level ${level}/5`;
                 
-                if (state.downCloseLevel < 5) {
-                    state.downCloseLevel++;
+                if (isFloor) {
+                    dom.downCloseBadge.classList.add('floor');
+                    dom.downCloseTitle.textContent = 'Final offer';
+                    dom.downCloseMessage.textContent = '🎯 A small policy is still a WIN';
+                    dom.downCloseMessage.classList.add('floor-message');
+                } else {
+                    dom.downCloseBadge.classList.remove('floor');
+                    dom.downCloseMessage.classList.remove('floor-message');
+                    
+                    if (remaining === 1) {
+                        dom.downCloseTitle.textContent = 'Last option after this';
+                        dom.downCloseMessage.textContent = 'One more level available.';
+                    } else {
+                        dom.downCloseTitle.textContent = `${remaining} more options`;
+                        dom.downCloseMessage.textContent = 'Keep going — find the yes.';
+                    }
                 }
-                
-                state.ws.send(JSON.stringify({
-                    type: 'down_close',
-                    data: { level: state.downCloseLevel }
-                }));
             }
+        }
+        
+        function hideDownCloseIndicator() {
+            dom.downCloseIndicator.classList.remove('active');
+            dom.downCloseBadge.classList.remove('floor');
+            dom.downCloseMessage.classList.remove('floor-message');
         }
         
         // ==================== UTILS ====================
@@ -2286,8 +2337,8 @@
                 case 'guidance_complete':
                     handleGuidanceComplete(msg);
                     break;
-                case 'price_objection':
-                    showPriceObjectionButton();
+                case 'down_close_level':
+                    handleDownCloseLevel(msg);
                     break;
                 case 'bridge':
                     handleBridge(msg);
@@ -2332,7 +2383,6 @@
             showScreen('callScreen');
             startTimer();
             setStatus('listening');
-            hidePriceObjectionButton();
             
             // Keep screen awake
             if ('wakeLock' in navigator) {
@@ -2578,13 +2628,12 @@
         
         // ==================== GUIDANCE ====================
         function handleBridge(msg) {
-            const text = msg.text || '';
-            if (!text) return;
+            // Show loading indicator - agents bridge naturally with their voice
+            console.log('[BRIDGE] Objection detected, showing loading indicator');
             
-            // Show bridge phrase immediately with loading indicator
             dom.listeningState.style.display = 'none';
             dom.teleprompter.classList.add('has-guidance');
-            dom.guidanceText.innerHTML = `<span class="bridge-text">${text}</span><span class="loading-dots"> ● ● ●</span>`;
+            dom.guidanceText.innerHTML = '<div class="guidance-loading">●  ●  ●</div>';
             dom.guidanceState.classList.add('active');
             
             // Single vibrate for the objection
@@ -2616,8 +2665,19 @@
         }
         
         function handleGuidanceStart(msg) {
+            console.log('[GUIDANCE_START] ====================================');
+            console.log('[GUIDANCE_START] Received guidance');
+            
             const content = msg.full_text || msg.chunk || '';
-            if (!content) return;
+            console.log('[GUIDANCE_START] Content length:', content.length);
+            
+            if (!content) {
+                console.log('[GUIDANCE_START] No content, returning');
+                console.log('[GUIDANCE_START] ====================================');
+                return;
+            }
+            
+            console.log('[GUIDANCE_START] ====================================');
             
             state.streamingGuidance = content;
             
@@ -2641,19 +2701,34 @@
         }
         
         function handleGuidanceComplete(msg) {
+            console.log('[GUIDANCE_COMPLETE] ====================================');
+            console.log('[GUIDANCE_COMPLETE] Guidance delivery complete');
+            console.log('[GUIDANCE_COMPLETE] Objection type:', msg.objection_type || 'unknown');
+            console.log('[GUIDANCE_COMPLETE] Down-close level:', msg.down_close_level || 0);
+            
             const fullText = msg.guidance || state.streamingGuidance || '';
+            console.log('[GUIDANCE_COMPLETE] Text length:', fullText.length);
+            
+            if (!fullText) {
+                console.log('[GUIDANCE_COMPLETE] ⚠️ WARNING: No text to display!');
+                console.log('[GUIDANCE_COMPLETE] ====================================');
+                return;
+            }
+            
+            console.log('[GUIDANCE_COMPLETE] ====================================');
+            
             const sayThis = extractSayThis(fullText);
             
             state.guidanceHistory.push({
                 text: sayThis,
                 raw: fullText,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                objection_type: msg.objection_type,
+                down_close_level: msg.down_close_level
             });
             
             const displayText = sayThis || fullText;
-            if (displayText) {
-                dom.guidanceText.innerHTML = formatGuidanceText(displayText);
-            }
+            dom.guidanceText.innerHTML = formatGuidanceText(displayText);
             
             dom.listeningState.style.display = 'none';
             dom.guidanceState.classList.add('active');
@@ -2718,7 +2793,7 @@
             dom.guidanceState.classList.remove('active');
             dom.listeningState.style.display = 'flex';
             dom.teleprompter.classList.remove('has-guidance');
-            hidePriceObjectionButton();
+            hideDownCloseIndicator();
             dom.guidanceText.innerHTML = '';
             state.streamingGuidance = '';
             state.hasVibratedForCurrentGuidance = false;
@@ -2876,7 +2951,6 @@
             saveIdentity,
             changeAgent,
             setCallType,
-            handlePriceObjection,
             closeErrorModal,
             getState: () => state
         };
