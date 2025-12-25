@@ -24,12 +24,14 @@ PRICING = {
         'base': 0.0125,
     },
     'telnyx': {
-        # Telnyx pricing (generally 30-50% cheaper than Twilio)
-        'call_per_minute_outbound': 0.007,  # outbound to US/Canada
+        # Telnyx pricing - dual channel means 2 outbound legs per call
+        # Rates based on Telnyx Call Control API pricing
+        'call_per_minute_outbound': 0.007,  # outbound to US/Canada (per leg)
         'call_per_minute_inbound': 0.0035,  # inbound
         'phone_number_monthly': 1.00,
-        'recording_per_minute': 0.002,
-        'conference_per_minute': 0.002,  # per participant per minute
+        'recording_per_minute': 0.0025,
+        'conference_per_minute_per_participant': 0.001,  # mixing included in call control
+        'media_streaming_per_minute': 0.002,  # WebSocket audio streaming
     },
     'claude': {
         'claude-sonnet-4-20250514': {
@@ -61,16 +63,44 @@ def calculate_deepgram_cost(minutes: float, model: str = 'nova-2') -> float:
     return minutes * rate
 
 
-def calculate_telnyx_cost(call_minutes: float, recording_minutes: float = 0, is_inbound: bool = False) -> float:
-    """Calculate Telnyx call cost"""
-    if is_inbound:
-        call_rate = PRICING['telnyx']['call_per_minute_inbound']
-    else:
-        call_rate = PRICING['telnyx']['call_per_minute_outbound']
+def calculate_telnyx_cost(
+    call_minutes: float, 
+    recording_minutes: float = 0, 
+    is_inbound: bool = False,
+    is_dual_channel: bool = True,
+    has_media_streaming: bool = True
+) -> float:
+    """
+    Calculate Telnyx call cost for dual-channel architecture
     
-    call_cost = call_minutes * call_rate
-    recording_cost = recording_minutes * PRICING['telnyx']['recording_per_minute']
-    return call_cost + recording_cost
+    Dual-channel call costs:
+    - 2 outbound call legs (agent + client)
+    - Conference bridge (2 participants)
+    - Media streaming for transcription (2 streams)
+    - Optional recording
+    """
+    pricing = PRICING['telnyx']
+    
+    if is_inbound:
+        call_rate = pricing['call_per_minute_inbound']
+    else:
+        call_rate = pricing['call_per_minute_outbound']
+    
+    if is_dual_channel:
+        # Two outbound legs
+        call_cost = call_minutes * call_rate * 2
+        # Conference bridge cost (2 participants)
+        conference_cost = call_minutes * pricing['conference_per_minute_per_participant'] * 2
+        # Media streaming for both channels
+        streaming_cost = call_minutes * pricing['media_streaming_per_minute'] * 2 if has_media_streaming else 0
+    else:
+        call_cost = call_minutes * call_rate
+        conference_cost = 0
+        streaming_cost = 0
+    
+    recording_cost = recording_minutes * pricing['recording_per_minute']
+    
+    return call_cost + conference_cost + streaming_cost + recording_cost
 
 
 def calculate_claude_cost(input_tokens: int, output_tokens: int, model: str = 'claude-sonnet-4-20250514') -> float:
@@ -79,6 +109,51 @@ def calculate_claude_cost(input_tokens: int, output_tokens: int, model: str = 'c
     input_cost = (input_tokens / 1000) * model_pricing['input_per_1k']
     output_cost = (output_tokens / 1000) * model_pricing['output_per_1k']
     return input_cost + output_cost
+
+
+def get_dual_channel_cost_breakdown(call_minutes: float) -> Dict[str, float]:
+    """
+    Get detailed cost breakdown for a dual-channel call
+    Useful for displaying per-call costs in admin
+    
+    Returns breakdown for a single coaching session
+    """
+    pricing = PRICING['telnyx']
+    
+    # Two outbound legs (agent + client)
+    call_legs = call_minutes * pricing['call_per_minute_outbound'] * 2
+    
+    # Conference bridge (2 participants)
+    conference = call_minutes * pricing['conference_per_minute_per_participant'] * 2
+    
+    # Media streaming (2 WebSocket streams for transcription)
+    streaming = call_minutes * pricing['media_streaming_per_minute'] * 2
+    
+    # Total Telnyx cost
+    telnyx_total = call_legs + conference + streaming
+    
+    # Add Deepgram cost (both channels transcribed)
+    deepgram_cost = call_minutes * PRICING['deepgram']['nova-2'] * 2
+    
+    # Estimate Claude cost (~1 analysis per minute, ~500 input + 100 output tokens each)
+    claude_analyses = call_minutes  # roughly 1 per minute
+    claude_cost = claude_analyses * calculate_claude_cost(500, 100)
+    
+    total = telnyx_total + deepgram_cost + claude_cost
+    
+    return {
+        'call_minutes': round(call_minutes, 2),
+        'telnyx': {
+            'call_legs': round(call_legs, 4),
+            'conference': round(conference, 4),
+            'streaming': round(streaming, 4),
+            'subtotal': round(telnyx_total, 4)
+        },
+        'deepgram': round(deepgram_cost, 4),
+        'claude': round(claude_cost, 4),
+        'total': round(total, 4),
+        'per_minute': round(total / call_minutes, 4) if call_minutes > 0 else 0
+    }
 
 
 # ============ LOGGING WRAPPERS ============
@@ -114,16 +189,36 @@ def log_telnyx_usage(
     session_id: Optional[str] = None,
     recording_seconds: float = 0,
     call_control_id: Optional[str] = None,
-    is_inbound: bool = False
+    is_inbound: bool = False,
+    is_dual_channel: bool = True,
+    agent_duration_seconds: Optional[float] = None,
+    client_duration_seconds: Optional[float] = None
 ):
-    """Log Telnyx call usage"""
+    """
+    Log Telnyx call usage for dual-channel architecture
+    
+    For accurate tracking, pass agent_duration_seconds and client_duration_seconds
+    separately. If not provided, assumes both legs = call_duration_seconds.
+    """
     call_minutes = call_duration_seconds / 60
     recording_minutes = recording_seconds / 60
-    cost = calculate_telnyx_cost(call_minutes, recording_minutes, is_inbound)
+    
+    # Calculate accurate cost
+    cost = calculate_telnyx_cost(
+        call_minutes, 
+        recording_minutes, 
+        is_inbound,
+        is_dual_channel=is_dual_channel,
+        has_media_streaming=True
+    )
+    
+    # Track both legs if provided
+    agent_mins = (agent_duration_seconds / 60) if agent_duration_seconds else call_minutes
+    client_mins = (client_duration_seconds / 60) if client_duration_seconds else call_minutes
     
     log_usage(
         service='telnyx',
-        operation='call',
+        operation='dual_channel_call' if is_dual_channel else 'call',
         quantity=call_minutes,
         unit='minutes',
         estimated_cost=cost,
@@ -132,7 +227,16 @@ def log_telnyx_usage(
         metadata={
             'call_control_id': call_control_id,
             'recording_minutes': recording_minutes,
-            'is_inbound': is_inbound
+            'is_inbound': is_inbound,
+            'is_dual_channel': is_dual_channel,
+            'agent_minutes': round(agent_mins, 2),
+            'client_minutes': round(client_mins, 2),
+            'cost_breakdown': {
+                'call_legs': round(call_minutes * PRICING['telnyx']['call_per_minute_outbound'] * 2, 4),
+                'conference': round(call_minutes * PRICING['telnyx']['conference_per_minute_per_participant'] * 2, 4),
+                'streaming': round(call_minutes * PRICING['telnyx']['media_streaming_per_minute'] * 2, 4),
+                'recording': round(recording_minutes * PRICING['telnyx']['recording_per_minute'], 4)
+            }
         }
     )
     
@@ -266,8 +370,8 @@ def fetch_deepgram_usage() -> Dict[str, Any]:
 
 def fetch_telnyx_usage() -> Dict[str, Any]:
     """
-    Fetch usage from Telnyx API
-    https://developers.telnyx.com/api/v2/reporting/fetch-all-cdr-requests
+    Fetch usage from Telnyx API with accurate cost tracking
+    Uses multiple endpoints for comprehensive data
     """
     api_key = os.getenv('TELNYX_API_KEY', '')
     
@@ -280,11 +384,10 @@ def fetch_telnyx_usage() -> Dict[str, Any]:
             'Content-Type': 'application/json'
         }
         
-        # Get billing summary
         end_date = datetime.utcnow()
         start_date = end_date.replace(day=1)  # First of month
         
-        # Get balance
+        # 1. Get account balance (shows actual spend)
         balance_response = requests.get(
             'https://api.telnyx.com/v2/balance',
             headers=headers,
@@ -292,10 +395,12 @@ def fetch_telnyx_usage() -> Dict[str, Any]:
         )
         
         balance_data = {}
+        account_balance = None
         if balance_response.status_code == 200:
             balance_data = balance_response.json()
+            account_balance = balance_data.get('data', {}).get('balance')
         
-        # Get phone numbers for monthly cost
+        # 2. Get phone numbers
         numbers_response = requests.get(
             'https://api.telnyx.com/v2/phone_numbers',
             headers=headers,
@@ -308,42 +413,97 @@ def fetch_telnyx_usage() -> Dict[str, Any]:
             numbers_data = numbers_response.json()
             phone_numbers = numbers_data.get('data', [])
         
-        # Get recent calls for usage
+        # 3. Get call events for actual usage
+        # Using call_events gives us more detail than /calls
         calls_response = requests.get(
-            'https://api.telnyx.com/v2/calls',
+            'https://api.telnyx.com/v2/call_events',
             headers=headers,
             params={
-                'page[size]': 100,
-                'filter[created_at][gte]': start_date.isoformat() + 'Z'
+                'page[size]': 250,
+                'filter[event_type]': 'call.hangup',
+                'filter[occurred_at][gte]': start_date.isoformat() + 'Z',
+                'filter[occurred_at][lte]': end_date.isoformat() + 'Z'
             },
-            timeout=10
+            timeout=15
         )
         
-        recent_calls = []
+        call_events = []
+        total_call_seconds = 0
+        call_count = 0
+        
         if calls_response.status_code == 200:
-            calls_data = calls_response.json()
-            recent_calls = calls_data.get('data', [])
+            events_data = calls_response.json()
+            call_events = events_data.get('data', [])
+            
+            for event in call_events:
+                payload = event.get('payload', {})
+                # Duration in seconds from hangup events
+                duration = payload.get('duration_secs', 0) or payload.get('billsec', 0)
+                if duration:
+                    total_call_seconds += duration
+                    call_count += 1
         
-        # Calculate summary
-        total_call_minutes = 0
-        for call in recent_calls:
-            duration = call.get('duration_secs', 0)
-            total_call_minutes += duration / 60
+        total_call_minutes = total_call_seconds / 60
         
-        phone_number_monthly_cost = len(phone_numbers) * PRICING['telnyx']['phone_number_monthly']
-        call_cost = total_call_minutes * PRICING['telnyx']['call_per_minute_outbound']
+        # 4. Try to get billing/usage report (if available)
+        billing_data = {}
+        try:
+            billing_response = requests.get(
+                'https://api.telnyx.com/v2/billing/group_costs',
+                headers=headers,
+                params={
+                    'filter[date][gte]': start_date.strftime('%Y-%m-%d'),
+                    'filter[date][lte]': end_date.strftime('%Y-%m-%d')
+                },
+                timeout=15
+            )
+            if billing_response.status_code == 200:
+                billing_data = billing_response.json()
+        except:
+            pass  # Billing API may not be available on all accounts
+        
+        # Calculate costs
+        pricing = PRICING['telnyx']
+        phone_number_monthly_cost = len(phone_numbers) * pricing['phone_number_monthly']
+        
+        # For dual-channel: each call session = 2 legs + conference + streaming
+        # Assuming most calls are dual-channel
+        sessions_count = call_count // 2 if call_count > 0 else 0
+        avg_session_minutes = (total_call_minutes / 2) if call_count > 0 else 0
+        
+        # Detailed cost breakdown
+        call_leg_cost = total_call_minutes * pricing['call_per_minute_outbound']
+        conference_cost = avg_session_minutes * pricing['conference_per_minute_per_participant'] * 2 * sessions_count / max(sessions_count, 1)
+        streaming_cost = total_call_minutes * pricing['media_streaming_per_minute']
+        
+        estimated_call_cost = call_leg_cost + conference_cost + streaming_cost
+        
+        # Check if we have actual billing data
+        actual_cost = None
+        if billing_data.get('data'):
+            actual_cost = sum(
+                float(item.get('total_cost', 0)) 
+                for item in billing_data.get('data', [])
+            )
         
         return {
             'period': f"{start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}",
-            'balance': balance_data.get('data', {}).get('balance', 'N/A'),
+            'account_balance': account_balance,
             'phone_numbers_count': len(phone_numbers),
+            'phone_numbers': [n.get('phone_number') for n in phone_numbers[:5]],  # First 5
             'total_call_minutes': round(total_call_minutes, 2),
-            'recent_calls_count': len(recent_calls),
+            'total_call_legs': call_count,
+            'estimated_sessions': sessions_count,
             'summary': {
-                'phone_numbers': phone_number_monthly_cost,
-                'calls': round(call_cost, 4),
-                'total_cost': round(phone_number_monthly_cost + call_cost, 4)
+                'phone_numbers': round(phone_number_monthly_cost, 2),
+                'call_legs': round(call_leg_cost, 4),
+                'conference': round(conference_cost, 4),
+                'streaming': round(streaming_cost, 4),
+                'estimated_total': round(phone_number_monthly_cost + estimated_call_cost, 4),
+                'actual_total': round(actual_cost, 4) if actual_cost else None,
+                'total_cost': round(actual_cost if actual_cost else (phone_number_monthly_cost + estimated_call_cost), 4)
             },
+            'has_actual_billing': actual_cost is not None,
             'fetched_at': datetime.utcnow().isoformat()
         }
         

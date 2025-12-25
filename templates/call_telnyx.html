@@ -2246,6 +2246,52 @@
             dom.callTypeHint.textContent = hints[type];
         }
         
+        // ==================== NOTIFICATION SOUND ====================
+        let audioContext = null;
+        
+        // Initialize audio context on user gesture (iOS requirement)
+        function warmUpAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        }
+        
+        function playNotificationSound() {
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Soft, pleasant tone
+                oscillator.frequency.value = 880; // A5 note
+                oscillator.type = 'sine';
+                
+                // Quick fade in/out for smooth sound
+                const now = audioContext.currentTime;
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(0.3, now + 0.02); // Fade in
+                gainNode.gain.linearRampToValueAtTime(0, now + 0.15);   // Fade out
+                
+                oscillator.start(now);
+                oscillator.stop(now + 0.15);
+            } catch (e) {
+                console.log('[Audio] Notification sound failed:', e);
+            }
+        }
+        
         // ==================== UTILS ====================
         function formatTime(s) {
             const m = Math.floor(s / 60);
@@ -2314,6 +2360,9 @@
         
         // ==================== TELNYX CALL FLOW ====================
         async function startCall() {
+            // Warm up audio on user gesture (iOS requirement)
+            warmUpAudio();
+            
             dom.startBtn.disabled = true;
             
             // Get client phone if provided (click-to-call mode)
@@ -2837,10 +2886,11 @@
             dom.guidanceText.innerHTML = '<div class="guidance-loading">●  ●  ●</div>';
             dom.guidanceState.classList.add('active');
             
-            // Single vibrate for the objection
+            // Audio + haptic notification
+            playNotificationSound();
             if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
             
-            // Mark that we've already vibrated for this guidance
+            // Mark that we've already notified for this guidance
             state.hasVibratedForCurrentGuidance = true;
         }
         
@@ -2858,9 +2908,10 @@
             
             showGuidance(sayThis);
             
-            // Only vibrate if we haven't already (e.g., from bridge)
-            if (!state.hasVibratedForCurrentGuidance && navigator.vibrate) {
-                navigator.vibrate([50, 30, 50]);
+            // Only notify if we haven't already (e.g., from bridge)
+            if (!state.hasVibratedForCurrentGuidance) {
+                playNotificationSound();
+                if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
             }
             state.hasVibratedForCurrentGuidance = false;
         }
@@ -2868,7 +2919,8 @@
         function handleGuidanceStart(msg) {
             console.log('[GUIDANCE_START] Guidance incoming');
             
-            // Haptic notification - guidance is coming
+            // Audio + haptic notification - guidance is coming
+            playNotificationSound();
             if (navigator.vibrate) {
                 navigator.vibrate([50, 30, 50]);
             }
