@@ -216,6 +216,7 @@ def generate_client_answered_texml(session_id: str) -> str:
         <Conference 
             startConferenceOnEnter="true"
             endConferenceOnExit="true"
+            waitUrl=""
             beep="false">
             {conference_name}
         </Conference>
