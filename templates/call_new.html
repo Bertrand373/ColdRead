@@ -62,16 +62,19 @@
         .back-btn {
             width: 36px;
             height: 36px;
-            border-radius: 50%;
+            border-radius: 8px;
             background: var(--surface);
             border: none;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.15s ease;
         }
         
-        .back-btn svg { width: 20px; height: 20px; color: var(--text-secondary); }
+        .back-btn:hover { background: var(--border); }
+        .back-btn:active { transform: scale(0.95); }
+        .back-btn svg { width: 20px; height: 20px; color: var(--text); }
         
         .logo {
             font-family: 'Outfit', sans-serif;
@@ -116,16 +119,20 @@
             content: '';
             position: absolute;
             top: 0;
-            left: 0;
-            right: 0;
-            height: 80px;
-            background: linear-gradient(180deg, rgba(96, 165, 250, 0.12) 0%, transparent 100%);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            border-radius: 2px;
+            opacity: 0;
+            animation: glowPulse 2s ease-out forwards;
             pointer-events: none;
-            animation: glowFade 2s ease-out forwards;
         }
         
-        @keyframes glowFade {
-            0% { opacity: 1; }
+        @keyframes glowPulse {
+            0% { opacity: 0; }
+            15% { opacity: 0.8; }
             100% { opacity: 0; }
         }
         

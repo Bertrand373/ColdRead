@@ -685,14 +685,12 @@
         @media (min-width: 768px) {
             .chat-container { 
                 padding: 24px 40px;
-                max-width: 900px;
+                max-width: 1100px;
                 margin: 0 auto;
             }
             .input-area { 
                 padding: 20px 40px; 
                 padding-bottom: calc(20px + var(--safe-bottom));
-                max-width: 900px;
-                margin: 0 auto;
             }
             .message { max-width: 85%; }
         }
@@ -1363,8 +1361,8 @@
                                         }
                                         
                                         fullText += chunk;
-                                        // Show text immediately as it streams
-                                        contentEl.innerHTML = formatMessage(fullText);
+                                        // Show text with cursor as it streams
+                                        contentEl.innerHTML = formatMessage(fullText) + '<span class="cursor"></span>';
                                     }
                                 } catch (e) {
                                     if (data.trim() && data !== '[DONE]') {
@@ -1374,7 +1372,7 @@
                                             firstChunk = false;
                                         }
                                         fullText += data;
-                                        contentEl.innerHTML = formatMessage(fullText);
+                                        contentEl.innerHTML = formatMessage(fullText) + '<span class="cursor"></span>';
                                     }
                                 }
                             }
@@ -1384,7 +1382,7 @@
                 
                 clearTimeout(requestTimeout);
                 
-                // Final render (in case formatting needs cleanup)
+                // Final render without cursor
                 if (fullText) {
                     contentEl.innerHTML = formatMessage(fullText);
                 } else {

@@ -2204,6 +2204,23 @@
         // Pre-fill and lock agency dropdown to validated agency
         function prefillAgencyDropdown() {
             if (state.validatedAgencyCode && dom.agencySelect) {
+                // Check if option exists, if not create it
+                let optionExists = false;
+                for (let i = 0; i < dom.agencySelect.options.length; i++) {
+                    if (dom.agencySelect.options[i].value === state.validatedAgencyCode) {
+                        optionExists = true;
+                        break;
+                    }
+                }
+                
+                if (!optionExists) {
+                    // Add the validated agency as an option
+                    const opt = document.createElement('option');
+                    opt.value = state.validatedAgencyCode;
+                    opt.textContent = state.validatedAgencyName || state.validatedAgencyCode;
+                    dom.agencySelect.appendChild(opt);
+                }
+                
                 dom.agencySelect.value = state.validatedAgencyCode;
                 // Disable dropdown - agency is locked from home page validation
                 dom.agencySelect.disabled = true;
