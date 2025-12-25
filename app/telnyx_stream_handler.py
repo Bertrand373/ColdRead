@@ -1,95 +1,290 @@
 """
-Coachd Telnyx Stream Handler - Dual-Channel
-============================================
-- Client stream: 100% client audio → Deepgram → guidance triggers
-- Agent stream: 100% agent audio → recording only (no Deepgram)
+Coachd Telnyx Stream Handler - Claude-Powered Dual Channel
+==========================================================
+- Agent stream: Deepgram → context buffer (not shown to agent)
+- Client stream: Deepgram → live display + Claude analysis → guidance
 
-No diarization needed = 100% speaker accuracy
+Claude sees BOTH sides, decides when guidance is needed.
 """
 
 import asyncio
 import base64
 import time
 import audioop
-from typing import Dict
+from typing import Dict, Optional
+from dataclasses import dataclass, field
 
 from deepgram import DeepgramClient, LiveTranscriptionEvents, LiveOptions
+import anthropic
 
 from .config import settings
-from .rag_engine import get_rag_engine, CallContext
-from .call_state_machine import CallStateMachine
 from .call_session import session_manager
-from .usage_tracker import log_deepgram_usage
+from .usage_tracker import log_deepgram_usage, log_claude_usage
+from .vector_db import get_vector_db
 
 import logging
 logger = logging.getLogger(__name__)
 
 
-class ClientStreamHandler:
+# Shared conversation buffer per session
+_conversation_buffers: Dict[str, 'ConversationBuffer'] = {}
+
+
+@dataclass
+class ConversationBuffer:
+    """Holds the full conversation for Claude context"""
+    session_id: str
+    turns: list = field(default_factory=list)
+    agent_name: str = ""
+    client_name: str = ""
+    agency: str = ""
+    
+    def add_turn(self, speaker: str, text: str):
+        """Add a conversation turn"""
+        self.turns.append({
+            "speaker": speaker,
+            "text": text,
+            "timestamp": time.time()
+        })
+        # Keep last 50 turns max
+        if len(self.turns) > 50:
+            self.turns = self.turns[-50:]
+    
+    def get_context(self, max_chars: int = 3000) -> str:
+        """Get formatted conversation for Claude"""
+        lines = []
+        for turn in self.turns:
+            speaker = "AGENT" if turn["speaker"] == "agent" else "CLIENT"
+            lines.append(f"{speaker}: {turn['text']}")
+        
+        context = "\n".join(lines)
+        if len(context) > max_chars:
+            context = context[-max_chars:]
+        return context
+    
+    def get_full_transcript(self) -> list:
+        """Get full transcript for post-call analysis"""
+        return self.turns.copy()
+
+
+def get_conversation_buffer(session_id: str) -> ConversationBuffer:
+    """Get or create conversation buffer for session"""
+    if session_id not in _conversation_buffers:
+        _conversation_buffers[session_id] = ConversationBuffer(session_id=session_id)
+    return _conversation_buffers[session_id]
+
+
+def remove_conversation_buffer(session_id: str):
+    """Clean up conversation buffer"""
+    if session_id in _conversation_buffers:
+        del _conversation_buffers[session_id]
+
+
+class ClaudeAnalyzer:
+    """Analyzes conversation and decides when guidance is needed"""
+    
+    ANALYSIS_COOLDOWN = 2.5  # Seconds between analyses
+    MIN_CLIENT_WORDS = 5  # Minimum words to trigger analysis
+    
+    def __init__(self, session_id: str, agency: str = None):
+        self.session_id = session_id
+        self.agency = agency
+        self.client = anthropic.Anthropic(api_key=settings.anthropic_api_key) if settings.anthropic_api_key else None
+        self.last_analysis_time = 0
+        self.is_analyzing = False
+        self._rag_context = None
+    
+    def _get_rag_context(self) -> str:
+        """Get relevant training materials"""
+        if self._rag_context is None:
+            try:
+                db = get_vector_db()
+                results = db.search(
+                    "objection handling rebuttals price spouse think about it",
+                    top_k=5,
+                    agency=self.agency
+                )
+                self._rag_context = "\n\n".join([r["content"] for r in results])
+            except Exception as e:
+                logger.error(f"RAG context error: {e}")
+                self._rag_context = ""
+        return self._rag_context
+    
+    async def should_analyze(self, client_text: str) -> bool:
+        """Check if we should run analysis"""
+        if not self.client:
+            return False
+        if self.is_analyzing:
+            return False
+        if len(client_text.split()) < self.MIN_CLIENT_WORDS:
+            return False
+        if time.time() - self.last_analysis_time < self.ANALYSIS_COOLDOWN:
+            return False
+        return True
+    
+    async def analyze(self, client_text: str, conversation: ConversationBuffer) -> Optional[str]:
+        """
+        Analyze if guidance is needed. Returns guidance text or None.
+        """
+        if not await self.should_analyze(client_text):
+            return None
+        
+        self.is_analyzing = True
+        self.last_analysis_time = time.time()
+        
+        try:
+            context = conversation.get_context()
+            training_materials = self._get_rag_context()
+            
+            prompt = f"""You are a live sales coach for a Globe Life insurance agent on an active call.
+
+TRAINING MATERIALS:
+{training_materials[:2000] if training_materials else "Standard insurance sales techniques."}
+
+CONVERSATION SO FAR:
+{context}
+
+CLIENT JUST SAID: "{client_text}"
+
+Analyze this moment. Does the agent need guidance RIGHT NOW?
+
+Consider:
+- Is this an OBJECTION? (price, spouse, think about it, timing, trust)
+- Is this a BUYING SIGNAL the agent should capitalize on?
+- Is the agent ALREADY handling this well? (check their last response)
+- Is this just NORMAL conversation flow?
+
+RESPOND WITH EXACTLY ONE OF:
+1. If guidance needed: The exact words the agent should say. Be conversational, not scripted. 2-3 sentences max.
+2. If no guidance needed: Just the word NO_GUIDANCE_NEEDED
+
+Do not explain your reasoning. Just give the guidance or NO_GUIDANCE_NEEDED."""
+
+            response = self.client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=200,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            # Log usage
+            log_claude_usage(
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
+                agency_code=self.agency,
+                model="claude-sonnet-4-20250514",
+                operation="live_analysis"
+            )
+            
+            result = response.content[0].text.strip()
+            
+            if "NO_GUIDANCE_NEEDED" in result.upper():
+                return None
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Claude analysis error: {e}")
+            return None
+        finally:
+            self.is_analyzing = False
+    
+    async def analyze_stream(self, client_text: str, conversation: ConversationBuffer):
+        """
+        Streaming version - yields guidance chunks for faster first-token.
+        """
+        if not await self.should_analyze(client_text):
+            return
+        
+        self.is_analyzing = True
+        self.last_analysis_time = time.time()
+        
+        try:
+            context = conversation.get_context()
+            training_materials = self._get_rag_context()
+            
+            prompt = f"""You are a live sales coach for a Globe Life insurance agent on an active call.
+
+TRAINING MATERIALS:
+{training_materials[:2000] if training_materials else "Standard insurance sales techniques."}
+
+CONVERSATION SO FAR:
+{context}
+
+CLIENT JUST SAID: "{client_text}"
+
+If the agent needs guidance right now (objection, buying signal, confusion), give them the exact words to say. 2-3 sentences, conversational.
+
+If no guidance needed, respond only with: NO_GUIDANCE_NEEDED"""
+
+            collected_text = ""
+            input_tokens = 0
+            output_tokens = 0
+            
+            with self.client.messages.stream(
+                model="claude-sonnet-4-20250514",
+                max_tokens=200,
+                messages=[{"role": "user", "content": prompt}]
+            ) as stream:
+                for text in stream.text_stream:
+                    collected_text += text
+                    
+                    # Check early if it's NO_GUIDANCE_NEEDED
+                    if "NO_GUIDANCE" in collected_text.upper():
+                        return
+                    
+                    yield text
+                
+                # Get final usage
+                final = stream.get_final_message()
+                if final and final.usage:
+                    input_tokens = final.usage.input_tokens
+                    output_tokens = final.usage.output_tokens
+            
+            # Log usage
+            if input_tokens or output_tokens:
+                log_claude_usage(
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    agency_code=self.agency,
+                    model="claude-sonnet-4-20250514",
+                    operation="live_analysis_stream"
+                )
+                
+        except Exception as e:
+            logger.error(f"Claude stream error: {e}")
+        finally:
+            self.is_analyzing = False
+
+
+class AgentStreamHandler:
     """
-    Handles CLIENT audio only.
-    All audio → Deepgram → objection detection → guidance.
+    Handles AGENT audio stream.
+    Transcribes via Deepgram, adds to conversation buffer.
+    NOT shown to agent (they know what they said).
     """
     
     SAMPLE_RATE = 8000
-    GUIDANCE_COOLDOWN_SECONDS = 3.0
-    MIN_WORDS_FOR_GUIDANCE = 8
-    
-    HOT_TRIGGERS = [
-        "can't afford", "too expensive", "not interested", "no money",
-        "think about it", "talk to my", "spouse", "wife", "husband",
-        "call back", "busy", "not a good time", "don't need",
-        "already have", "too much", "let me think", "send information",
-        "how much", "what's the cost", "what's the price",
-        "i need to", "let me", "give me some time", "not right now",
-        "i'm not sure", "that's a lot", "can't do that", "don't have"
-    ]
     
     def __init__(self, session_id: str):
         self.session_id = session_id
         self.deepgram = None
         self.connection = None
         self.is_running = False
-        
-        self._client_buffer = ""
-        self._full_transcript = []
-        
-        self._last_guidance_time = 0
-        self._generating_guidance = False
-        self._rag_engine = None
-        self._state_machine = None
+        self.conversation = get_conversation_buffer(session_id)
         
         self._total_audio_bytes = 0
         self._session_start_time = None
-        self._agency = None
         
-        logger.info(f"[ClientStream] Created for session {session_id}")
+        logger.info(f"[AgentStream] Created for session {session_id}")
     
     async def start(self) -> bool:
-        """Initialize Deepgram for client audio"""
-        logger.info(f"[ClientStream] Starting for {self.session_id}")
-        print(f"[ClientStream] Starting for {self.session_id}", flush=True)
-        
+        """Initialize Deepgram for agent audio"""
+        print(f"[AgentStream] Starting for {self.session_id}", flush=True)
         self._session_start_time = time.time()
         
-        session = await session_manager.get_session(self.session_id)
-        if session:
-            self._agency = getattr(session, 'agency', None)
-        
-        try:
-            self._rag_engine = get_rag_engine()
-        except Exception as e:
-            logger.warning(f"[ClientStream] RAG unavailable: {e}")
-        
-        try:
-            self._state_machine = CallStateMachine(session_id=self.session_id)
-        except Exception as e:
-            logger.warning(f"[ClientStream] State machine unavailable: {e}")
-        
         if not settings.deepgram_api_key:
-            logger.warning("[ClientStream] No Deepgram key")
+            logger.warning("[AgentStream] No Deepgram key")
             self.is_running = True
-            await self._broadcast({"type": "ready", "message": "Connected (no transcription)"})
             return True
         
         try:
@@ -101,13 +296,12 @@ class ClientStreamHandler:
             self.connection.on(LiveTranscriptionEvents.Error, self._on_error)
             self.connection.on(LiveTranscriptionEvents.Close, self._on_close)
             
-            # NO DIARIZATION - all audio is client
             options = LiveOptions(
                 model="nova-2",
                 language="en-US",
                 smart_format=True,
                 punctuate=True,
-                interim_results=True,
+                interim_results=False,  # Only finals for agent
                 utterance_end_ms=1000,
                 encoding="linear16",
                 sample_rate=self.SAMPLE_RATE,
@@ -117,17 +311,169 @@ class ClientStreamHandler:
             await self.connection.start(options)
             self.is_running = True
             
-            print(f"[ClientStream] Deepgram connected (client-only)", flush=True)
+            print(f"[AgentStream] Deepgram connected", flush=True)
+            return True
+            
+        except Exception as e:
+            logger.error(f"[AgentStream] Deepgram error: {e}")
+            self.is_running = True
+            return True
+    
+    async def handle_telnyx_message(self, message: dict):
+        """Process Telnyx message with agent audio"""
+        event = message.get("event")
+        
+        if event == "connected":
+            print(f"[AgentStream] Telnyx connected", flush=True)
+        elif event == "start":
+            print(f"[AgentStream] Stream started", flush=True)
+        elif event == "media":
+            media = message.get("media", {})
+            payload = media.get("payload")
+            
+            if payload:
+                try:
+                    ulaw_audio = base64.b64decode(payload)
+                    self._total_audio_bytes += len(ulaw_audio)
+                    pcm_audio = audioop.ulaw2lin(ulaw_audio, 2)
+                    
+                    if self.connection and self.is_running:
+                        await self.connection.send(pcm_audio)
+                except Exception as e:
+                    logger.error(f"[AgentStream] Audio error: {e}")
+        elif event == "stop":
+            await self.stop()
+    
+    async def _on_open(self, *args, **kwargs):
+        print(f"[AgentStream] Deepgram open", flush=True)
+    
+    async def _on_transcript(self, *args, **kwargs):
+        """Handle agent transcript - add to buffer, don't display"""
+        try:
+            result = kwargs.get('result') or (args[1] if len(args) > 1 else None)
+            if not result:
+                return
+            
+            alternatives = result.channel.alternatives
+            if not alternatives:
+                return
+            
+            transcript = alternatives[0].transcript
+            if not transcript or not result.is_final:
+                return
+            
+            print(f"[AgentStream] AGENT: {transcript[:60]}", flush=True)
+            
+            # Add to conversation buffer (for Claude context)
+            self.conversation.add_turn("agent", transcript)
+            
+        except Exception as e:
+            logger.error(f"[AgentStream] Transcript error: {e}")
+    
+    async def _on_error(self, *args, **kwargs):
+        error = kwargs.get('error') or (args[1] if len(args) > 1 else "Unknown")
+        logger.error(f"[AgentStream] Deepgram error: {error}")
+    
+    async def _on_close(self, *args, **kwargs):
+        logger.info(f"[AgentStream] Deepgram closed")
+    
+    async def stop(self):
+        """Stop and log usage"""
+        print(f"[AgentStream] Stopping {self.session_id}", flush=True)
+        self.is_running = False
+        
+        if self._total_audio_bytes > 0 and self._session_start_time:
+            bytes_per_second = self.SAMPLE_RATE * 2
+            duration_seconds = self._total_audio_bytes / bytes_per_second
+            log_deepgram_usage(
+                duration_seconds=duration_seconds,
+                agency_code=self.conversation.agency,
+                session_id=self.session_id,
+                model='nova-2'
+            )
+            print(f"[AgentStream] Usage: {duration_seconds:.1f}s", flush=True)
+        
+        if self.connection:
+            try:
+                await asyncio.wait_for(self.connection.finish(), timeout=3.0)
+            except:
+                pass
+
+
+class ClientStreamHandler:
+    """
+    Handles CLIENT audio stream.
+    Transcribes via Deepgram, displays live, triggers Claude analysis.
+    """
+    
+    SAMPLE_RATE = 8000
+    
+    def __init__(self, session_id: str):
+        self.session_id = session_id
+        self.deepgram = None
+        self.connection = None
+        self.is_running = False
+        self.conversation = get_conversation_buffer(session_id)
+        
+        self._total_audio_bytes = 0
+        self._session_start_time = None
+        self._client_buffer = ""  # Current utterance being built
+        
+        # Claude analyzer
+        self._analyzer = None
+        self._generating_guidance = False
+        
+        logger.info(f"[ClientStream] Created for session {session_id}")
+    
+    async def start(self) -> bool:
+        """Initialize Deepgram for client audio"""
+        print(f"[ClientStream] Starting for {self.session_id}", flush=True)
+        self._session_start_time = time.time()
+        
+        # Get agency from session
+        session = await session_manager.get_session(self.session_id)
+        if session:
+            self.conversation.agency = getattr(session, 'agency', None)
+        
+        # Initialize Claude analyzer
+        if settings.anthropic_api_key:
+            self._analyzer = ClaudeAnalyzer(self.session_id, self.conversation.agency)
+        
+        if not settings.deepgram_api_key:
+            logger.warning("[ClientStream] No Deepgram key")
+            self.is_running = True
+            await self._broadcast({"type": "ready"})
+            return True
+        
+        try:
+            self.deepgram = DeepgramClient(settings.deepgram_api_key)
+            self.connection = self.deepgram.listen.asynclive.v("1")
+            
+            self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
+            self.connection.on(LiveTranscriptionEvents.Transcript, self._on_transcript)
+            self.connection.on(LiveTranscriptionEvents.Error, self._on_error)
+            self.connection.on(LiveTranscriptionEvents.Close, self._on_close)
+            
+            options = LiveOptions(
+                model="nova-2",
+                language="en-US",
+                smart_format=True,
+                punctuate=True,
+                interim_results=True,  # Show live typing for client
+                utterance_end_ms=1000,
+                encoding="linear16",
+                sample_rate=self.SAMPLE_RATE,
+                channels=1
+            )
+            
+            await self.connection.start(options)
+            self.is_running = True
+            
+            print(f"[ClientStream] Deepgram connected", flush=True)
             
             await self._broadcast({
                 "type": "ready",
-                "message": "Live coaching active"
-            })
-            
-            # Immediately notify that speakers are identified (they're always known in dual-channel)
-            await self._broadcast({
-                "type": "speakers_identified",
-                "message": "Client connected - coaching active"
+                "message": "Coaching active"
             })
             
             return True
@@ -135,7 +481,6 @@ class ClientStreamHandler:
         except Exception as e:
             logger.error(f"[ClientStream] Deepgram error: {e}")
             self.is_running = True
-            await self._broadcast({"type": "ready", "message": "Connected (transcription unavailable)"})
             return True
     
     async def handle_telnyx_message(self, message: dict):
@@ -144,10 +489,8 @@ class ClientStreamHandler:
         
         if event == "connected":
             print(f"[ClientStream] Telnyx connected", flush=True)
-            
         elif event == "start":
             print(f"[ClientStream] Stream started", flush=True)
-            
         elif event == "media":
             media = message.get("media", {})
             payload = media.get("payload")
@@ -162,16 +505,14 @@ class ClientStreamHandler:
                         await self.connection.send(pcm_audio)
                 except Exception as e:
                     logger.error(f"[ClientStream] Audio error: {e}")
-                    
         elif event == "stop":
-            print(f"[ClientStream] Stream stopped", flush=True)
             await self.stop()
     
     async def _on_open(self, *args, **kwargs):
         print(f"[ClientStream] Deepgram open", flush=True)
     
     async def _on_transcript(self, *args, **kwargs):
-        """Handle transcript - ALL is client speech"""
+        """Handle client transcript - display and analyze"""
         try:
             result = kwargs.get('result') or (args[1] if len(args) > 1 else None)
             if not result:
@@ -187,106 +528,68 @@ class ClientStreamHandler:
             if not transcript:
                 return
             
-            print(f"[ClientStream] CLIENT ({'FINAL' if is_final else 'interim'}): {transcript[:60]}", flush=True)
-            
-            # Broadcast to frontend - always "caller" (client)
+            # Send to frontend for live display
             await self._broadcast({
-                "type": "transcript",
+                "type": "client_transcript",
                 "text": transcript,
-                "speaker": "caller",
-                "is_final": is_final,
-                "roles_locked": True
+                "is_final": is_final
             })
             
             if is_final:
-                self._client_buffer += " " + transcript
-                self._full_transcript.append({
-                    "speaker": "client",
-                    "text": transcript,
-                    "timestamp": time.time()
-                })
+                print(f"[ClientStream] CLIENT: {transcript[:60]}", flush=True)
                 
-                if self._state_machine:
-                    self._state_machine.add_transcript(transcript, is_final=True)
+                # Add to conversation buffer
+                self.conversation.add_turn("client", transcript)
+                self._client_buffer = transcript
                 
-                await self._check_guidance_trigger(transcript)
-                
+                # Trigger Claude analysis
+                if self._analyzer and not self._generating_guidance:
+                    asyncio.create_task(self._run_analysis(transcript))
+                    
         except Exception as e:
             logger.error(f"[ClientStream] Transcript error: {e}")
     
-    async def _check_guidance_trigger(self, transcript: str):
-        """Check if client speech should trigger guidance"""
+    async def _run_analysis(self, client_text: str):
+        """Run Claude analysis and stream guidance if needed"""
         if self._generating_guidance:
             return
         
-        now = time.time()
-        if now - self._last_guidance_time < self.GUIDANCE_COOLDOWN_SECONDS:
-            return
-        
-        transcript_lower = transcript.lower()
-        triggered = False
-        trigger_phrase = None
-        
-        for trigger in self.HOT_TRIGGERS:
-            if trigger in transcript_lower:
-                triggered = True
-                trigger_phrase = trigger
-                break
-        
-        word_count = len(transcript.split())
-        if not triggered and word_count >= self.MIN_WORDS_FOR_GUIDANCE:
-            triggered = True
-            trigger_phrase = f"{word_count} words"
-        
-        if triggered:
-            print(f"[ClientStream] 🎯 TRIGGER: '{trigger_phrase}'", flush=True)
-            await self._generate_guidance(transcript)
-    
-    async def _generate_guidance(self, trigger_text: str):
-        """Generate AI guidance"""
-        if not self._rag_engine:
-            return
-        
         self._generating_guidance = True
-        self._last_guidance_time = time.time()
         
         try:
-            context = CallContext(
-                call_type="presentation",
-                product="life insurance",
-                recent_transcript=self._client_buffer[-500:],
-                client_profile={}
-            )
+            guidance_started = False
+            full_guidance = ""
             
-            await self._broadcast({
-                "type": "guidance_start",
-                "trigger": trigger_text[:50]
-            })
-            
-            guidance_text = ""
-            async for chunk in self._rag_engine.get_guidance_stream(
-                trigger_text,
-                context,
-                agency=self._agency
-            ):
-                guidance_text += chunk
+            async for chunk in self._analyzer.analyze_stream(client_text, self.conversation):
+                if not guidance_started:
+                    # First chunk - notify frontend guidance is coming
+                    await self._broadcast({
+                        "type": "guidance_start",
+                        "trigger": client_text[:50]
+                    })
+                    guidance_started = True
+                
+                full_guidance += chunk
                 await self._broadcast({
                     "type": "guidance_chunk",
                     "text": chunk
                 })
             
-            await self._broadcast({
-                "type": "guidance_complete",
-                "full_text": guidance_text
-            })
-            
-            await session_manager.add_guidance(self.session_id, {
-                "trigger": trigger_text[:50],
-                "response": guidance_text
-            })
-            
+            if guidance_started:
+                await self._broadcast({
+                    "type": "guidance_complete",
+                    "full_text": full_guidance
+                })
+                
+                # Store in session
+                await session_manager.add_guidance(self.session_id, {
+                    "trigger": client_text[:50],
+                    "response": full_guidance,
+                    "timestamp": time.time()
+                })
+                
         except Exception as e:
-            logger.error(f"[ClientStream] Guidance error: {e}")
+            logger.error(f"[ClientStream] Analysis error: {e}")
         finally:
             self._generating_guidance = False
     
@@ -309,13 +612,13 @@ class ClientStreamHandler:
         if self._total_audio_bytes > 0 and self._session_start_time:
             bytes_per_second = self.SAMPLE_RATE * 2
             duration_seconds = self._total_audio_bytes / bytes_per_second
-            cost = log_deepgram_usage(
+            log_deepgram_usage(
                 duration_seconds=duration_seconds,
-                agency_code=self._agency,
+                agency_code=self.conversation.agency,
                 session_id=self.session_id,
                 model='nova-2'
             )
-            print(f"[ClientStream] Usage: {duration_seconds:.1f}s = ${cost:.4f}", flush=True)
+            print(f"[ClientStream] Usage: {duration_seconds:.1f}s", flush=True)
         
         if self.connection:
             try:
@@ -324,41 +627,6 @@ class ClientStreamHandler:
                 pass
         
         await self._broadcast({"type": "stream_ended"})
-
-
-class AgentStreamHandler:
-    """
-    Handles AGENT audio - recording only, NO Deepgram.
-    """
-    
-    def __init__(self, session_id: str):
-        self.session_id = session_id
-        self.is_running = False
-        self._total_audio_bytes = 0
-        logger.info(f"[AgentStream] Created for session {session_id}")
-    
-    async def start(self) -> bool:
-        print(f"[AgentStream] Starting for {self.session_id} (recording only)", flush=True)
-        self.is_running = True
-        return True
-    
-    async def handle_telnyx_message(self, message: dict):
-        """Handle agent audio - recording only"""
-        event = message.get("event")
-        
-        if event == "connected":
-            print(f"[AgentStream] Connected", flush=True)
-        elif event == "media":
-            media = message.get("media", {})
-            payload = media.get("payload")
-            if payload:
-                self._total_audio_bytes += len(base64.b64decode(payload))
-        elif event == "stop":
-            await self.stop()
-    
-    async def stop(self):
-        print(f"[AgentStream] Stopped - {self._total_audio_bytes} bytes", flush=True)
-        self.is_running = False
 
 
 # Handler management
@@ -389,10 +657,18 @@ async def get_or_create_agent_handler(session_id: str) -> AgentStreamHandler:
 
 
 async def remove_handler(session_id: str):
-    """Remove handlers for session"""
+    """Remove handlers and cleanup for session"""
     if session_id in _client_handlers:
         handler = _client_handlers.pop(session_id)
         await handler.stop()
     if session_id in _agent_handlers:
         handler = _agent_handlers.pop(session_id)
         await handler.stop()
+    remove_conversation_buffer(session_id)
+
+
+def get_session_transcript(session_id: str) -> list:
+    """Get full transcript for post-call analysis"""
+    if session_id in _conversation_buffers:
+        return _conversation_buffers[session_id].get_full_transcript()
+    return []
