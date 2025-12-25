@@ -42,6 +42,127 @@
             -webkit-font-smoothing: antialiased;
         }
         
+        /* ========== LANDSCAPE BLOCKER (PREMIUM) ========== */
+        .landscape-blocker {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(145deg, #FAFAFA 0%, #F0F4F8 100%);
+            z-index: 99999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+            overflow: hidden;
+        }
+        
+        .landscape-blocker::before {
+            content: '';
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(96, 165, 250, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            top: -60px;
+            right: -60px;
+            animation: floatOrb 8s ease-in-out infinite;
+        }
+        
+        .landscape-blocker::after {
+            content: '';
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            background: radial-gradient(circle, rgba(96, 165, 250, 0.06) 0%, transparent 70%);
+            border-radius: 50%;
+            bottom: -40px;
+            left: -40px;
+            animation: floatOrb 8s ease-in-out infinite reverse;
+        }
+        
+        @keyframes floatOrb {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(10px, -10px) scale(1.05); }
+        }
+        
+        .phone-container {
+            position: relative;
+            margin-bottom: 28px;
+            z-index: 1;
+        }
+        
+        .phone-glow {
+            position: absolute;
+            inset: -20px;
+            background: radial-gradient(circle, rgba(96, 165, 250, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(10px);
+            animation: pulseGlow 3s ease-in-out infinite;
+        }
+        
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+        }
+        
+        .phone-icon {
+            position: relative;
+            animation: rotatePhone 3s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+        }
+        
+        .phone-icon svg {
+            width: 56px;
+            height: 56px;
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.08));
+        }
+        
+        @keyframes rotatePhone {
+            0%, 10% { transform: rotate(90deg); }
+            30%, 100% { transform: rotate(0deg); }
+        }
+        
+        .rotate-arrow {
+            position: absolute;
+            top: 50%;
+            left: -24px;
+            transform: translateY(-50%);
+            opacity: 0;
+            animation: arrowHint 3s ease-in-out infinite;
+        }
+        
+        .rotate-arrow svg {
+            width: 18px;
+            height: 18px;
+            color: #60A5FA;
+        }
+        
+        @keyframes arrowHint {
+            0%, 10% { opacity: 0.8; transform: translateY(-50%) rotate(-45deg); }
+            25%, 100% { opacity: 0; transform: translateY(-50%) rotate(0deg); }
+        }
+        
+        .landscape-blocker-text {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #1A1A1A;
+            margin-bottom: 6px;
+            letter-spacing: -0.01em;
+            z-index: 1;
+        }
+        
+        .landscape-blocker-subtext {
+            font-size: 0.8rem;
+            color: #9CA3AF;
+            z-index: 1;
+        }
+        
+        @media (orientation: landscape) and (max-height: 500px) {
+            .landscape-blocker { display: flex; }
+            .container { display: none !important; }
+        }
+        
         .container {
             max-width: 640px;
             margin: 0 auto;
@@ -108,6 +229,27 @@
     </style>
 </head>
 <body>
+    <div class="landscape-blocker">
+        <div class="phone-container">
+            <div class="phone-glow"></div>
+            <div class="phone-icon">
+                <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+                    <rect x="16" y="6" width="24" height="44" rx="4" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="2"/>
+                    <rect x="20" y="12" width="16" height="28" rx="2" fill="#60A5FA" opacity="0.15"/>
+                    <circle cx="28" cy="46" r="2.5" stroke="#1A1A1A" stroke-width="1.5"/>
+                    <rect x="24" y="8" width="8" height="2" rx="1" fill="#E5E7EB"/>
+                </svg>
+            </div>
+            <div class="rotate-arrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <path d="M2 12c0-4.4 3.6-8 8-8h4m0 0l-3-3m3 3l-3 3"/>
+                </svg>
+            </div>
+        </div>
+        <p class="landscape-blocker-text">Please rotate your device</p>
+        <p class="landscape-blocker-subtext">Coachd works best in portrait mode</p>
+    </div>
+
     <div class="container">
         <a href="/" class="back-link">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
