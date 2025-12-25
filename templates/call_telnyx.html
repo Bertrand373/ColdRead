@@ -784,18 +784,34 @@
             flex-direction: column;
             align-items: center;
             width: 100%;
-            max-width: 900px;  /* Wider for desktop readability */
-            padding: 0 16px 40px 16px;  /* Side padding prevents edge cutoff */
-            flex-shrink: 0;  /* iOS fix: prevent collapse */
+            max-width: 900px;
+            padding: 0 16px 40px 16px;
+            flex-shrink: 0;
             box-sizing: border-box;
+            position: relative;
         }
         
         .guidance-state.active { 
             display: flex;
-            animation: guidanceFadeIn 150ms ease-out;
+            animation: guidanceEntry 0.3s ease-out;
         }
         
-        @keyframes guidanceFadeIn {
+        /* Subtle glow on arrival - fades out after 2s */
+        .guidance-state.active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            border-radius: 2px;
+            opacity: 0;
+            animation: glowPulse 2s ease-out forwards;
+        }
+        
+        @keyframes guidanceEntry {
             from { 
                 opacity: 0; 
                 transform: translateY(-8px); 
@@ -804,6 +820,12 @@
                 opacity: 1; 
                 transform: translateY(0); 
             }
+        }
+        
+        @keyframes glowPulse {
+            0% { opacity: 0; }
+            15% { opacity: 0.8; }
+            100% { opacity: 0; }
         }
         
         .guidance-text {
@@ -877,105 +899,86 @@
         
         .guidance-text strong { font-weight: 700; }
         
-        /* ========== LIVE CAPTIONS ========== */
+        /* ========== LIVE CAPTIONS - Client Only Card ========== */
         .live-captions {
             background: var(--surface);
-            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.04);
-            padding: 10px 16px;
+            border-top: 1px solid var(--border);
+            padding: 12px 16px;
             flex-shrink: 0;
         }
         
-        .captions-header {
+        .client-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            transition: all 0.2s ease;
+        }
+        
+        .client-card.speaking {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        
+        .client-card-header {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             margin-bottom: 6px;
         }
         
-        .captions-dot {
-            width: 5px;
-            height: 5px;
+        .client-indicator {
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             background: var(--text-muted);
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
         
-        .captions-dot.active {
+        .client-card.speaking .client-indicator {
             background: var(--success);
             box-shadow: 0 0 0 2px var(--success-soft);
-            animation: captionPulse 1.5s ease-in-out infinite;
+            animation: indicatorPulse 1.5s ease-in-out infinite;
         }
         
-        @keyframes captionPulse {
-            0%, 100% { opacity: 0.7; }
-            50% { opacity: 1; }
+        @keyframes indicatorPulse {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
         }
         
-        .captions-label {
-            font-size: 9px;
+        .client-label {
+            font-size: 10px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--text-muted);
         }
         
-        .captions-content {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
+        .client-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text);
+            min-height: 21px;
         }
         
-        .caption-line {
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-            transition: opacity 0.4s ease;
-        }
-        
-        .caption-line.faded {
-            opacity: 0.4;
-        }
-        
-        .caption-speaker {
-            font-size: 9px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            flex-shrink: 0;
-            min-width: 44px;
-            text-align: center;
-        }
-        
-        .caption-speaker.agent {
-            background: var(--accent-soft);
-            color: var(--accent-dark);
-        }
-        
-        .caption-speaker.caller {
-            background: var(--border);
-            color: var(--text-secondary);
-        }
-        
-        .caption-text {
-            font-size: 12px;
-            line-height: 1.4;
-            color: var(--text-secondary);
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        
-        .caption-text.interim {
+        .client-text.waiting {
             color: var(--text-muted);
             font-style: italic;
         }
         
-        .caption-text.waiting {
-            color: var(--text-muted);
-            font-style: italic;
+        .client-text .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 14px;
+            background: var(--accent);
+            margin-left: 2px;
+            animation: cursorBlink 0.8s infinite;
+            vertical-align: text-bottom;
+        }
+        
+        @keyframes cursorBlink {
+            0%, 45% { opacity: 1; }
+            50%, 100% { opacity: 0; }
         }
         
         .call-footer {
@@ -1737,21 +1740,14 @@
                 <div class="down-close-message" id="downCloseMessage">Keep going — find the yes.</div>
             </div>
             
-            <!-- Live Captions -->
+            <!-- Live Client Card -->
             <div class="live-captions" id="liveCaptions">
-                <div class="captions-header">
-                    <div class="captions-dot" id="captionsDot"></div>
-                    <span class="captions-label">Live Transcript</span>
-                </div>
-                <div class="captions-content">
-                    <div class="caption-line" id="agentCaptionLine">
-                        <span class="caption-speaker agent">Agent</span>
-                        <span class="caption-text waiting" id="agentCaptionText">Waiting for speech...</span>
+                <div class="client-card" id="clientCard">
+                    <div class="client-card-header">
+                        <div class="client-indicator" id="clientIndicator"></div>
+                        <span class="client-label">Client</span>
                     </div>
-                    <div class="caption-line" id="callerCaptionLine">
-                        <span class="caption-speaker caller">Client</span>
-                        <span class="caption-text waiting" id="callerCaptionText">Waiting for speech...</span>
-                    </div>
+                    <div class="client-text waiting" id="clientText">Listening...</div>
                 </div>
             </div>
             
@@ -1916,6 +1912,7 @@
             ws: null,
             agentFadeTimer: null,
             callerFadeTimer: null,
+            clientFadeTimer: null,
             streamingGuidance: '',
             hasVibratedForCurrentGuidance: false,
             clientContext: {
@@ -1959,11 +1956,9 @@
             get phoneDisplay() { return document.getElementById('phoneDisplay'); },
             get phoneDisplayNumber() { return document.getElementById('phoneDisplayNumber'); },
             get clientPhoneInput() { return document.getElementById('clientPhoneInput'); },
-            get captionsDot() { return document.getElementById('captionsDot'); },
-            get agentCaptionLine() { return document.getElementById('agentCaptionLine'); },
-            get callerCaptionLine() { return document.getElementById('callerCaptionLine'); },
-            get agentCaptionText() { return document.getElementById('agentCaptionText'); },
-            get callerCaptionText() { return document.getElementById('callerCaptionText'); },
+            get clientCard() { return document.getElementById('clientCard'); },
+            get clientIndicator() { return document.getElementById('clientIndicator'); },
+            get clientText() { return document.getElementById('clientText'); },
             get callTypeHint() { return document.getElementById('callTypeHint'); },
             // Down-close indicator
             get downCloseIndicator() { return document.getElementById('downCloseIndicator'); },
@@ -2432,6 +2427,9 @@
                 case 'transcript':
                     handleTranscript(msg);
                     break;
+                case 'client_transcript':
+                    handleClientTranscript(msg);
+                    break;
                 case 'speakers_identified':
                     // Agent intro detected - roles are now locked
                     console.log('✅ Speakers identified:', msg.message);
@@ -2711,54 +2709,54 @@
         }
         
         // ==================== CAPTIONS ====================
-        function updateCaption(speaker, text, isInterim) {
-            const captionLine = speaker === 'agent' ? dom.agentCaptionLine : dom.callerCaptionLine;
-            const captionText = speaker === 'agent' ? dom.agentCaptionText : dom.callerCaptionText;
-            const fadeTimerKey = speaker === 'agent' ? 'agentFadeTimer' : 'callerFadeTimer';
+        function handleClientTranscript(msg) {
+            const text = msg.text || '';
+            const isFinal = msg.is_final;
             
-            if (state[fadeTimerKey]) {
-                clearTimeout(state[fadeTimerKey]);
-                state[fadeTimerKey] = null;
+            updateClientCard(text, !isFinal);
+            
+            if (isFinal && text.length > 3) {
+                extractClientInfo(text);
+            }
+        }
+        
+        function updateClientCard(text, isInterim) {
+            if (state.clientFadeTimer) {
+                clearTimeout(state.clientFadeTimer);
+                state.clientFadeTimer = null;
             }
             
-            captionLine.classList.remove('faded');
-            dom.captionsDot.classList.add('active');
-            
-            captionText.classList.remove('waiting', 'interim');
+            dom.clientCard.classList.add('speaking');
+            dom.clientText.classList.remove('waiting');
             
             if (isInterim) {
-                captionText.classList.add('interim');
-            }
-            
-            captionText.textContent = text || 'Waiting for speech...';
-            
-            if (!isInterim && text) {
-                state[fadeTimerKey] = setTimeout(() => {
-                    captionLine.classList.add('faded');
-                    
-                    if (dom.agentCaptionLine.classList.contains('faded') && 
-                        dom.callerCaptionLine.classList.contains('faded')) {
-                        dom.captionsDot.classList.remove('active');
-                    }
+                // Show cursor for live typing effect
+                dom.clientText.innerHTML = text + '<span class="cursor"></span>';
+            } else {
+                dom.clientText.textContent = text || 'Listening...';
+                
+                // Fade after delay
+                state.clientFadeTimer = setTimeout(() => {
+                    dom.clientCard.classList.remove('speaking');
                 }, CONFIG.captionFadeDelay);
             }
         }
         
+        // Legacy handler - route to client card
+        function updateCaption(speaker, text, isInterim) {
+            if (speaker === 'caller' || speaker === 'client') {
+                updateClientCard(text, isInterim);
+            }
+            // Agent transcripts not displayed (used for Claude context only)
+        }
+        
         function resetCaptions() {
-            if (state.agentFadeTimer) clearTimeout(state.agentFadeTimer);
-            if (state.callerFadeTimer) clearTimeout(state.callerFadeTimer);
-            state.agentFadeTimer = null;
-            state.callerFadeTimer = null;
+            if (state.clientFadeTimer) clearTimeout(state.clientFadeTimer);
+            state.clientFadeTimer = null;
             
-            dom.agentCaptionLine.classList.remove('faded');
-            dom.callerCaptionLine.classList.remove('faded');
-            dom.agentCaptionText.textContent = 'Waiting for speech...';
-            dom.callerCaptionText.textContent = 'Waiting for speech...';
-            dom.agentCaptionText.classList.add('waiting');
-            dom.callerCaptionText.classList.add('waiting');
-            dom.agentCaptionText.classList.remove('interim');
-            dom.callerCaptionText.classList.remove('interim');
-            dom.captionsDot.classList.remove('active');
+            dom.clientCard.classList.remove('speaking');
+            dom.clientText.textContent = 'Listening...';
+            dom.clientText.classList.add('waiting');
         }
         
         // ==================== GUIDANCE ====================
@@ -2800,57 +2798,38 @@
         }
         
         function handleGuidanceStart(msg) {
-            console.log('[GUIDANCE_START] ====================================');
-            console.log('[GUIDANCE_START] Received guidance');
+            console.log('[GUIDANCE_START] Guidance incoming');
             
-            const content = msg.full_text || msg.chunk || '';
-            console.log('[GUIDANCE_START] Content length:', content.length);
-            
-            if (!content) {
-                console.log('[GUIDANCE_START] No content, returning');
-                console.log('[GUIDANCE_START] ====================================');
-                return;
-            }
-            
-            console.log('[GUIDANCE_START] ====================================');
-            
-            state.streamingGuidance = content;
-            
-            dom.listeningState.style.display = 'none';
-            dom.teleprompter.classList.add('has-guidance');
-            dom.guidanceText.innerHTML = formatGuidanceText(content);
-            dom.guidanceState.classList.add('active');
-            
-            // Only vibrate if we haven't already (e.g., from bridge)
-            if (!state.hasVibratedForCurrentGuidance && navigator.vibrate) {
+            // Haptic notification - guidance is coming
+            if (navigator.vibrate) {
                 navigator.vibrate([50, 30, 50]);
             }
+            state.hasVibratedForCurrentGuidance = true;
+            
+            // Prepare UI for incoming guidance
+            dom.listeningState.style.display = 'none';
+            dom.teleprompter.classList.add('has-guidance');
+            dom.guidanceText.innerHTML = '<span class="cursor"></span>';
+            dom.guidanceState.classList.add('active');
+            
+            state.streamingGuidance = '';
         }
         
         function handleGuidanceChunk(msg) {
-            const content = msg.full_text || (state.streamingGuidance + (msg.chunk || ''));
-            if (!content) return;
+            const chunk = msg.text || msg.chunk || '';
+            if (!chunk) return;
             
-            state.streamingGuidance = content;
-            dom.guidanceText.innerHTML = formatGuidanceText(content);
+            state.streamingGuidance += chunk;
+            dom.guidanceText.innerHTML = formatGuidanceText(state.streamingGuidance) + '<span class="cursor"></span>';
         }
         
         function handleGuidanceComplete(msg) {
-            console.log('[GUIDANCE_COMPLETE] ====================================');
-            console.log('[GUIDANCE_COMPLETE] Guidance delivery complete');
-            console.log('[GUIDANCE_COMPLETE] Objection type:', msg.objection_type || 'unknown');
-            console.log('[GUIDANCE_COMPLETE] Down-close level:', msg.down_close_level || 0);
-            
-            const fullText = msg.guidance || state.streamingGuidance || '';
-            console.log('[GUIDANCE_COMPLETE] Text length:', fullText.length);
+            const fullText = msg.full_text || state.streamingGuidance || '';
             
             if (!fullText) {
-                console.log('[GUIDANCE_COMPLETE] ⚠️ WARNING: No text to display!');
-                console.log('[GUIDANCE_COMPLETE] ====================================');
+                dismissGuidance();
                 return;
             }
-            
-            console.log('[GUIDANCE_COMPLETE] ====================================');
             
             const sayThis = extractSayThis(fullText);
             
@@ -2862,13 +2841,12 @@
                 down_close_level: msg.down_close_level
             });
             
+            // Final display - no cursor
             const displayText = sayThis || fullText;
             dom.guidanceText.innerHTML = formatGuidanceText(displayText);
             
-            dom.listeningState.style.display = 'none';
-            dom.guidanceState.classList.add('active');
-            
             state.streamingGuidance = '';
+            state.hasVibratedForCurrentGuidance = false;
         }
         
         function formatGuidanceText(text) {
