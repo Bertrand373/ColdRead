@@ -1095,49 +1095,6 @@
         
         .end-btn svg { width: 18px; height: 18px; }
         
-        /* Down-Close Level Indicator */
-        .down-close-indicator {
-            display: none;
-            background: linear-gradient(135deg, #1e3a5f 0%, #0f1f33 100%);
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin: 0 16px 8px 16px;
-            flex-shrink: 0;
-        }
-        .down-close-indicator.active { display: block; }
-        .down-close-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 6px;
-        }
-        .down-close-badge {
-            background: rgba(96, 165, 250, 0.2);
-            color: #60A5FA;
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 6px;
-        }
-        .down-close-badge.floor {
-            background: rgba(239, 68, 68, 0.2);
-            color: #EF4444;
-        }
-        .down-close-title {
-            color: #FFFFFF;
-            font-size: 0.875rem;
-            font-weight: 600;
-        }
-        .down-close-message {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.8rem;
-            line-height: 1.4;
-        }
-        .down-close-message.floor-message {
-            color: #FCD34D;
-            font-weight: 500;
-        }
-        
         /* ========== OUTCOME SCREEN ========== */
         .outcome-screen {
             justify-content: center;
@@ -1741,7 +1698,7 @@
                 </svg>
             </div>
             <h1 class="start-title">Ready to Coach</h1>
-            <p class="start-subtitle">Enter client's number below to start the call.</p>
+            <p class="start-subtitle">Live coaching enabled</p>
             
             <div class="start-phone-display" id="phoneDisplay">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1833,15 +1790,6 @@
                     <div class="guidance-text" id="guidanceText"></div>
                     <div class="dismiss-hint">tap anywhere to dismiss</div>
                 </div>
-            </div>
-            
-            <!-- Down-Close Level Indicator -->
-            <div class="down-close-indicator" id="downCloseIndicator">
-                <div class="down-close-header">
-                    <span class="down-close-badge" id="downCloseBadge">Level 1/5</span>
-                    <span class="down-close-title" id="downCloseTitle">4 more options</span>
-                </div>
-                <div class="down-close-message" id="downCloseMessage">Keep going — find the yes.</div>
             </div>
             
             <!-- Live Client Card -->
@@ -2012,7 +1960,6 @@
             guidanceHistory: [],
             selectedTipIndex: null,
             callOutcome: null,
-            downCloseLevel: 0,
             ws: null,
             agentFadeTimer: null,
             callerFadeTimer: null,
@@ -2064,11 +2011,6 @@
             get clientIndicator() { return document.getElementById('clientIndicator'); },
             get clientText() { return document.getElementById('clientText'); },
             get callTypeHint() { return document.getElementById('callTypeHint'); },
-            // Down-close indicator
-            get downCloseIndicator() { return document.getElementById('downCloseIndicator'); },
-            get downCloseBadge() { return document.getElementById('downCloseBadge'); },
-            get downCloseTitle() { return document.getElementById('downCloseTitle'); },
-            get downCloseMessage() { return document.getElementById('downCloseMessage'); },
             get errorModal() { return document.getElementById('errorModal'); },
             get errorModalTitle() { return document.getElementById('errorModalTitle'); },
             get errorModalMessage() { return document.getElementById('errorModalMessage'); }
@@ -2302,52 +2244,6 @@
                 presentation: 'Full sales presentation (30-45 min)'
             };
             dom.callTypeHint.textContent = hints[type];
-        }
-        
-        // ==================== DOWN-CLOSE INDICATOR ====================
-        function handleDownCloseLevel(msg) {
-            const level = msg.level || 0;
-            const remaining = msg.remaining || (5 - level);
-            const isFloor = msg.is_floor || level === 5;
-            
-            console.log(`[DOWN_CLOSE] ====================================`);
-            console.log(`[DOWN_CLOSE] Level: ${level}/5`);
-            console.log(`[DOWN_CLOSE] Remaining: ${remaining} options`);
-            console.log(`[DOWN_CLOSE] Is Floor: ${isFloor}`);
-            console.log(`[DOWN_CLOSE] ====================================`);
-            
-            // Update state
-            state.downCloseLevel = level;
-            
-            // Update UI
-            if (level > 0) {
-                dom.downCloseIndicator.classList.add('active');
-                dom.downCloseBadge.textContent = `Level ${level}/5`;
-                
-                if (isFloor) {
-                    dom.downCloseBadge.classList.add('floor');
-                    dom.downCloseTitle.textContent = 'Final offer';
-                    dom.downCloseMessage.textContent = '🎯 A small policy is still a WIN';
-                    dom.downCloseMessage.classList.add('floor-message');
-                } else {
-                    dom.downCloseBadge.classList.remove('floor');
-                    dom.downCloseMessage.classList.remove('floor-message');
-                    
-                    if (remaining === 1) {
-                        dom.downCloseTitle.textContent = 'Last option after this';
-                        dom.downCloseMessage.textContent = 'One more level available.';
-                    } else {
-                        dom.downCloseTitle.textContent = `${remaining} more options`;
-                        dom.downCloseMessage.textContent = 'Keep going — find the yes.';
-                    }
-                }
-            }
-        }
-        
-        function hideDownCloseIndicator() {
-            dom.downCloseIndicator.classList.remove('active');
-            dom.downCloseBadge.classList.remove('floor');
-            dom.downCloseMessage.classList.remove('floor-message');
         }
         
         // ==================== UTILS ====================
@@ -2594,9 +2490,6 @@
                 case 'guidance_complete':
                     handleGuidanceComplete(msg);
                     break;
-                case 'down_close_level':
-                    handleDownCloseLevel(msg);
-                    break;
                 case 'bridge':
                     handleBridge(msg);
                     break;
@@ -2676,7 +2569,6 @@
             state.guidanceHistory = [];
             state.selectedTipIndex = null;
             state.callOutcome = null;
-            state.downCloseLevel = 0;
             
             resetCaptions();
             showScreen('callScreen');
@@ -3013,8 +2905,7 @@
                 text: sayThis,
                 raw: fullText,
                 timestamp: Date.now(),
-                objection_type: msg.objection_type,
-                down_close_level: msg.down_close_level
+                objection_type: msg.objection_type
             });
             
             // Final display - no cursor
@@ -3148,8 +3039,7 @@
                 timestamp: new Date().toISOString(),
                 agency: state.agency,
                 agent_name: state.agentName,
-                call_type: state.callType,
-                down_close_level: state.downCloseLevel
+                call_type: state.callType
             };
             
             try {
@@ -3173,7 +3063,6 @@
             dom.finalObjection.value = '';
             state.guidanceHistory = [];
             state.selectedTipIndex = null;
-            state.downCloseLevel = 0;
             state.sessionId = null;
             state.clientPhone = null;
             if (dom.clientPhoneInput) dom.clientPhoneInput.value = '';
