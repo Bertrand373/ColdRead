@@ -34,8 +34,24 @@ router = APIRouter(prefix="/api/telnyx", tags=["telnyx"])
 
 # ============ PYDANTIC MODELS ============
 
+class ClientContext(BaseModel):
+    """Quick Prep context from agent"""
+    product: Optional[str] = None
+    age: Optional[int] = None
+    sex: Optional[str] = None
+    weight: Optional[int] = None
+    tobacco: Optional[str] = None
+    married: Optional[str] = None
+    kids: Optional[str] = None
+    kidsCount: Optional[int] = None
+    income: Optional[str] = None
+    issue: Optional[str] = None
+    budget: Optional[int] = None
+
 class StartCallRequest(BaseModel):
     agent_phone: str
+    client_phone: Optional[str] = None
+    client_context: Optional[ClientContext] = None
 
 class DialClientRequest(BaseModel):
     session_id: str
@@ -70,8 +86,11 @@ async def start_call(data: StartCallRequest):
         digits = agent_phone.replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
         agent_phone = f"+1{digits}" if len(digits) == 10 else f"+{digits}"
     
-    # Create session
-    session = await session_manager.create_session(agent_phone)
+    # Extract client context if provided
+    client_context = data.client_context.dict() if data.client_context else None
+    
+    # Create session with context
+    session = await session_manager.create_session(agent_phone, client_context=client_context)
     
     # Call the agent
     result = initiate_agent_call(agent_phone, session.session_id)

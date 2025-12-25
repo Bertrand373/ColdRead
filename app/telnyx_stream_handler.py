@@ -86,13 +86,67 @@ class ClaudeAnalyzer:
     ANALYSIS_COOLDOWN = 2.5  # Seconds between analyses
     MIN_CLIENT_WORDS = 5  # Minimum words to trigger analysis
     
-    def __init__(self, session_id: str, agency: str = None):
+    def __init__(self, session_id: str, agency: str = None, client_context: dict = None):
         self.session_id = session_id
         self.agency = agency
+        self.client_context = client_context or {}
         # Use ASYNC client for true token-by-token streaming
         self.client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key) if settings.anthropic_api_key else None
         self.last_analysis_time = 0
         self.is_analyzing = False
+    
+    def _format_client_context(self) -> str:
+        """Format Quick Prep context for Claude prompt"""
+        if not self.client_context:
+            return ""
+        
+        ctx = self.client_context
+        parts = []
+        
+        # Product interest
+        product_map = {
+            'whole_life': 'Whole Life Insurance',
+            'term': 'Term Life Insurance', 
+            'cancer': 'Cancer Policy',
+            'accident': 'Accident Policy',
+            'critical_illness': 'Critical Illness Policy'
+        }
+        if ctx.get('product'):
+            parts.append(f"Product Interest: {product_map.get(ctx['product'], ctx['product'])}")
+        
+        # Demographics
+        if ctx.get('age'):
+            parts.append(f"Age: {ctx['age']}")
+        if ctx.get('sex'):
+            parts.append(f"Sex: {'Male' if ctx['sex'] == 'M' else 'Female'}")
+        if ctx.get('married'):
+            parts.append(f"Married: {'Yes' if ctx['married'] == 'Y' else 'No'}")
+        if ctx.get('kids') == 'Y':
+            kids_str = f"Has Kids: Yes"
+            if ctx.get('kidsCount'):
+                kids_str += f" ({ctx['kidsCount']})"
+            parts.append(kids_str)
+        
+        # Health/Risk factors
+        if ctx.get('tobacco'):
+            parts.append(f"Tobacco User: {'Yes' if ctx['tobacco'] == 'Y' else 'No'}")
+        if ctx.get('weight'):
+            parts.append(f"Weight: {ctx['weight']} lbs")
+        
+        # Financial
+        if ctx.get('income'):
+            parts.append(f"Income: {ctx['income']}")
+        if ctx.get('budget'):
+            parts.append(f"Budget: ${ctx['budget']}/month")
+        
+        # Special notes
+        if ctx.get('issue'):
+            parts.append(f"Notes: {ctx['issue']}")
+        
+        if not parts:
+            return ""
+        
+        return "CLIENT BACKGROUND (from agent's prep):\n" + "\n".join(f"• {p}" for p in parts)
     
     def _get_relevant_training(self, client_text: str) -> str:
         """Dynamically search training materials based on what client said"""
@@ -134,8 +188,11 @@ class ClaudeAnalyzer:
         try:
             context = conversation.get_context()
             training_materials = self._get_relevant_training(client_text)
+            client_background = self._format_client_context()
             
             prompt = f"""You are a live sales coach for a Globe Life insurance agent on an active call.
+
+{client_background}
 
 RELEVANT TRAINING MATERIALS:
 {training_materials[:3000] if training_materials else "Use standard insurance sales techniques."}
@@ -152,6 +209,7 @@ Consider:
 - Is this a BUYING SIGNAL the agent should capitalize on?
 - Is the agent ALREADY handling this well? (check their last response)
 - Is this just NORMAL conversation flow?
+- Use the CLIENT BACKGROUND to personalize your guidance (reference their age, family situation, product interest, etc.)
 
 RESPOND WITH EXACTLY ONE OF:
 1. If guidance needed: The exact words the agent should say. Be conversational, not scripted. 2-3 sentences max. Use the training materials as your guide.
@@ -201,8 +259,11 @@ Do not explain your reasoning. Just give the guidance or NO_GUIDANCE_NEEDED."""
         try:
             context = conversation.get_context()
             training_materials = self._get_relevant_training(client_text)
+            client_background = self._format_client_context()
             
             prompt = f"""You are a live sales coach for a Globe Life insurance agent on an active call.
+
+{client_background}
 
 RELEVANT TRAINING MATERIALS:
 {training_materials[:3000] if training_materials else "Use standard insurance sales techniques."}
@@ -212,7 +273,7 @@ CONVERSATION SO FAR:
 
 CLIENT JUST SAID: "{client_text}"
 
-If the agent needs guidance right now (objection, buying signal, confusion), give them the exact words to say. 2-3 sentences, conversational. Use the training materials as your guide.
+If the agent needs guidance right now (objection, buying signal, confusion), give them the exact words to say. 2-3 sentences, conversational. Use the training materials and client background to personalize your guidance.
 
 If no guidance needed, respond only with: NO_GUIDANCE_NEEDED"""
 
@@ -431,14 +492,19 @@ class ClientStreamHandler:
         print(f"[ClientStream] Starting for {self.session_id}", flush=True)
         self._session_start_time = time.time()
         
-        # Get agency from session
+        # Get agency and client context from session
         session = await session_manager.get_session(self.session_id)
         if session:
             self.conversation.agency = getattr(session, 'agency', None)
         
-        # Initialize Claude analyzer
+        # Initialize Claude analyzer with client context from Quick Prep
+        client_context = getattr(session, 'client_context', None) if session else None
         if settings.anthropic_api_key:
-            self._analyzer = ClaudeAnalyzer(self.session_id, self.conversation.agency)
+            self._analyzer = ClaudeAnalyzer(
+                self.session_id, 
+                self.conversation.agency,
+                client_context=client_context
+            )
         
         if not settings.deepgram_api_key:
             logger.warning("[ClientStream] No Deepgram key")

@@ -43,6 +43,7 @@ class CallSession:
     transcript: list = field(default_factory=list)
     guidance_history: list = field(default_factory=list)
     websocket_clients: set = field(default_factory=set)
+    client_context: Optional[dict] = None  # Quick Prep context from agent
     
     def to_dict(self) -> dict:
         return {
@@ -72,19 +73,21 @@ class CallSessionManager:
         self._sessions: Dict[str, CallSession] = {}
         self._lock = asyncio.Lock()
     
-    async def create_session(self, agent_phone: str) -> CallSession:
+    async def create_session(self, agent_phone: str, client_context: dict = None) -> CallSession:
         """Create a new call session"""
         session_id = str(uuid.uuid4())[:8]
         
         session = CallSession(
             session_id=session_id,
-            agent_phone=agent_phone
+            agent_phone=agent_phone,
+            client_context=client_context
         )
         
         async with self._lock:
             self._sessions[session_id] = session
         
-        logger.info(f"Created session {session_id} for agent {agent_phone}")
+        logger.info(f"Created session {session_id} for agent {agent_phone}" + 
+                   (f" with context: {list(client_context.keys())}" if client_context else ""))
         return session
     
     async def get_session(self, session_id: str) -> Optional[CallSession]:
@@ -205,16 +208,9 @@ class CallSessionManager:
         logger.info(f"Session {session_id} ended. Duration: {session.get_duration()}s")
     
     async def get_active_sessions(self) -> list:
-        """Get all active sessions as dicts"""
+        """Get all active sessions"""
         return [
             s.to_dict() for s in self._sessions.values() 
-            if s.status not in [CallStatus.COMPLETED, CallStatus.FAILED]
-        ]
-    
-    async def get_active_sessions_objects(self) -> list:
-        """Get all active session objects"""
-        return [
-            s for s in self._sessions.values() 
             if s.status not in [CallStatus.COMPLETED, CallStatus.FAILED]
         ]
 

@@ -5,7 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>Coachd.ai | Live Call</title>
+    <title>Live Call | Coachd.ai</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+    <link rel="shortcut icon" href="/static/favicon.ico">
+    <meta name="theme-color" content="#0a0a0a">
+    
+    <!-- SEO -->
+    <meta name="description" content="AI-powered sales coaching for life insurance agents.">
+    
     <!-- VERSION: 2025-12-24-v9-click-to-call -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
@@ -2388,13 +2400,14 @@
             }
             
             try {
-                // Call the Telnyx API - include client_phone for click-to-call
+                // Call the Telnyx API - include client_phone and context for click-to-call
                 const response = await fetch(CONFIG.telnyxStartEndpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         agent_phone: state.agentPhone,
-                        client_phone: clientPhone || null  // null triggers legacy 3-way mode
+                        client_phone: clientPhone || null,  // null triggers legacy 3-way mode
+                        client_context: state.clientContext  // Quick Prep context for personalized coaching
                     })
                 });
                 
