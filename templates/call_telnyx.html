@@ -2674,6 +2674,10 @@
                     break;
                 case 'error':
                     console.error('Server error:', msg.message);
+                    // If we're on the connecting screen and get an error, show it
+                    if (dom.connectingScreen.classList.contains('active')) {
+                        showError(msg.message || 'Connection failed');
+                    }
                     break;
             }
         }
@@ -2681,8 +2685,16 @@
         function handleSessionState(data) {
             console.log('[Session State]', data.status);
             
-            if (data.status === 'agent_connected' || data.status === 'in_progress') {
+            if (data.status === 'in_progress') {
+                // Client is connected - ready for coaching
                 onCallConnected();
+            } else if (data.status === 'agent_connected') {
+                // Agent connected - only go to coaching if NO client phone was provided
+                // (native 3-way mode where agent manually adds client)
+                if (!state.clientPhone) {
+                    onCallConnected();
+                }
+                // If client phone was provided, wait for client_connected message
             } else if (data.status === 'ended' || data.status === 'failed') {
                 endCall();
             }
@@ -2691,8 +2703,23 @@
         function handleStatusUpdate(data) {
             console.log('[Status Update]', data.status);
             
-            if (data.status === 'agent_connected' || data.status === 'in_progress') {
+            if (data.status === 'in_progress') {
+                // Client is connected - ready for coaching
                 onCallConnected();
+            } else if (data.status === 'agent_connected') {
+                // Agent connected - only go to coaching if NO client phone was provided
+                if (!state.clientPhone) {
+                    onCallConnected();
+                }
+                // If client phone was provided, the client_dialing message handler
+                // will update the UI, and client_connected will trigger onCallConnected
+            } else if (data.status === 'client_ringing') {
+                // Client is ringing - update UI
+                updateConnectionStep('agent', 'complete');
+                updateConnectionStep('client', 'active');
+                document.getElementById('stepAgentText').textContent = 'You\'re connected!';
+                document.getElementById('connectingTitle').textContent = 'Calling Client...';
+                document.getElementById('connectingSubtitle').textContent = 'Waiting for them to answer';
             }
         }
         

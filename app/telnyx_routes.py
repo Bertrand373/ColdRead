@@ -75,22 +75,33 @@ def texml_response(content: str) -> Response:
 async def start_call(data: StartCallRequest):
     """
     Start a new coaching session.
-    App calls the agent, then agent 3-ways in their client.
+    App calls the agent, then auto-dials client if provided.
     """
     if not is_telnyx_configured():
         raise HTTPException(status_code=503, detail="Telnyx not configured")
     
-    # Normalize phone number
+    # Normalize agent phone number
     agent_phone = data.agent_phone
     if not agent_phone.startswith("+"):
         digits = agent_phone.replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
         agent_phone = f"+1{digits}" if len(digits) == 10 else f"+{digits}"
     
+    # Normalize client phone if provided
+    client_phone = data.client_phone
+    if client_phone:
+        if not client_phone.startswith("+"):
+            digits = client_phone.replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
+            client_phone = f"+1{digits}" if len(digits) == 10 else f"+{digits}"
+    
     # Extract client context if provided
     client_context = data.client_context.dict() if data.client_context else None
     
-    # Create session with context
-    session = await session_manager.create_session(agent_phone, client_context=client_context)
+    # Create session with context AND client_phone for auto-dial
+    session = await session_manager.create_session(
+        agent_phone, 
+        client_context=client_context,
+        client_phone=client_phone
+    )
     
     # Call the agent
     result = initiate_agent_call(agent_phone, session.session_id)
@@ -232,16 +243,52 @@ async def agent_answered(request: Request):
     """
     Webhook: Agent has answered the outbound call.
     Return TeXML to put them in conference with streaming.
+    If client_phone was provided, automatically dial the client.
     """
     session_id = request.query_params.get("session_id", "unknown")
     
     logger.info(f"Agent answered for session {session_id}")
+    
+    # Get the session to check for client_phone
+    session = await session_manager.get_session(session_id)
     
     await session_manager.update_session(
         session_id,
         status=CallStatus.AGENT_CONNECTED,
         started_at=datetime.utcnow()
     )
+    
+    # If client phone was provided (click-to-call mode), auto-dial them
+    if session and session.client_phone:
+        logger.info(f"Auto-dialing client {session.client_phone} for session {session_id}")
+        
+        # Broadcast client_dialing to frontend
+        await session_manager._broadcast_to_session(session_id, {
+            "type": "client_dialing",
+            "message": "Dialing client..."
+        })
+        
+        # Dial the client using agent's phone as caller ID
+        result = add_client_to_conference(
+            session.client_phone, 
+            session_id, 
+            agent_caller_id=session.agent_phone
+        )
+        
+        if result["success"]:
+            await session_manager.update_session(
+                session_id,
+                client_call_sid=result["call_control_id"],
+                status=CallStatus.CLIENT_RINGING
+            )
+            logger.info(f"Client dial initiated: {result['call_control_id']}")
+        else:
+            logger.error(f"Failed to dial client: {result.get('error')}")
+            # Broadcast error to frontend
+            await session_manager._broadcast_to_session(session_id, {
+                "type": "error",
+                "message": f"Failed to dial client: {result.get('error', 'Unknown error')}"
+            })
     
     texml = generate_agent_conference_texml(session_id)
     
@@ -257,12 +304,19 @@ async def client_answered(request: Request):
     """
     Webhook: Client has answered.
     Return TeXML to put them in the conference.
+    Broadcast client_connected to frontend.
     """
     session_id = request.query_params.get("session_id", "unknown")
     
     logger.info(f"Client answered for session {session_id}")
     
     await session_manager.update_session(session_id, status=CallStatus.IN_PROGRESS)
+    
+    # Broadcast client_connected to frontend - this triggers transition to guidance panel
+    await session_manager._broadcast_to_session(session_id, {
+        "type": "client_connected",
+        "message": "Client connected"
+    })
     
     texml = generate_client_conference_texml(session_id)
     return texml_response(texml)

@@ -73,20 +73,27 @@ class CallSessionManager:
         self._sessions: Dict[str, CallSession] = {}
         self._lock = asyncio.Lock()
     
-    async def create_session(self, agent_phone: str, client_context: dict = None) -> CallSession:
+    async def create_session(self, agent_phone: str, client_context: dict = None, client_phone: str = None) -> CallSession:
         """Create a new call session"""
         session_id = str(uuid.uuid4())[:8]
+        
+        # Normalize client_phone if provided
+        if client_phone:
+            if not client_phone.startswith("+"):
+                digits = client_phone.replace("-", "").replace(" ", "").replace("(", "").replace(")", "")
+                client_phone = f"+1{digits}" if len(digits) == 10 else f"+{digits}"
         
         session = CallSession(
             session_id=session_id,
             agent_phone=agent_phone,
+            client_phone=client_phone,
             client_context=client_context
         )
         
         async with self._lock:
             self._sessions[session_id] = session
         
-        logger.info(f"Created session {session_id} for agent {agent_phone}" + 
+        logger.info(f"Created session {session_id} for agent {agent_phone}, client: {client_phone}" + 
                    (f" with context: {list(client_context.keys())}" if client_context else ""))
         return session
     
