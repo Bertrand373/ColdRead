@@ -2,6 +2,12 @@
 Coachd Telnyx Bridge (TeXML Version)
 Handles 3-way conference calls with real-time audio streaming
 Uses TeXML API for outbound calls and webhook responses
+
+DUAL-CHANNEL CLICK-TO-CALL ARCHITECTURE:
+- Agent answers → Joins conference + agent audio stream starts
+- Client answers → Joins SAME conference + client audio stream starts  
+- Both are bridged via conference, can hear each other
+- Separate audio streams enable speaker-accurate transcription
 """
 
 import logging
@@ -120,62 +126,85 @@ def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
 
 def generate_agent_conference_texml(session_id: str) -> str:
     """
-    Generate TeXML for agent call with audio streaming.
+    Generate TeXML for agent call - JOIN CONFERENCE with audio streaming.
     Called when agent answers the call.
     
-    Architecture for native 3-way:
-    - Agent answers our call
-    - We start streaming audio to capture everything
-    - Agent uses phone's native 3-way to call client  
-    - Client audio comes through mixed on agent's connection
-    - We transcribe the mixed audio stream
+    CRITICAL: Agent MUST join the conference so client can hear them!
+    - Start streaming agent's audio (inbound_track = agent speaking)
+    - Join conference so they can hear/talk to client
+    - startConferenceOnEnter="true" - conference starts when agent joins
+    - endConferenceOnExit="true" - conference ends if agent hangs up
     """
     stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
-    full_stream_url = f"{stream_url}/ws/telnyx/stream/{session_id}"
+    conference_name = f"coachd_{session_id}"
+    # Use separate stream endpoint for agent audio
+    agent_stream_url = f"{stream_url}/ws/telnyx/stream/agent/{session_id}"
     
-    print(f"[TeXML] Generating for session {session_id}", flush=True)
-    print(f"[TeXML] base_url: {settings.base_url}", flush=True)
-    print(f"[TeXML] stream_url: {full_stream_url}", flush=True)
+    print(f"[TeXML] Generating AGENT TeXML for session {session_id}", flush=True)
+    print(f"[TeXML] Conference: {conference_name}", flush=True)
+    print(f"[TeXML] Agent stream: {agent_stream_url}", flush=True)
     
-    # Use Record to keep call alive
-    # - maxLength="7200" = 2 hours max
-    # - timeout="3600" = 1 hour silence timeout
-    # - playBeep="false" = no beep
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Start>
-        <Stream url="{full_stream_url}" track="both_tracks" />
+        <Stream url="{agent_stream_url}" track="inbound_track" />
     </Start>
-    <Record maxLength="7200" timeout="3600" playBeep="false" />
-</Response>"""
-    
-    return texml
-
-
-def generate_client_conference_texml(session_id: str) -> str:
-    """
-    Generate TeXML to put the client into the conference.
-    Called when client answers the call.
-    """
-    conference_name = f"coachd_{session_id}"
-    
-    texml = f"""<?xml version="1.0" encoding="UTF-8"?>
-<Response>
     <Dial>
         <Conference
-            startConferenceOnEnter="false"
-            endConferenceOnExit="true">
+            startConferenceOnEnter="true"
+            endConferenceOnExit="true"
+            beep="false">
             {conference_name}
         </Conference>
     </Dial>
 </Response>"""
     
+    print(f"[TeXML] Agent TeXML:\n{texml}", flush=True)
+    return texml
+
+
+def generate_client_conference_texml(session_id: str) -> str:
+    """
+    Generate TeXML to put the client into the conference with streaming.
+    Called when client answers the call.
+    
+    - Start streaming client's audio (inbound_track = client speaking)
+    - Join same conference as agent
+    - startConferenceOnEnter="false" - don't start new conference, join existing
+    - endConferenceOnExit="true" - end conference if client hangs up
+    """
+    stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
+    conference_name = f"coachd_{session_id}"
+    # Use separate stream endpoint for client audio
+    client_stream_url = f"{stream_url}/ws/telnyx/stream/client/{session_id}"
+    
+    print(f"[TeXML] Generating CLIENT TeXML for session {session_id}", flush=True)
+    print(f"[TeXML] Conference: {conference_name}", flush=True)
+    print(f"[TeXML] Client stream: {client_stream_url}", flush=True)
+    
+    texml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Start>
+        <Stream url="{client_stream_url}" track="inbound_track" />
+    </Start>
+    <Dial>
+        <Conference
+            startConferenceOnEnter="false"
+            endConferenceOnExit="true"
+            beep="false">
+            {conference_name}
+        </Conference>
+    </Dial>
+</Response>"""
+    
+    print(f"[TeXML] Client TeXML:\n{texml}", flush=True)
     return texml
 
 
 def generate_inbound_texml(session_id: str) -> str:
     """
     Generate TeXML for inbound calls (agent calls the Telnyx number).
+    This is for the legacy flow where agent dials in.
     """
     stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
     conference_name = f"coachd_{session_id}"
@@ -184,13 +213,13 @@ def generate_inbound_texml(session_id: str) -> str:
 <Response>
     <Say voice="Polly.Joanna">Coachd ready.</Say>
     <Start>
-        <Stream url="{stream_url}/ws/telnyx/stream/{session_id}" track="both_tracks" />
+        <Stream url="{stream_url}/ws/telnyx/stream/agent/{session_id}" track="inbound_track" />
     </Start>
     <Dial>
         <Conference 
             startConferenceOnEnter="true"
             endConferenceOnExit="true"
-            record="record-from-start">
+            beep="false">
             {conference_name}
         </Conference>
     </Dial>
@@ -202,6 +231,7 @@ def generate_inbound_texml(session_id: str) -> str:
 def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id: str = None) -> dict:
     """
     Call the client and add them to the conference.
+    Uses agent's phone number as caller ID so client sees familiar number.
     """
     if not is_telnyx_configured():
         return {"success": False, "error": "Telnyx not configured"}
@@ -209,6 +239,8 @@ def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id
     from_number = agent_caller_id if agent_caller_id else get_telnyx_phone()
     api_key = get_telnyx_api_key()
     app_id = get_telnyx_app_id()
+    
+    logger.info(f"[Telnyx] Dialing client {client_phone} from {from_number} for session {session_id}")
     
     try:
         response = requests.post(
@@ -229,7 +261,7 @@ def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id
             data = response.json().get("data", {})
             call_control_id = data.get("call_control_id", "") or data.get("call_sid", "")
             
-            logger.info(f"Added client to conference: {call_control_id}")
+            logger.info(f"Client call initiated: {call_control_id} for session {session_id}")
             
             return {
                 "success": True,
@@ -245,11 +277,11 @@ def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id
             except:
                 error_msg = f"HTTP {response.status_code}"
             
-            logger.error(f"Telnyx API error: {response.status_code} - {error_msg}")
+            logger.error(f"Telnyx API error dialing client: {response.status_code} - {error_msg}")
             return {"success": False, "error": error_msg}
             
     except Exception as e:
-        logger.error(f"Failed to add client to conference: {e}")
+        logger.error(f"Failed to dial client: {e}")
         return {"success": False, "error": str(e)}
 
 
