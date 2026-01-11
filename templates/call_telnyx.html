@@ -887,15 +887,15 @@
             overflow: hidden;
         }
         
-        /* GRID LAYOUT only when active - more reliable than flex for scrollable content */
+        /* FLEX LAYOUT for sidebar + main content */
         .call-screen.active {
-            display: grid;
-            grid-template-rows: 1fr auto auto;  /* teleprompter | captions | footer */
-            grid-template-columns: 1fr;
+            display: flex;
+            flex-direction: column;
         }
         
         .teleprompter {
-            /* Grid child - takes the 1fr row */
+            /* Flex child - fills available space */
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -907,7 +907,7 @@
             cursor: pointer;
             transition: background 0.2s;
             box-sizing: border-box;
-            /* CRITICAL: These 3 properties enable scrolling in grid */
+            /* Enable scrolling */
             min-height: 0;
             overflow-y: auto;
             overflow-x: hidden;
@@ -1091,88 +1091,7 @@
         
         .guidance-text strong { font-weight: 700; }
         
-        /* ========== LIVE CAPTIONS - Client Only Card ========== */
-        .live-captions {
-            background: var(--surface);
-            border-top: 1px solid var(--border);
-            padding: 12px 16px;
-            flex-shrink: 0;
-        }
-        
-        .client-card {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 12px 16px;
-            transition: all 0.2s ease;
-        }
-        
-        .client-card.speaking {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-soft);
-        }
-        
-        .client-card-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 6px;
-        }
-        
-        .client-indicator {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--text-muted);
-            transition: all 0.2s ease;
-        }
-        
-        .client-card.speaking .client-indicator {
-            background: var(--success);
-            box-shadow: 0 0 0 2px var(--success-soft);
-            animation: indicatorPulse 1.5s ease-in-out infinite;
-        }
-        
-        @keyframes indicatorPulse {
-            0%, 100% { opacity: 0.7; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.1); }
-        }
-        
-        .client-label {
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
-        }
-        
-        .client-text {
-            font-size: 14px;
-            line-height: 1.5;
-            color: var(--text);
-            min-height: 21px;
-        }
-        
-        .client-text.waiting {
-            color: var(--text-muted);
-            font-style: italic;
-        }
-        
-        .client-text .cursor {
-            display: inline-block;
-            width: 2px;
-            height: 14px;
-            background: var(--accent);
-            margin-left: 2px;
-            animation: cursorBlink 0.8s infinite;
-            vertical-align: text-bottom;
-        }
-        
-        @keyframes cursorBlink {
-            0%, 45% { opacity: 1; }
-            50%, 100% { opacity: 0; }
-        }
-        
+        /* ========== CALL FOOTER ========== */
         .call-footer {
             padding: 16px 24px 24px;
             display: flex;
@@ -1204,6 +1123,205 @@
         }
         
         .end-btn svg { width: 18px; height: 18px; }
+        
+        /* ========== TRANSCRIPT SIDEBAR ========== */
+        .call-content-wrapper {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+        
+        .transcript-sidebar {
+            width: 280px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            flex-shrink: 0;
+        }
+        
+        .transcript-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .transcript-header-icon {
+            width: 6px;
+            height: 6px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: transcriptPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes transcriptPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        .transcript-header-text {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+        
+        .transcript-feed {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            
+            /* Hidden scrollbar - premium */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        
+        .transcript-feed::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* Top fade when scrolled */
+        .transcript-sidebar::before {
+            content: '';
+            position: absolute;
+            top: 49px; /* Below header */
+            left: 0;
+            right: 0;
+            height: 24px;
+            background: linear-gradient(to bottom, var(--surface), transparent);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 1;
+        }
+        
+        .transcript-sidebar.has-scroll::before {
+            opacity: 1;
+        }
+        
+        .transcript-msg {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            animation: msgFadeIn 0.2s ease;
+        }
+        
+        @keyframes msgFadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .transcript-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+        
+        .transcript-text {
+            font-size: 0.8125rem;
+            line-height: 1.5;
+        }
+        
+        .transcript-msg.agent .transcript-text {
+            color: var(--text-secondary);
+        }
+        
+        .transcript-msg.client .transcript-text {
+            color: var(--text);
+        }
+        
+        /* Live typing cursor */
+        .transcript-text .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 0.9em;
+            background: var(--accent);
+            margin-left: 2px;
+            animation: cursorBlink 0.8s infinite;
+            vertical-align: text-bottom;
+        }
+        
+        .transcript-empty {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-style: italic;
+        }
+        
+        .call-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        
+        /* Mobile: Transcript as bottom drawer */
+        @media (max-width: 768px) {
+            .call-content-wrapper {
+                flex-direction: column;
+            }
+            
+            .transcript-sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 140px;
+                border-right: none;
+                border-top: 1px solid var(--border);
+                order: 2; /* Move below main content */
+                transition: max-height 0.3s ease;
+            }
+            
+            .transcript-sidebar.collapsed {
+                max-height: 44px;
+                overflow: hidden;
+            }
+            
+            .transcript-sidebar.collapsed .transcript-feed {
+                display: none;
+            }
+            
+            .transcript-header {
+                cursor: pointer;
+            }
+            
+            .transcript-header::after {
+                content: '';
+                margin-left: auto;
+                width: 0;
+                height: 0;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-bottom: 5px solid var(--text-muted);
+                transition: transform 0.2s;
+            }
+            
+            .transcript-sidebar.collapsed .transcript-header::after {
+                transform: rotate(180deg);
+            }
+            
+            .transcript-sidebar::before {
+                display: none; /* No fade on mobile */
+            }
+            
+            .call-main {
+                order: 1;
+                flex: 1;
+            }
+        }
         
         /* ========== OUTCOME SCREEN ========== */
         .outcome-screen {
@@ -1894,33 +2012,38 @@
         
         <!-- Call Screen -->
         <div class="screen call-screen" id="callScreen">
-            <div class="teleprompter" id="teleprompter" onclick="Coachd.dismissGuidance()">
-                <div class="listening-state" id="listeningState">
-                    <div class="listening-bars">
-                        <div class="bar"></div>
-                        <div class="bar"></div>
-                        <div class="bar"></div>
-                        <div class="bar"></div>
-                        <div class="bar"></div>
+            <div class="call-content-wrapper">
+                <!-- Transcript Sidebar -->
+                <div class="transcript-sidebar" id="transcriptSidebar">
+                    <div class="transcript-header" onclick="Coachd.toggleTranscript()">
+                        <div class="transcript-header-icon"></div>
+                        <span class="transcript-header-text">Live Transcript</span>
                     </div>
-                    <div class="listening-text">Listening...</div>
-                    <div class="listening-hint">Listening for objections</div>
+                    <div class="transcript-feed" id="transcriptFeed">
+                        <div class="transcript-empty" id="transcriptEmpty">Waiting for conversation...</div>
+                    </div>
                 </div>
                 
-                <div class="guidance-state" id="guidanceState">
-                    <div class="guidance-text" id="guidanceText"></div>
-                    <div class="dismiss-hint">tap anywhere to dismiss</div>
-                </div>
-            </div>
-            
-            <!-- Live Client Card -->
-            <div class="live-captions" id="liveCaptions">
-                <div class="client-card" id="clientCard">
-                    <div class="client-card-header">
-                        <div class="client-indicator" id="clientIndicator"></div>
-                        <span class="client-label">Client</span>
+                <!-- Main Guidance Area -->
+                <div class="call-main">
+                    <div class="teleprompter" id="teleprompter" onclick="Coachd.dismissGuidance()">
+                        <div class="listening-state" id="listeningState">
+                            <div class="listening-bars">
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                                <div class="bar"></div>
+                            </div>
+                            <div class="listening-text">Listening...</div>
+                            <div class="listening-hint">Coaching activates on objections</div>
+                        </div>
+                        
+                        <div class="guidance-state" id="guidanceState">
+                            <div class="guidance-text" id="guidanceText"></div>
+                            <div class="dismiss-hint">tap anywhere to dismiss</div>
+                        </div>
                     </div>
-                    <div class="client-text waiting" id="clientText">Listening...</div>
                 </div>
             </div>
             
@@ -2087,6 +2210,10 @@
             clientFadeTimer: null,
             streamingGuidance: '',
             hasVibratedForCurrentGuidance: false,
+            // Transcript sidebar state
+            transcriptUserScrolled: false,
+            currentClientText: '',
+            currentClientElement: null,
             clientContext: {
                 product: 'whole_life',
                 age: null,
@@ -2128,13 +2255,14 @@
             get phoneDisplay() { return document.getElementById('phoneDisplay'); },
             get phoneDisplayNumber() { return document.getElementById('phoneDisplayNumber'); },
             get clientPhoneInput() { return document.getElementById('clientPhoneInput'); },
-            get clientCard() { return document.getElementById('clientCard'); },
-            get clientIndicator() { return document.getElementById('clientIndicator'); },
-            get clientText() { return document.getElementById('clientText'); },
             get callTypeHint() { return document.getElementById('callTypeHint'); },
             get errorModal() { return document.getElementById('errorModal'); },
             get errorModalTitle() { return document.getElementById('errorModalTitle'); },
-            get errorModalMessage() { return document.getElementById('errorModalMessage'); }
+            get errorModalMessage() { return document.getElementById('errorModalMessage'); },
+            // Transcript sidebar
+            get transcriptSidebar() { return document.getElementById('transcriptSidebar'); },
+            get transcriptFeed() { return document.getElementById('transcriptFeed'); },
+            get transcriptEmpty() { return document.getElementById('transcriptEmpty'); }
         };
         
         // ==================== INIT ====================
@@ -2171,7 +2299,7 @@
         }
         
         async function init() {
-            console.log('🚀 Coachd.ai Live Call (Telnyx) - VERSION: 2025-12-22-telnyx-v2-secure');
+            console.log('🚀 Coachd.ai Live Call (Telnyx) - VERSION: 2025-01-11-transcript-sidebar');
             
             // SECURITY: Gate on validated agency code FIRST
             const validatedAgency = checkAgencyCode();
@@ -2186,6 +2314,9 @@
             await loadAgencies();
             loadClientContext();
             checkExistingIdentity();
+            
+            // Initialize transcript sidebar scroll tracking
+            initTranscriptScroll();
         }
         
         function loadClientContext() {
@@ -2620,6 +2751,9 @@
                 case 'client_transcript':
                     handleClientTranscript(msg);
                     break;
+                case 'agent_transcript':
+                    handleAgentTranscript(msg);
+                    break;
                 case 'speakers_identified':
                     // Agent intro detected - roles are now locked
                     console.log('✅ Speakers identified:', msg.message);
@@ -2988,50 +3122,119 @@
             const text = msg.text || '';
             const isFinal = msg.is_final;
             
-            updateClientCard(text, !isFinal);
+            updateTranscriptSidebar('client', text, !isFinal);
             
             if (isFinal && text.length > 3) {
                 extractClientInfo(text);
             }
         }
         
-        function updateClientCard(text, isInterim) {
-            if (state.clientFadeTimer) {
-                clearTimeout(state.clientFadeTimer);
-                state.clientFadeTimer = null;
-            }
-            
-            dom.clientCard.classList.add('speaking');
-            dom.clientText.classList.remove('waiting');
-            
-            if (isInterim) {
-                // Show cursor for live typing effect
-                dom.clientText.innerHTML = text + '<span class="cursor"></span>';
-            } else {
-                dom.clientText.textContent = text || 'Listening...';
-                
-                // Fade after delay
-                state.clientFadeTimer = setTimeout(() => {
-                    dom.clientCard.classList.remove('speaking');
-                }, CONFIG.captionFadeDelay);
+        function handleAgentTranscript(msg) {
+            const text = msg.text || '';
+            if (text) {
+                updateTranscriptSidebar('agent', text, false);
             }
         }
         
-        // Legacy handler - route to client card
+        function updateTranscriptSidebar(speaker, text, isInterim) {
+            if (!text) return;
+            
+            // Remove empty state on first message
+            if (dom.transcriptEmpty) {
+                dom.transcriptEmpty.remove();
+            }
+            
+            // For interim (live typing), update current element or create new
+            if (isInterim) {
+                if (!state.currentClientElement) {
+                    // Create new message element for live typing
+                    state.currentClientElement = createTranscriptMessage('client', '');
+                    dom.transcriptFeed.appendChild(state.currentClientElement);
+                }
+                // Update with cursor
+                const textEl = state.currentClientElement.querySelector('.transcript-text');
+                textEl.innerHTML = text + '<span class="cursor"></span>';
+                state.currentClientText = text;
+            } else {
+                // Final transcript
+                if (speaker === 'client' && state.currentClientElement) {
+                    // Finalize the current interim element
+                    const textEl = state.currentClientElement.querySelector('.transcript-text');
+                    textEl.textContent = text;
+                    state.currentClientElement = null;
+                    state.currentClientText = '';
+                } else {
+                    // Create new final message (agent or new client)
+                    const msgEl = createTranscriptMessage(speaker, text);
+                    dom.transcriptFeed.appendChild(msgEl);
+                }
+            }
+            
+            // Auto-scroll unless user scrolled up
+            if (!state.transcriptUserScrolled) {
+                dom.transcriptFeed.scrollTop = dom.transcriptFeed.scrollHeight;
+            }
+            
+            // Update scroll fade indicator
+            updateScrollFade();
+        }
+        
+        function createTranscriptMessage(speaker, text) {
+            const div = document.createElement('div');
+            div.className = `transcript-msg ${speaker}`;
+            div.innerHTML = `
+                <span class="transcript-label">${speaker.toUpperCase()}</span>
+                <div class="transcript-text">${text}</div>
+            `;
+            return div;
+        }
+        
+        function updateScrollFade() {
+            if (dom.transcriptFeed && dom.transcriptSidebar) {
+                const hasScroll = dom.transcriptFeed.scrollTop > 10;
+                dom.transcriptSidebar.classList.toggle('has-scroll', hasScroll);
+            }
+        }
+        
+        function toggleTranscript() {
+            // Mobile only - toggle collapsed state
+            if (window.innerWidth <= 768 && dom.transcriptSidebar) {
+                dom.transcriptSidebar.classList.toggle('collapsed');
+            }
+        }
+        
+        function initTranscriptScroll() {
+            if (dom.transcriptFeed) {
+                // Track if user scrolls up manually
+                dom.transcriptFeed.addEventListener('scroll', () => {
+                    const { scrollTop, scrollHeight, clientHeight } = dom.transcriptFeed;
+                    const isAtBottom = scrollTop + clientHeight >= scrollHeight - 50;
+                    state.transcriptUserScrolled = !isAtBottom;
+                    updateScrollFade();
+                });
+            }
+        }
+        
+        // Legacy handler - route to transcript sidebar
         function updateCaption(speaker, text, isInterim) {
             if (speaker === 'caller' || speaker === 'client') {
-                updateClientCard(text, isInterim);
+                updateTranscriptSidebar('client', text, isInterim);
+            } else if (speaker === 'agent') {
+                updateTranscriptSidebar('agent', text, false);
             }
-            // Agent transcripts not displayed (used for Claude context only)
         }
         
         function resetCaptions() {
-            if (state.clientFadeTimer) clearTimeout(state.clientFadeTimer);
-            state.clientFadeTimer = null;
-            
-            dom.clientCard.classList.remove('speaking');
-            dom.clientText.textContent = 'Listening...';
-            dom.clientText.classList.add('waiting');
+            // Clear transcript sidebar
+            if (dom.transcriptFeed) {
+                dom.transcriptFeed.innerHTML = '<div class="transcript-empty" id="transcriptEmpty">Waiting for conversation...</div>';
+            }
+            state.currentClientElement = null;
+            state.currentClientText = '';
+            state.transcriptUserScrolled = false;
+            if (dom.transcriptSidebar) {
+                dom.transcriptSidebar.classList.remove('has-scroll');
+            }
         }
         
         // ==================== GUIDANCE ====================
@@ -3342,6 +3545,7 @@
             changeAgent,
             setCallType,
             closeErrorModal,
+            toggleTranscript,
             getState: () => state
         };
     })();
