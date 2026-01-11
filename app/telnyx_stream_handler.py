@@ -648,21 +648,33 @@ class AgentStreamHandler:
         logger.info(f"[AgentStream] Created for session {session_id}")
     
     async def start(self) -> bool:
-        """Initialize Deepgram for agent audio with retry logic"""
+        """Mark handler as ready - Deepgram connects on first audio"""
         print(f"[AgentStream] Starting for {self.session_id}", flush=True)
         self._session_start_time = time.time()
+        self.is_running = True
+        return True
+    
+    async def _ensure_deepgram_connected(self) -> bool:
+        """Lazy-initialize Deepgram connection with delays to avoid proxy issues"""
+        if self._deepgram_connected:
+            return True
         
         if not settings.deepgram_api_key:
             logger.warning("[AgentStream] No Deepgram key")
-            self.is_running = True
-            return True
+            return False
+        
+        # Delay to let Render's WebSocket proxy stabilize
+        print(f"[AgentStream] Waiting 1s before Deepgram connection...", flush=True)
+        await asyncio.sleep(1.0)
         
         # Retry logic for Deepgram connection
         max_retries = 3
-        retry_delay = 0.5  # seconds
+        retry_delay = 1.0  # seconds
         
         for attempt in range(max_retries):
             try:
+                print(f"[AgentStream] Connecting to Deepgram (attempt {attempt + 1})...", flush=True)
+                
                 self.deepgram = DeepgramClient(settings.deepgram_api_key)
                 self.connection = self.deepgram.listen.asynclive.v("1")
                 
@@ -684,10 +696,9 @@ class AgentStreamHandler:
                 )
                 
                 await self.connection.start(options)
-                self.is_running = True
                 self._deepgram_connected = True
                 
-                print(f"[AgentStream] Deepgram connected (attempt {attempt + 1})", flush=True)
+                print(f"[AgentStream] Deepgram connected!", flush=True)
                 return True
                 
             except Exception as e:
@@ -697,11 +708,9 @@ class AgentStreamHandler:
                     await asyncio.sleep(retry_delay)
                     retry_delay *= 2  # Exponential backoff
                 else:
-                    print(f"[AgentStream] All retries failed, continuing without transcription", flush=True)
+                    print(f"[AgentStream] All retries failed, agent transcription disabled", flush=True)
         
-        # Continue without agent transcription if all retries fail
-        self.is_running = True
-        return True
+        return False
     
     async def handle_telnyx_message(self, message: dict):
         """Process Telnyx message with agent audio"""
@@ -710,7 +719,9 @@ class AgentStreamHandler:
         if event == "connected":
             print(f"[AgentStream] Telnyx connected", flush=True)
         elif event == "start":
-            print(f"[AgentStream] Stream started", flush=True)
+            print(f"[AgentStream] Stream started - connecting to Deepgram", flush=True)
+            # Connect to Deepgram when stream starts (audio is about to flow)
+            await self._ensure_deepgram_connected()
         elif event == "media":
             media = message.get("media", {})
             payload = media.get("payload")
