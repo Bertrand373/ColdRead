@@ -914,10 +914,10 @@
             -webkit-overflow-scrolling: touch;
         }
         
-        /* When guidance is showing, start from top so user can scroll */
+        /* Keep centered for guidance too - the guidance-state will handle overflow */
         .teleprompter.has-guidance {
-            justify-content: flex-start;
-            padding-top: 40px;
+            justify-content: center;
+            padding: 24px;
         }
         
         .teleprompter:active { background: var(--surface); }
@@ -975,10 +975,10 @@
             display: none;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             width: 100%;
-            max-width: 900px;
-            padding: 0 16px 40px 16px;
-            flex-shrink: 0;
+            max-width: 700px;
+            padding: 0 16px;
             box-sizing: border-box;
             position: relative;
         }
@@ -1148,6 +1148,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            background: var(--surface);
         }
         
         .transcript-header-icon {
@@ -1176,6 +1177,7 @@
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             padding: 16px;
+            padding-bottom: 32px; /* Extra space at bottom for fade */
             display: flex;
             flex-direction: column;
             gap: 16px;
@@ -1206,6 +1208,19 @@
         
         .transcript-sidebar.has-scroll::before {
             opacity: 1;
+        }
+        
+        /* Bottom fade - always visible for polish */
+        .transcript-sidebar::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 32px;
+            background: linear-gradient(to top, var(--surface), transparent);
+            pointer-events: none;
+            z-index: 1;
         }
         
         .transcript-msg {
@@ -1267,6 +1282,12 @@
             display: flex;
             flex-direction: column;
             min-width: 0;
+            background: var(--bg);
+        }
+        
+        /* Footer now inside call-main */
+        .call-main .call-footer {
+            flex-shrink: 0;
         }
         
         /* Mobile: Transcript as bottom drawer */
@@ -1314,7 +1335,11 @@
             }
             
             .transcript-sidebar::before {
-                display: none; /* No fade on mobile */
+                display: none; /* No top fade on mobile */
+            }
+            
+            .transcript-sidebar::after {
+                display: none; /* No bottom fade on mobile */
             }
             
             .call-main {
@@ -2044,17 +2069,17 @@
                             <div class="dismiss-hint">tap anywhere to dismiss</div>
                         </div>
                     </div>
+                    
+                    <div class="call-footer">
+                        <button class="end-btn" onclick="Coachd.endCall()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/>
+                                <line x1="23" y1="1" x2="1" y2="23"/>
+                            </svg>
+                            End Session
+                        </button>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="call-footer">
-                <button class="end-btn" onclick="Coachd.endCall()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/>
-                        <line x1="23" y1="1" x2="1" y2="23"/>
-                    </svg>
-                    End Session
-                </button>
             </div>
         </div>
         
@@ -3301,13 +3326,23 @@
             if (!chunk) return;
             
             state.streamingGuidance += chunk;
+            
+            // Early abort if it looks like a NO response
+            const current = state.streamingGuidance.trim().toUpperCase();
+            if (current === 'NO' || current.startsWith('NO_GUIDANCE') || current.startsWith('NO GUIDANCE')) {
+                dismissGuidance();
+                return;
+            }
+            
             dom.guidanceText.innerHTML = formatGuidanceText(state.streamingGuidance) + '<span class="cursor"></span>';
         }
         
         function handleGuidanceComplete(msg) {
             const fullText = msg.full_text || state.streamingGuidance || '';
             
-            if (!fullText) {
+            // Filter out non-guidance responses (NO, NO_GUIDANCE_NEEDED, etc.)
+            const trimmed = fullText.trim().toUpperCase();
+            if (!fullText || trimmed === 'NO' || trimmed.includes('NO_GUIDANCE') || fullText.length < 10) {
                 dismissGuidance();
                 return;
             }

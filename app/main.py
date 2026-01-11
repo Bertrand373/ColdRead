@@ -246,7 +246,7 @@ async def telnyx_client_stream(websocket: WebSocket, session_id: str):
 async def telnyx_agent_stream(websocket: WebSocket, session_id: str):
     """
     AGENT audio stream - 100% agent audio.
-    Recording only, NOT sent to Deepgram.
+    Sent to Deepgram for transcription (context extraction, no guidance triggers).
     """
     await websocket.accept()
     print(f"[AgentStream] WebSocket accepted: {session_id}", flush=True)
@@ -262,9 +262,16 @@ async def telnyx_agent_stream(websocket: WebSocket, session_id: str):
                 message = await websocket.receive()
                 message_count += 1
                 
+                if message_count <= 3:
+                    print(f"[AgentStream] Msg #{message_count}", flush=True)
+                
                 if "text" in message:
                     data = json.loads(message["text"])
                     await handler.handle_telnyx_message(data)
+                elif "bytes" in message:
+                    # Forward audio to Deepgram for transcription
+                    if handler.connection:
+                        await handler.connection.send(message["bytes"])
                 elif message.get("type") == "websocket.disconnect":
                     break
                     
