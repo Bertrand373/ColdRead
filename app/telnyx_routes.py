@@ -153,26 +153,36 @@ async def dial_client(data: DialClientRequest):
 
 @router.post("/end-call")
 async def end_call(data: EndCallRequest):
-    """End a call session"""
+    """End a call session - hangs up both agent and client calls"""
     session = await session_manager.get_session(data.session_id)
     
-    # Log usage with dual-channel tracking
-    if session and session.started_at:
-        duration = session.get_duration() or 0
+    if session:
+        # Hang up both call legs
+        if session.agent_call_sid:
+            logger.info(f"Hanging up agent call: {session.agent_call_sid}")
+            hangup_call(session.agent_call_sid)
         
-        # Get individual leg durations if available
-        agent_duration = getattr(session, 'agent_duration', None) or duration
-        client_duration = getattr(session, 'client_duration', None) or duration
+        if session.client_call_sid:
+            logger.info(f"Hanging up client call: {session.client_call_sid}")
+            hangup_call(session.client_call_sid)
         
-        log_telnyx_usage(
-            call_duration_seconds=duration,
-            agency_code=getattr(session, 'agency_code', None),
-            session_id=data.session_id,
-            call_control_id=session.agent_call_sid,
-            is_dual_channel=True,  # All calls now use dual-channel
-            agent_duration_seconds=agent_duration,
-            client_duration_seconds=client_duration
-        )
+        # Log usage with dual-channel tracking
+        if session.started_at:
+            duration = session.get_duration() or 0
+            
+            # Get individual leg durations if available
+            agent_duration = getattr(session, 'agent_duration', None) or duration
+            client_duration = getattr(session, 'client_duration', None) or duration
+            
+            log_telnyx_usage(
+                call_duration_seconds=duration,
+                agency_code=getattr(session, 'agency_code', None),
+                session_id=data.session_id,
+                call_control_id=session.agent_call_sid,
+                is_dual_channel=True,
+                agent_duration_seconds=agent_duration,
+                client_duration_seconds=client_duration
+            )
     
     end_conference(data.session_id)
     await session_manager.end_session(data.session_id)

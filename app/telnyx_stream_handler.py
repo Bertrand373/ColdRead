@@ -935,6 +935,12 @@ class AgentStreamHandler:
                 await asyncio.wait_for(self.connection.finish(), timeout=3.0)
             except:
                 pass
+        
+        # Notify frontend that call has ended - triggers auto-cleanup
+        await session_manager._broadcast_to_session(self.session_id, {
+            "type": "call_ended", 
+            "party": "agent"
+        })
 
 
 class ClientStreamHandler:
@@ -986,7 +992,7 @@ class ClientStreamHandler:
         if not self.deepgram:
             logger.warning("[ClientStream] No Deepgram client available")
             self.is_running = True
-            await self._broadcast({"type": "ready"})
+            await self._broadcast({"type": "client_connected"})
             return True
         
         try:
@@ -1017,9 +1023,10 @@ class ClientStreamHandler:
             # Now trigger Agent's Deepgram connection (delayed to avoid HTTP 400)
             await self._trigger_agent_deepgram()
             
+            # Notify frontend that client is connected - triggers UI update
             await self._broadcast({
-                "type": "ready",
-                "message": "Coaching active"
+                "type": "client_connected",
+                "message": "Client connected - coaching active"
             })
             
             return True
@@ -1211,7 +1218,8 @@ class ClientStreamHandler:
             except:
                 pass
         
-        await self._broadcast({"type": "stream_ended"})
+        # Notify frontend that call has ended - triggers auto-cleanup
+        await self._broadcast({"type": "call_ended", "party": "client"})
 
 
 # Handler management

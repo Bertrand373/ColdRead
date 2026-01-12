@@ -2460,7 +2460,9 @@
                     handleBridge(msg);
                     break;
                 case 'call_ended':
-                    endCall();
+                    // Call ended by server (agent or client hung up)
+                    console.log('📵 Call ended by server:', msg.party || 'unknown');
+                    endCall(true);  // true = from server, don't call backend again
                     break;
                 case 'call_hangup':
                     // Phone hung up (from Telnyx webhook)
@@ -2491,7 +2493,7 @@
                 }
                 // If client phone was provided, wait for client_connected message
             } else if (data.status === 'ended' || data.status === 'failed') {
-                endCall();
+                endCall(true);  // Server indicated call ended
             }
         }
         
@@ -2536,8 +2538,8 @@
             
             console.log(`[Hangup] ${party} hung up: ${cause}`);
             
-            // End the call - this will show outcome screen
-            endCall();
+            // End the call - server already knows, don't call back
+            endCall(true);
         }
         
         function resetConnectionSteps() {
@@ -2620,13 +2622,18 @@
             showScreen('startScreen');
         }
         
-        function endCall() {
+        function endCall(fromServer = false) {
+            // Prevent double-cleanup
+            if (!state.isInCall && !state.sessionId) return;
+            
             state.isInCall = false;
             
             // Re-enable landscape blocker
             document.body.classList.remove('call-active');
             
-            if (state.sessionId) {
+            // Only tell backend to end call if this wasn't triggered by the server
+            // (avoids circular call when server sends call_ended)
+            if (state.sessionId && !fromServer) {
                 fetch(CONFIG.telnyxEndEndpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
