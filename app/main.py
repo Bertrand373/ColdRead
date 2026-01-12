@@ -33,7 +33,8 @@ from .call_session import session_manager, CallStatus
 from .telnyx_stream_handler import (
     get_or_create_client_handler,
     get_or_create_agent_handler,
-    remove_handler
+    remove_handler,
+    get_deepgram_client
 )
 
 # Database and usage tracking
@@ -107,6 +108,10 @@ async def lifespan(app: FastAPI):
     
     if settings.deepgram_api_key:
         print("✓ Deepgram API key configured")
+        # Pre-initialize Deepgram client at startup to avoid first-connection issues
+        dg_client = get_deepgram_client()
+        if dg_client:
+            print("✓ Deepgram client pre-initialized")
     else:
         print("⚠ DEEPGRAM_API_KEY not set")
     

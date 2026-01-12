@@ -36,6 +36,18 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# Shared DeepgramClient instance - SDK may have issues with multiple clients
+_deepgram_client: Optional[DeepgramClient] = None
+
+def get_deepgram_client() -> Optional[DeepgramClient]:
+    """Get or create shared Deepgram client"""
+    global _deepgram_client
+    if _deepgram_client is None and settings.deepgram_api_key:
+        _deepgram_client = DeepgramClient(settings.deepgram_api_key)
+        logger.info("[Deepgram] Shared client created")
+    return _deepgram_client
+
+
 # Shared conversation buffer per session
 _conversation_buffers: Dict[str, 'ConversationBuffer'] = {}
 
@@ -648,17 +660,26 @@ class AgentStreamHandler:
         logger.info(f"[AgentStream] Created for session {session_id}")
     
     async def start(self) -> bool:
-        """Initialize Deepgram for agent audio - connect immediately like ClientStreamHandler"""
+        """Initialize handler - Deepgram connects later via connect_deepgram()"""
         print(f"[AgentStream] Starting for {self.session_id}", flush=True)
         self._session_start_time = time.time()
-        
-        if not settings.deepgram_api_key:
-            logger.warning("[AgentStream] No Deepgram key")
-            self.is_running = True
+        self.is_running = True
+        # Don't connect Deepgram yet - wait until called explicitly
+        # This avoids the HTTP 400 that happens when Agent connects before Client
+        return True
+    
+    async def connect_deepgram(self) -> bool:
+        """Connect to Deepgram - called AFTER client stream is established"""
+        if self._deepgram_connected:
             return True
+            
+        self.deepgram = get_deepgram_client()
+        if not self.deepgram:
+            logger.warning("[AgentStream] No Deepgram client available")
+            return False
         
         try:
-            self.deepgram = DeepgramClient(settings.deepgram_api_key)
+            print(f"[AgentStream] Connecting to Deepgram now...", flush=True)
             self.connection = self.deepgram.listen.asynclive.v("1")
             
             self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
@@ -671,7 +692,7 @@ class AgentStreamHandler:
                 language="en-US",
                 smart_format=True,
                 punctuate=True,
-                interim_results=False,  # Only finals for agent
+                interim_results=True,
                 utterance_end_ms=1000,
                 encoding="linear16",
                 sample_rate=self.SAMPLE_RATE,
@@ -679,17 +700,15 @@ class AgentStreamHandler:
             )
             
             await self.connection.start(options)
-            self.is_running = True
             self._deepgram_connected = True
             
-            print(f"[AgentStream] Deepgram connected", flush=True)
+            print(f"[AgentStream] Deepgram connected!", flush=True)
             return True
             
         except Exception as e:
             logger.error(f"[AgentStream] Deepgram error: {e}")
-            # Continue without agent transcription if Deepgram fails
-            self.is_running = True
-            return True
+            print(f"[AgentStream] Deepgram FAILED: {e}", flush=True)
+            return False
     
     async def handle_telnyx_message(self, message: dict):
         """Process Telnyx message with agent audio"""
@@ -826,14 +845,15 @@ class ClientStreamHandler:
                 client_context=client_context
             )
         
-        if not settings.deepgram_api_key:
-            logger.warning("[ClientStream] No Deepgram key")
+        # Use shared Deepgram client
+        self.deepgram = get_deepgram_client()
+        if not self.deepgram:
+            logger.warning("[ClientStream] No Deepgram client available")
             self.is_running = True
             await self._broadcast({"type": "ready"})
             return True
         
         try:
-            self.deepgram = DeepgramClient(settings.deepgram_api_key)
             self.connection = self.deepgram.listen.asynclive.v("1")
             
             self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
@@ -858,6 +878,9 @@ class ClientStreamHandler:
             
             print(f"[ClientStream] Deepgram connected", flush=True)
             
+            # Now trigger Agent's Deepgram connection (delayed to avoid HTTP 400)
+            await self._trigger_agent_deepgram()
+            
             await self._broadcast({
                 "type": "ready",
                 "message": "Coaching active"
@@ -869,6 +892,18 @@ class ClientStreamHandler:
             logger.error(f"[ClientStream] Deepgram error: {e}")
             self.is_running = True
             return True
+    
+    async def _trigger_agent_deepgram(self):
+        """Trigger Agent's Deepgram connection after Client is established"""
+        try:
+            if self.session_id in _agent_handlers:
+                agent_handler = _agent_handlers[self.session_id]
+                print(f"[ClientStream] Triggering Agent Deepgram connection...", flush=True)
+                await agent_handler.connect_deepgram()
+            else:
+                print(f"[ClientStream] No agent handler found for {self.session_id}", flush=True)
+        except Exception as e:
+            logger.error(f"[ClientStream] Failed to trigger agent Deepgram: {e}")
     
     async def handle_telnyx_message(self, message: dict):
         """Process Telnyx message with client audio"""
