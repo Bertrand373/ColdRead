@@ -15,6 +15,7 @@ from .config import settings
 from .telnyx_bridge import (
     is_telnyx_configured,
     initiate_agent_call,
+    generate_agent_dtmf_texml,
     generate_agent_conference_texml,
     generate_client_conference_texml,
     generate_inbound_texml,
@@ -252,14 +253,14 @@ async def incoming_call(request: Request):
 async def agent_answered(request: Request):
     """
     Webhook: Agent has answered the outbound call.
-    Return TeXML to put them in conference with streaming.
-    If client_phone was provided, automatically dial the client.
+    Return TeXML with DTMF gate - agent must press 1 to proceed.
+    This prevents voicemail/declined calls from triggering client dial.
     """
     session_id = request.query_params.get("session_id", "unknown")
     
     logger.info(f"Agent answered for session {session_id}")
     
-    # Get the session to check for client_phone
+    # Get the session
     session = await session_manager.get_session(session_id)
     
     await session_manager.update_session(
@@ -268,17 +269,67 @@ async def agent_answered(request: Request):
         started_at=datetime.utcnow()
     )
     
-    # If client phone was provided (click-to-call mode), auto-dial them
+    # Broadcast to frontend that agent answered, waiting for confirmation
+    await session_manager._broadcast_to_session(session_id, {
+        "type": "agent_answered",
+        "message": "Press 1 when ready"
+    })
+    
+    # If client phone provided, return DTMF gate TeXML
+    # Agent must press 1 before we dial client
     if session and session.client_phone:
-        logger.info(f"Auto-dialing client {session.client_phone} for session {session_id}")
+        texml = generate_agent_dtmf_texml(session_id)
+    else:
+        # No client phone (manual 3-way mode) - go straight to conference
+        texml = generate_agent_conference_texml(session_id)
+    
+    print(f"[TeXML] Returning for session {session_id}:", flush=True)
+    print(texml, flush=True)
+    
+    return texml_response(texml)
+
+
+@router.post("/agent-ready")
+async def agent_ready(request: Request):
+    """
+    Webhook: Agent pressed DTMF key (1) - they're ready.
+    Now put them in conference and dial the client.
+    """
+    session_id = request.query_params.get("session_id", "unknown")
+    
+    # Parse form data to get DTMF digit
+    form = await request.form()
+    digits = form.get("Digits", "")
+    
+    logger.info(f"Agent ready for session {session_id}, digits: {digits}")
+    
+    # Validate digit (should be "1")
+    if digits != "1":
+        logger.warning(f"Unexpected DTMF digit: {digits}")
+        # Still proceed - any key press shows human intent
+    
+    # Get the session
+    session = await session_manager.get_session(session_id)
+    
+    if not session:
+        logger.error(f"Session not found: {session_id}")
+        texml = """<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Say voice="Polly.Matthew">Session not found. Goodbye.</Say>
+    <Hangup />
+</Response>"""
+        return texml_response(texml)
+    
+    # Broadcast to frontend that agent confirmed, now dialing client
+    await session_manager._broadcast_to_session(session_id, {
+        "type": "client_dialing",
+        "message": "Dialing client..."
+    })
+    
+    # Dial the client using agent's phone as caller ID
+    if session.client_phone:
+        logger.info(f"Dialing client {session.client_phone} for session {session_id}")
         
-        # Broadcast client_dialing to frontend
-        await session_manager._broadcast_to_session(session_id, {
-            "type": "client_dialing",
-            "message": "Dialing client..."
-        })
-        
-        # Dial the client using agent's phone as caller ID
         result = add_client_to_conference(
             session.client_phone, 
             session_id, 
@@ -297,13 +348,21 @@ async def agent_answered(request: Request):
             # Broadcast error to frontend
             await session_manager._broadcast_to_session(session_id, {
                 "type": "error",
-                "message": f"Failed to dial client: {result.get('error', 'Unknown error')}"
+                "code": "client_dial_failed",
+                "message": "Couldn't reach client"
             })
+            # Hang up agent
+            texml = """<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Say voice="Polly.Matthew">Unable to reach the client. Goodbye.</Say>
+    <Hangup />
+</Response>"""
+            return texml_response(texml)
     
+    # Return conference TeXML for agent
     texml = generate_agent_conference_texml(session_id)
     
-    # Log the TeXML being returned
-    print(f"[TeXML] Returning for session {session_id}:", flush=True)
+    print(f"[TeXML] Agent ready, returning conference TeXML for {session_id}:", flush=True)
     print(texml, flush=True)
     
     return texml_response(texml)
@@ -435,6 +494,16 @@ async def main_webhook(request: Request):
         if event_type == "call.hangup" and session_id:
             session = await session_manager.get_session(session_id)
             if session:
+                # Notify frontend that call ended
+                hangup_cause = payload.get("hangup_cause", "normal")
+                hangup_source = payload.get("hangup_source", "unknown")
+                
+                await session_manager._broadcast_to_session(session_id, {
+                    "type": "call_ended",
+                    "party": "agent" if hangup_source == "caller" else "callee",
+                    "cause": hangup_cause
+                })
+                
                 await session_manager.end_session(session_id)
         
     except Exception as e:

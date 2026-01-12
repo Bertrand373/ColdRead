@@ -2420,9 +2420,17 @@
                 case 'session_update':
                     handleSessionUpdate(msg.data || msg);
                     break;
+                case 'agent_answered':
+                    // Agent picked up, waiting for DTMF confirmation
+                    console.log('📞 Agent answered, waiting for confirmation...');
+                    updateConnectionStep('agent', 'active');
+                    document.getElementById('stepAgentText').textContent = 'Press 1 when ready';
+                    document.getElementById('connectingTitle').textContent = 'Answer Your Phone';
+                    document.getElementById('connectingSubtitle').textContent = 'Press 1 to start the call';
+                    break;
                 case 'client_dialing':
-                    // Click-to-call: Agent connected, now dialing client
-                    console.log('📞 Agent connected, dialing client...');
+                    // Agent confirmed (pressed 1), now dialing client
+                    console.log('📞 Agent confirmed, dialing client...');
                     updateConnectionStep('agent', 'complete');
                     updateConnectionStep('client', 'active');
                     document.getElementById('stepAgentText').textContent = 'You\'re connected!';
@@ -2460,9 +2468,34 @@
                     handleBridge(msg);
                     break;
                 case 'call_ended':
-                    // Call ended by server (agent or client hung up)
-                    console.log('📵 Call ended by server:', msg.party || 'unknown');
-                    endCall(true);  // true = from server, don't call backend again
+                    // Call ended by server (agent or client hung up, or timeout)
+                    console.log('📵 Call ended by server:', msg.party || 'unknown', msg.cause || '');
+                    
+                    // If we're still on connecting screen, show appropriate message
+                    if (dom.connectingScreen.classList.contains('active')) {
+                        const cause = msg.cause || 'normal';
+                        let title = 'Call Ended';
+                        let message = 'The call was disconnected.';
+                        
+                        if (cause === 'timeout' || cause === 'no_answer') {
+                            title = 'No Answer';
+                            message = msg.party === 'client' 
+                                ? 'Client didn\'t answer. Try again later.'
+                                : 'Call wasn\'t answered in time.';
+                        } else if (cause === 'busy') {
+                            title = 'Line Busy';
+                            message = 'The line is busy. Try again later.';
+                        } else if (cause === 'rejected' || cause === 'call_rejected') {
+                            title = 'Call Declined';
+                            message = 'The call was declined.';
+                        }
+                        
+                        cancelCall();
+                        showErrorModal(title, message);
+                    } else {
+                        // Normal end during active call
+                        endCall(true);  // true = from server, don't call backend again
+                    }
                     break;
                 case 'call_hangup':
                     // Phone hung up (from Telnyx webhook)
@@ -2470,10 +2503,21 @@
                     handleCallHangup(msg);
                     break;
                 case 'error':
-                    console.error('Server error:', msg.message);
-                    // If we're on the connecting screen and get an error, show it
+                    console.error('Server error:', msg.message, msg.code);
+                    // If we're on the connecting screen, show appropriate error
                     if (dom.connectingScreen.classList.contains('active')) {
-                        showError(msg.message || 'Connection failed');
+                        const errorCode = msg.code || '';
+                        let title = 'Connection Failed';
+                        let message = msg.message || 'Unable to complete the call.';
+                        
+                        if (errorCode === 'client_dial_failed') {
+                            title = 'Couldn\'t Reach Client';
+                            message = 'Unable to connect to the client. Please check the number and try again.';
+                        }
+                        
+                        // Return to start screen and show error
+                        cancelCall();
+                        showErrorModal(title, message);
                     }
                     break;
             }
@@ -2619,6 +2663,9 @@
             state.sessionId = null;
             state.isInCall = false;
             setStatus('');
+            resetConnectionSteps();
+            // Remove connected class from icon
+            document.getElementById('connectingIcon')?.classList.remove('connected');
             showScreen('startScreen');
         }
         
@@ -3092,9 +3139,13 @@
             state.sessionId = null;
             state.clientPhone = null;
             state.seconds = 0;
+            state.isInCall = false;
             if (dom.clientPhoneInput) dom.clientPhoneInput.value = '';
             dismissGuidance();
             resetCaptions();
+            resetConnectionSteps();
+            // Remove connected class from icon
+            document.getElementById('connectingIcon')?.classList.remove('connected');
             showScreen('startScreen');
         }
         

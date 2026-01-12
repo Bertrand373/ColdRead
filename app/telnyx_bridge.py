@@ -124,10 +124,40 @@ def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
+def generate_agent_dtmf_texml(session_id: str) -> str:
+    """
+    Generate TeXML for agent DTMF gate.
+    Called when agent answers the call.
+    
+    Waits for agent to press 1 before dialing client.
+    This prevents voicemail/declined calls from triggering client dial.
+    
+    - 10 second timeout for DTMF input
+    - On success (press 1): redirect to /agent-ready endpoint
+    - On timeout/no input: hang up with message
+    """
+    dtmf_action_url = f"{settings.base_url}/api/telnyx/agent-ready?session_id={session_id}"
+    
+    print(f"[TeXML] Generating AGENT DTMF TeXML for session {session_id}", flush=True)
+    print(f"[TeXML] DTMF action URL: {dtmf_action_url}", flush=True)
+    
+    texml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Gather action="{dtmf_action_url}" method="POST" numDigits="1" timeout="10">
+        <Say voice="Polly.Matthew" language="en-US">Press 1 when ready.</Say>
+    </Gather>
+    <Say voice="Polly.Matthew" language="en-US">No response received. Goodbye.</Say>
+    <Hangup />
+</Response>"""
+    
+    print(f"[TeXML] Agent DTMF TeXML:\n{texml}", flush=True)
+    return texml
+
+
 def generate_agent_conference_texml(session_id: str) -> str:
     """
-    Generate TeXML for agent call - JOIN CONFERENCE with audio streaming.
-    Called when agent answers the call.
+    Generate TeXML to put the agent into a conference with audio streaming.
+    Called AFTER agent presses 1 (DTMF gate passed).
     
     CRITICAL: Agent MUST join the conference so client can hear them!
     - Start streaming agent's audio (inbound_track = agent speaking)
@@ -140,7 +170,7 @@ def generate_agent_conference_texml(session_id: str) -> str:
     # Use separate stream endpoint for agent audio
     agent_stream_url = f"{stream_url}/ws/telnyx/stream/agent/{session_id}"
     
-    print(f"[TeXML] Generating AGENT TeXML for session {session_id}", flush=True)
+    print(f"[TeXML] Generating AGENT CONFERENCE TeXML for session {session_id}", flush=True)
     print(f"[TeXML] Conference: {conference_name}", flush=True)
     print(f"[TeXML] Agent stream: {agent_stream_url}", flush=True)
     
@@ -166,7 +196,7 @@ def generate_agent_conference_texml(session_id: str) -> str:
     </Dial>
 </Response>"""
     
-    print(f"[TeXML] Agent TeXML:\n{texml}", flush=True)
+    print(f"[TeXML] Agent Conference TeXML:\n{texml}", flush=True)
     return texml
 
 
