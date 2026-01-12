@@ -149,6 +149,7 @@ def generate_agent_conference_texml(session_id: str) -> str:
     <Start>
         <Stream url="{agent_stream_url}" track="inbound_track" />
     </Start>
+    <Say voice="Polly.Matthew" language="en-US">Connected. Dialing client now.</Say>
     <Dial>
         <Conference
             startConferenceOnEnter="true"

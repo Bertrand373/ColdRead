@@ -298,10 +298,36 @@ When you DO fire guidance, make it UNCANNY by referencing:
 - What stage of the presentation they're in
 - What products have been discussed
 
-RESPONSE FORMAT:
-- If guidance needed: Give the EXACT words to say. 2-4 sentences. Conversational, not robotic.
-- If reminder needed: Start with "📋 REMINDER:" then the nudge
-- If no action needed: Respond with exactly: NO_GUIDANCE_NEEDED
+=== CRITICAL OUTPUT RULES ===
+
+YOUR OUTPUT IS DISPLAYED DIRECTLY ON THE AGENT'S SCREEN AS A TELEPROMPTER.
+The agent will READ YOUR WORDS OUT LOUD to the client.
+
+✅ CORRECT OUTPUT (exact script to read):
+"I completely understand wanting to talk to your wife - that shows you're a thoughtful husband. Here's what we can do: let's lock in this rate today while you're still healthy, and you have 30 days to cancel with a full refund if she's not on board."
+
+❌ WRONG - Never echo client speech:
+"I don't know if life insurance is for me, bro."
+
+❌ WRONG - Never give commentary/observations:
+"This call has gone downhill." 
+"The client seems resistant."
+"Things are getting heated."
+
+❌ WRONG - Never give meta-instructions:
+"Try to calm them down."
+"You should apologize."
+"Redirect the conversation."
+
+ONLY OUTPUT:
+1. The EXACT words for the agent to say (in quotes, as a script) - OR -
+2. "📋 REMINDER:" followed by a brief nudge - OR -
+3. NO_GUIDANCE_NEEDED
+
+If the conversation goes off the rails (cursing, hostility), give the agent WORDS TO SAY to recover:
+"Sir, I apologize if I came across wrong - I'm just passionate about making sure families are protected. Can we start fresh?"
+
+NOT commentary about the situation.
 
 Be the coach that makes agents close deals they would have lost."""
     
@@ -434,11 +460,13 @@ Remember:
 - Only fire on objections, hesitations, or missed critical stages
 - NOT on acknowledgments, confirmations, or clarifying questions
 - Make guidance specific using the extracted context
-- Respect the presentation flow"""
+- Respect the presentation flow
+- OUTPUT ONLY: exact script in quotes, 📋 REMINDER, or NO_GUIDANCE_NEEDED"""
 
             collected_text = ""
             input_tokens = 0
             output_tokens = 0
+            first_check_done = False
             
             async with self.client.messages.stream(
                 model="claude-sonnet-4-20250514",
@@ -452,6 +480,29 @@ Remember:
                     # Check early if it's NO_GUIDANCE_NEEDED
                     if "NO_GUIDANCE" in collected_text.upper():
                         return
+                    
+                    # Safety check after first ~30 chars
+                    if not first_check_done and len(collected_text) > 30:
+                        first_check_done = True
+                        trimmed = collected_text.strip()
+                        
+                        # Check if echoing client speech (first 20 chars match)
+                        if client_text and len(client_text) > 10:
+                            client_start = client_text[:20].lower().strip()
+                            output_start = trimmed[:20].lower()
+                            if client_start and output_start.startswith(client_start[:15]):
+                                print(f"[Claude] Filtering: echoing client speech", flush=True)
+                                return
+                        
+                        # Check if it's commentary (doesn't start with quote or 📋)
+                        # Valid starts: " ' " 📋 "Listen "Sir "I "Look "Here's "Let "That's "You "What "Mr "Mrs
+                        valid_starts = ('"', "'", '"', '📋', '"', 'Listen', 'Sir', 'I ', 'Look', "Here's", 'Let', "That's", 'You', 'What', 'Mr', 'Mrs', 'Ma\'am', 'Hey')
+                        if not any(trimmed.startswith(s) for s in valid_starts):
+                            # Could be commentary - check for red flag words
+                            commentary_flags = ['this call', 'the client', 'seems', 'appears', 'getting', 'gone', 'has become', 'situation']
+                            if any(flag in trimmed.lower() for flag in commentary_flags):
+                                print(f"[Claude] Filtering: commentary detected", flush=True)
+                                return
                     
                     yield text
                 
