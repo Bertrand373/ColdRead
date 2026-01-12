@@ -155,17 +155,23 @@ async def dial_client(data: DialClientRequest):
 @router.post("/end-call")
 async def end_call(data: EndCallRequest):
     """End a call session - hangs up both agent and client calls"""
+    print(f"[EndCall] Ending session: {data.session_id}", flush=True)
+    
     session = await session_manager.get_session(data.session_id)
     
     if session:
+        print(f"[EndCall] Found session. Agent SID: {session.agent_call_sid}, Client SID: {session.client_call_sid}", flush=True)
+        
         # Hang up both call legs
         if session.agent_call_sid:
-            logger.info(f"Hanging up agent call: {session.agent_call_sid}")
-            hangup_call(session.agent_call_sid)
+            print(f"[EndCall] Hanging up agent call: {session.agent_call_sid}", flush=True)
+            result = hangup_call(session.agent_call_sid)
+            print(f"[EndCall] Agent hangup result: {result}", flush=True)
         
         if session.client_call_sid:
-            logger.info(f"Hanging up client call: {session.client_call_sid}")
-            hangup_call(session.client_call_sid)
+            print(f"[EndCall] Hanging up client call: {session.client_call_sid}", flush=True)
+            result = hangup_call(session.client_call_sid)
+            print(f"[EndCall] Client hangup result: {result}", flush=True)
         
         # Log usage with dual-channel tracking
         if session.started_at:
@@ -184,6 +190,8 @@ async def end_call(data: EndCallRequest):
                 agent_duration_seconds=agent_duration,
                 client_duration_seconds=client_duration
             )
+    else:
+        print(f"[EndCall] Session not found: {data.session_id}", flush=True)
     
     end_conference(data.session_id)
     await session_manager.end_session(data.session_id)
@@ -393,20 +401,96 @@ async def client_answered(request: Request):
 
 @router.post("/call-status")
 async def call_status(request: Request):
-    """Webhook: Call status updates"""
+    """
+    Webhook: TeXML call status updates.
+    Handles: initiated, ringing, answered, completed (which includes no-answer, busy, failed, canceled)
+    """
     try:
         form = await request.form()
-        status = form.get("CallStatus")
+        status = form.get("CallStatus", "")
         session_id = request.query_params.get("session_id")
+        party = request.query_params.get("party", "unknown")  # "agent" or "client"
         
-        logger.info(f"Call status: {status} for session {session_id}")
+        # Additional details for completed calls
+        sip_code = form.get("SipResponseCode", "")
+        error_code = form.get("ErrorCode", "")
         
-        if session_id and status == "completed":
-            session = await session_manager.get_session(session_id)
-            if session:
+        print(f"[CallStatus] {party} status={status} sip={sip_code} error={error_code} session={session_id}", flush=True)
+        
+        if not session_id:
+            return Response(content="", status_code=200)
+        
+        session = await session_manager.get_session(session_id)
+        if not session:
+            return Response(content="", status_code=200)
+        
+        # Handle different statuses
+        if status == "completed":
+            # Call ended - determine why
+            cause = "normal"
+            
+            # Check SIP response codes for specific failures
+            if sip_code:
+                sip_int = int(sip_code) if sip_code.isdigit() else 0
+                if sip_int == 486 or sip_int == 600:
+                    cause = "busy"
+                elif sip_int == 487:
+                    cause = "canceled"
+                elif sip_int == 480 or sip_int == 408:
+                    cause = "no_answer"
+                elif sip_int == 603:
+                    cause = "rejected"
+                elif sip_int >= 400:
+                    cause = "failed"
+            
+            # If no SIP code but there's an error, it's likely no-answer timeout
+            if not sip_code and error_code:
+                cause = "no_answer"
+            
+            print(f"[CallStatus] {party} completed with cause: {cause}", flush=True)
+            
+            # Notify frontend
+            await session_manager._broadcast_to_session(session_id, {
+                "type": "call_ended",
+                "party": party,
+                "cause": cause
+            })
+            
+            # If agent call ended, end the session
+            # If client call ended but agent is still connected, just notify
+            if party == "agent":
                 await session_manager.end_session(session_id)
+            elif party == "client" and cause != "normal":
+                # Client failed to connect - hang up agent too
+                if session.agent_call_sid:
+                    hangup_call(session.agent_call_sid)
+                await session_manager.end_session(session_id)
+                
+        elif status == "busy":
+            await session_manager._broadcast_to_session(session_id, {
+                "type": "call_ended",
+                "party": party,
+                "cause": "busy"
+            })
+            
+        elif status == "no-answer":
+            await session_manager._broadcast_to_session(session_id, {
+                "type": "call_ended",
+                "party": party,
+                "cause": "no_answer"
+            })
+            
+        elif status == "failed":
+            await session_manager._broadcast_to_session(session_id, {
+                "type": "call_ended",
+                "party": party,
+                "cause": "failed"
+            })
+            
     except Exception as e:
         logger.error(f"Error handling call status: {e}")
+        import traceback
+        traceback.print_exc()
     
     return Response(content="", status_code=200)
 

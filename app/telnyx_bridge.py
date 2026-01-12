@@ -68,6 +68,7 @@ def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
     """
     Call the agent using Telnyx API.
     When agent answers, Telnyx hits our webhook which returns TeXML instructions.
+    StatusCallback handles call end events (hangup, no-answer, busy, failed).
     """
     from_number = get_telnyx_phone()
     api_key = get_telnyx_api_key()
@@ -78,6 +79,9 @@ def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
     if not is_telnyx_configured():
         logger.error(f"[Telnyx] Not configured")
         return {"success": False, "error": "Telnyx not configured"}
+    
+    # Status callback to detect hangup, no-answer, busy, failed
+    status_callback = f"{settings.base_url}/api/telnyx/call-status?session_id={session_id}&party=agent"
     
     try:
         response = requests.post(
@@ -90,7 +94,10 @@ def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
                 "To": agent_phone,
                 "From": from_number,
                 "Url": f"{settings.base_url}/api/telnyx/agent-answered?session_id={session_id}",
-                "Method": "POST"
+                "Method": "POST",
+                "StatusCallback": status_callback,
+                "StatusCallbackEvent": "initiated ringing answered completed",
+                "Timeout": 30  # 30 second ring timeout for agent
             }
         )
         
@@ -269,6 +276,7 @@ def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id
     """
     Call the client and add them to the conference.
     Uses agent's phone number as caller ID so client sees familiar number.
+    StatusCallback handles call end events (hangup, no-answer, busy, failed).
     """
     if not is_telnyx_configured():
         return {"success": False, "error": "Telnyx not configured"}
@@ -278,6 +286,9 @@ def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id
     app_id = get_telnyx_app_id()
     
     logger.info(f"[Telnyx] Dialing client {client_phone} from {from_number} for session {session_id}")
+    
+    # Status callback to detect hangup, no-answer, busy, failed
+    status_callback = f"{settings.base_url}/api/telnyx/call-status?session_id={session_id}&party=client"
     
     try:
         response = requests.post(
@@ -290,7 +301,10 @@ def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id
                 "To": client_phone,
                 "From": from_number,
                 "Url": f"{settings.base_url}/api/telnyx/client-answered?session_id={session_id}",
-                "Method": "POST"
+                "Method": "POST",
+                "StatusCallback": status_callback,
+                "StatusCallbackEvent": "initiated ringing answered completed",
+                "Timeout": 25  # 25 second ring timeout for client
             }
         )
         
@@ -323,24 +337,59 @@ def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id
 
 
 def hangup_call(call_control_id: str) -> dict:
-    """Hang up a specific call"""
+    """
+    Hang up a specific TeXML call.
+    TeXML calls use a different API than standard Call Control.
+    """
     if not is_telnyx_configured():
         return {"success": False, "error": "Telnyx not configured"}
     
+    if not call_control_id:
+        logger.warning("No call_control_id provided for hangup")
+        return {"success": False, "error": "No call ID"}
+    
+    app_id = get_telnyx_app_id()
+    
     try:
+        # TeXML calls use /texml/calls/{call_sid}/update with Status=completed
         response = requests.post(
-            f"https://api.telnyx.com/v2/calls/{call_control_id}/actions/hangup",
+            f"https://api.telnyx.com/v2/texml/calls/{call_control_id}/update",
             headers={
                 "Authorization": f"Bearer {get_telnyx_api_key()}",
                 "Content-Type": "application/json"
+            },
+            json={
+                "Status": "completed"
             }
         )
         
-        if response.status_code in [200, 201]:
-            logger.info(f"Hung up call: {call_control_id}")
+        print(f"[Hangup] TeXML hangup {call_control_id}: {response.status_code}", flush=True)
+        
+        if response.status_code in [200, 201, 204]:
+            logger.info(f"Hung up TeXML call: {call_control_id}")
             return {"success": True}
         else:
-            return {"success": False, "error": "Failed to hangup"}
+            # Try fallback to standard Call Control API
+            logger.warning(f"TeXML hangup failed ({response.status_code}), trying Call Control API")
+            fallback = requests.post(
+                f"https://api.telnyx.com/v2/calls/{call_control_id}/actions/hangup",
+                headers={
+                    "Authorization": f"Bearer {get_telnyx_api_key()}",
+                    "Content-Type": "application/json"
+                }
+            )
+            print(f"[Hangup] Fallback hangup {call_control_id}: {fallback.status_code}", flush=True)
+            
+            if fallback.status_code in [200, 201, 204]:
+                return {"success": True}
+            else:
+                error_detail = ""
+                try:
+                    error_detail = response.text[:200]
+                except:
+                    pass
+                logger.error(f"Both hangup methods failed for {call_control_id}: {error_detail}")
+                return {"success": False, "error": f"Failed to hangup: {response.status_code}"}
             
     except Exception as e:
         logger.error(f"Failed to hangup call: {e}")
