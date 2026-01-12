@@ -930,32 +930,18 @@
             max-width: 100%;
         }
         
-        .listening-bars {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
+        .listening-ring {
+            width: 48px;
             height: 48px;
+            border: 2px solid var(--accent);
+            border-radius: 50%;
             margin-bottom: 20px;
+            animation: ringPulse 2.5s ease-in-out infinite;
         }
         
-        .bar {
-            width: 6px;
-            height: 20px;
-            background: var(--accent);
-            border-radius: 3px;
-            animation: bars 1s ease-in-out infinite;
-        }
-        
-        .bar:nth-child(1) { animation-delay: 0s; }
-        .bar:nth-child(2) { animation-delay: 0.1s; }
-        .bar:nth-child(3) { animation-delay: 0.2s; }
-        .bar:nth-child(4) { animation-delay: 0.3s; }
-        .bar:nth-child(5) { animation-delay: 0.4s; }
-        
-        @keyframes bars {
-            0%, 100% { height: 12px; opacity: 0.4; }
-            50% { height: 36px; opacity: 1; }
+        @keyframes ringPulse {
+            0%, 100% { opacity: 0.35; transform: scale(0.95); }
+            50% { opacity: 0.7; transform: scale(1); }
         }
         
         .listening-text {
@@ -1023,12 +1009,11 @@
         .guidance-text {
             width: 100%;
             max-width: 100%;
-            font-size: 1.5rem;
+            font-size: clamp(1.5rem, 4vw, 2.25rem);
             line-height: 1.55;
             font-weight: 500;
             color: var(--text);
             text-align: center;
-            margin-bottom: 32px;
             overflow-wrap: break-word;
             word-wrap: break-word;
         }
@@ -1075,18 +1060,6 @@
         @keyframes loadingPulse {
             0%, 100% { opacity: 0.3; }
             50% { opacity: 1; }
-        }
-        
-        .dismiss-hint {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .guidance-state.active .dismiss-hint {
-            opacity: 1;
-            transition-delay: 1s;
         }
         
         .guidance-text strong { font-weight: 700; }
@@ -1195,15 +1168,15 @@
         .transcript-sidebar::before {
             content: '';
             position: absolute;
-            top: 49px; /* Below header */
+            top: 53px; /* Below header (padding + content + border) */
             left: 0;
             right: 0;
-            height: 24px;
+            height: 32px;
             background: linear-gradient(to bottom, var(--surface), transparent);
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s;
-            z-index: 1;
+            z-index: 2;
         }
         
         .transcript-sidebar.has-scroll::before {
@@ -1249,11 +1222,12 @@
         }
         
         .transcript-msg.agent .transcript-text {
-            color: var(--text-secondary);
+            color: var(--text-muted);
         }
         
         .transcript-msg.client .transcript-text {
             color: var(--text);
+            font-weight: 500;
         }
         
         /* Live typing cursor */
@@ -1348,337 +1322,73 @@
             }
         }
         
-        /* ========== OUTCOME SCREEN ========== */
-        .outcome-screen {
+        /* ========== SESSION COMPLETE SCREEN ========== */
+        .complete-screen {
             justify-content: center;
             align-items: center;
             text-align: center;
             padding: 40px 24px;
         }
         
-        .outcome-question {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.75rem;
-            font-weight: 600;
-            margin-bottom: 40px;
-            color: var(--text);
-        }
-        
-        .outcome-buttons {
-            display: flex;
-            gap: 16px;
-            width: 100%;
-            max-width: 320px;
-        }
-        
-        .outcome-btn {
-            flex: 1;
-            padding: 20px 24px;
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-radius: 14px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .outcome-btn svg { width: 32px; height: 32px; }
-        
-        .outcome-btn.yes {
+        .complete-icon {
+            width: 72px;
+            height: 72px;
             background: var(--success-soft);
-            border: 2px solid var(--success);
-            color: #059669;
-        }
-        
-        .outcome-btn.yes:hover {
-            background: var(--success);
-            color: white;
-        }
-        
-        .outcome-btn.no {
-            background: var(--surface);
-            border: 2px solid var(--border);
-            color: var(--text-secondary);
-        }
-        
-        .outcome-btn.no:hover {
-            background: var(--border);
-            color: var(--text);
-        }
-        
-        /* ========== REVIEW SCREEN ========== */
-        .review-screen {
-            padding: 24px;
-            overflow-y: auto;
-        }
-        
-        .review-header {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-        
-        .review-icon {
-            width: 64px;
-            height: 64px;
-            background: var(--success-soft);
-            border-radius: 16px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 16px;
+            margin-bottom: 24px;
         }
         
-        .review-icon svg {
-            width: 32px;
-            height: 32px;
+        .complete-icon svg {
+            width: 36px;
+            height: 36px;
             color: var(--success);
         }
         
-        .review-title {
+        .complete-title {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             font-weight: 600;
-            margin-bottom: 4px;
             color: var(--text);
+            margin-bottom: 24px;
         }
         
-        .review-subtitle {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
+        .complete-stats {
+            margin-bottom: 40px;
         }
         
-        .review-stats {
+        .complete-stat {
             display: flex;
-            justify-content: center;
-            gap: 40px;
-            margin-bottom: 32px;
-            padding: 20px;
-            background: var(--surface);
-            border-radius: 14px;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
         }
         
-        .stat-value {
+        .complete-stat-value {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.75rem;
+            font-size: 2rem;
             font-weight: 700;
             color: var(--text);
         }
         
-        .stat-label {
+        .complete-stat-label {
             font-size: 0.75rem;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
         
-        .review-section-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 8px;
-            text-align: center;
-        }
-        
-        .review-card {
-            background: var(--surface);
-            border-radius: 14px;
-            padding: 20px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.15s ease;
-        }
-        
-        .review-card:hover { border-color: var(--border); }
-        
-        .review-card.selected {
-            border-color: var(--accent-dark);
-            background: var(--accent-soft);
-        }
-        
-        .review-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-        
-        .review-card-number {
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: var(--accent-dark);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        
-        .review-card-check {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 2px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.15s ease;
-        }
-        
-        .review-card.selected .review-card-check {
-            background: var(--accent-dark);
-            border-color: var(--accent-dark);
-        }
-        
-        .review-card-check svg {
-            width: 12px;
-            height: 12px;
-            color: white;
-            opacity: 0;
-        }
-        
-        .review-card.selected .review-card-check svg { opacity: 1; }
-        
-        .review-card-text {
-            font-size: 1rem;
-            line-height: 1.6;
-            color: var(--text);
-        }
-        
-        .review-empty {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
-        }
-        
-        .review-helper {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            text-align: center;
-            margin-bottom: 24px;
-        }
-        
-        .review-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 24px;
-        }
-        
-        .review-btn {
-            flex: 1;
-            padding: 16px 20px;
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.95rem;
-            font-weight: 600;
-            border-radius: 14px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-        
-        .review-btn.primary {
-            background: var(--text);
-            color: white;
-            border: none;
-        }
-        
-        .review-btn.secondary {
-            background: var(--surface);
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-        
-        .review-btn:hover { opacity: 0.9; }
-        
-        /* ========== NO-CLOSE SCREEN ========== */
-        .noclose-screen {
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 40px 24px;
-        }
-        
-        .noclose-icon {
-            width: 64px;
-            height: 64px;
-            background: var(--surface);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-        
-        .noclose-icon svg {
-            width: 32px;
-            height: 32px;
-            color: var(--text-muted);
-        }
-        
-        .noclose-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text);
-        }
-        
-        .noclose-subtitle {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-bottom: 32px;
-            max-width: 280px;
-        }
-        
-        .noclose-label {
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 10px;
-        }
-        
-        .objection-select {
-            width: 100%;
-            max-width: 300px;
-            padding: 14px 16px;
-            font-family: 'Inter', sans-serif;
-            font-size: 1rem;
-            color: var(--text);
-            background: transparent;
-            border: 1.5px solid var(--border);
-            border-radius: 12px;
-            cursor: pointer;
-            margin-bottom: 32px;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 20px;
-            min-height: 50px;
-            transition: all 0.2s ease;
-        }
-        
-        .objection-select:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-soft);
-        }
-        
-        .noclose-actions {
+        .complete-actions {
             display: flex;
             flex-direction: column;
             gap: 12px;
             width: 100%;
-            max-width: 300px;
+            max-width: 280px;
         }
         
-        .noclose-btn {
+        .complete-btn {
             padding: 16px 24px;
             font-family: 'Outfit', sans-serif;
             font-size: 1rem;
@@ -1688,20 +1398,20 @@
             transition: all 0.15s ease;
         }
         
-        .noclose-btn.primary {
+        .complete-btn.primary {
             background: var(--text);
             color: white;
             border: none;
         }
         
-        .noclose-btn.secondary {
+        .complete-btn.secondary {
             background: var(--surface);
             color: var(--text-secondary);
             border: 1px solid var(--border);
         }
         
-        .noclose-btn:hover { opacity: 0.9; }
-        
+        .complete-btn:hover { opacity: 0.9; }
+
         /* ========== ERROR MODAL ========== */
         .modal-overlay {
             position: fixed;
@@ -2053,20 +1763,13 @@
                 <div class="call-main">
                     <div class="teleprompter" id="teleprompter" onclick="Coachd.dismissGuidance()">
                         <div class="listening-state" id="listeningState">
-                            <div class="listening-bars">
-                                <div class="bar"></div>
-                                <div class="bar"></div>
-                                <div class="bar"></div>
-                                <div class="bar"></div>
-                                <div class="bar"></div>
-                            </div>
-                            <div class="listening-text">Listening...</div>
-                            <div class="listening-hint">Coaching activates on objections</div>
+                            <div class="listening-ring"></div>
+                            <div class="listening-text">Ready</div>
+                            <div class="listening-hint">Connected — coaching active</div>
                         </div>
                         
                         <div class="guidance-state" id="guidanceState">
                             <div class="guidance-text" id="guidanceText"></div>
-                            <div class="dismiss-hint">tap anywhere to dismiss</div>
                         </div>
                     </div>
                     
@@ -2083,90 +1786,24 @@
             </div>
         </div>
         
-        <!-- Outcome Screen -->
-        <div class="screen outcome-screen" id="outcomeScreen">
-            <h1 class="outcome-question">Did you close?</h1>
-            <div class="outcome-buttons">
-                <button class="outcome-btn yes" onclick="Coachd.recordOutcome(true)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                        <polyline points="22 4 12 14.01 9 11.01"/>
-                    </svg>
-                    Yes
-                </button>
-                <button class="outcome-btn no" onclick="Coachd.recordOutcome(false)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="15" y1="9" x2="9" y2="15"/>
-                        <line x1="9" y1="9" x2="15" y2="15"/>
-                    </svg>
-                    No
-                </button>
-            </div>
-        </div>
-        
-        <!-- Review Screen (after closing) -->
-        <div class="screen review-screen" id="reviewScreen">
-            <div class="review-header">
-                <div class="review-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                        <polyline points="22 4 12 14.01 9 11.01"/>
-                    </svg>
-                </div>
-                <h1 class="review-title">Great work! 🎉</h1>
-                <p class="review-subtitle">Quick review to improve coaching</p>
-            </div>
-            
-            <div class="review-stats">
-                <div class="stat">
-                    <div class="stat-value" id="statDuration">0:00</div>
-                    <div class="stat-label">Duration</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-value" id="statTips">0</div>
-                    <div class="stat-label">Tips</div>
-                </div>
-            </div>
-            
-            <p class="review-section-title">Which tip helped most?</p>
-            <p class="review-helper">Tap to select (optional)</p>
-            
-            <div id="reviewCards"></div>
-            
-            <div class="review-actions">
-                <button class="review-btn secondary" onclick="Coachd.goHome()">Done</button>
-                <button class="review-btn primary" onclick="Coachd.submitAndNewCall()">Next Call</button>
-            </div>
-        </div>
-        
-        <!-- No-Close Screen -->
-        <div class="screen noclose-screen" id="nocloseScreen">
-            <div class="noclose-icon">
+        <!-- Session Complete Screen -->
+        <div class="screen complete-screen" id="completeScreen">
+            <div class="complete-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <path d="M12 20h9"/>
-                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
                 </svg>
             </div>
-            <h1 class="noclose-title">What stopped the sale?</h1>
-            <p class="noclose-subtitle">Help us coach you better next time</p>
-            
-            <label class="noclose-label">Final Objection</label>
-            <select class="objection-select" id="finalObjection">
-                <option value="">Select objection...</option>
-                <option value="price">Price / Can't afford it</option>
-                <option value="spouse">Need to talk to spouse</option>
-                <option value="think">Need to think about it</option>
-                <option value="coverage">Already has coverage</option>
-                <option value="not_interested">Not interested</option>
-                <option value="callback">Requested callback</option>
-                <option value="no_answer">No answer / Voicemail</option>
-                <option value="other">Other</option>
-            </select>
-            
-            <div class="noclose-actions">
-                <button class="noclose-btn primary" onclick="Coachd.submitAndNewCall()">Next Call</button>
-                <button class="noclose-btn secondary" onclick="Coachd.goHome()">Done for Now</button>
+            <h1 class="complete-title">Session Complete</h1>
+            <div class="complete-stats">
+                <div class="complete-stat">
+                    <span class="complete-stat-value" id="completeDuration">0:00</span>
+                    <span class="complete-stat-label">Duration</span>
+                </div>
+            </div>
+            <div class="complete-actions">
+                <button class="complete-btn primary" onclick="Coachd.startNewCall()">New Call</button>
+                <button class="complete-btn secondary" onclick="Coachd.goHome()">Done</button>
             </div>
         </div>
         
@@ -2235,6 +1872,7 @@
             clientFadeTimer: null,
             streamingGuidance: '',
             hasVibratedForCurrentGuidance: false,
+            guidanceDismissTimer: null,  // Fallback auto-dismiss
             // Transcript sidebar state
             transcriptUserScrolled: false,
             currentClientText: '',
@@ -2257,9 +1895,7 @@
             get startScreen() { return document.getElementById('startScreen'); },
             get connectingScreen() { return document.getElementById('connectingScreen'); },
             get callScreen() { return document.getElementById('callScreen'); },
-            get outcomeScreen() { return document.getElementById('outcomeScreen'); },
-            get reviewScreen() { return document.getElementById('reviewScreen'); },
-            get nocloseScreen() { return document.getElementById('nocloseScreen'); },
+            get completeScreen() { return document.getElementById('completeScreen'); },
             get startBtn() { return document.getElementById('startBtn'); },
             get timer() { return document.getElementById('timer'); },
             get statusIndicator() { return document.getElementById('statusIndicator'); },
@@ -2267,10 +1903,7 @@
             get listeningState() { return document.getElementById('listeningState'); },
             get guidanceState() { return document.getElementById('guidanceState'); },
             get guidanceText() { return document.getElementById('guidanceText'); },
-            get statDuration() { return document.getElementById('statDuration'); },
-            get statTips() { return document.getElementById('statTips'); },
-            get reviewCards() { return document.getElementById('reviewCards'); },
-            get finalObjection() { return document.getElementById('finalObjection'); },
+            get completeDuration() { return document.getElementById('completeDuration'); },
             get agentName() { return document.getElementById('agentName'); },
             get agentPhone() { return document.getElementById('agentPhone'); },
             get agencySelect() { return document.getElementById('agencySelect'); },
@@ -2820,6 +2453,9 @@
                 case 'guidance_complete':
                     handleGuidanceComplete(msg);
                     break;
+                case 'guidance_dismiss':
+                    dismissGuidance();
+                    break;
                 case 'bridge':
                     handleBridge(msg);
                     break;
@@ -3005,7 +2641,10 @@
             
             stopTimer();
             setStatus('');
-            showScreen('outcomeScreen');
+            
+            // Show session complete screen with duration
+            dom.completeDuration.textContent = formatTime(state.seconds);
+            showScreen('completeScreen');
             state.sessionId = null;
         }
         
@@ -3362,6 +3001,13 @@
             
             state.streamingGuidance = '';
             state.hasVibratedForCurrentGuidance = false;
+            
+            // Start fallback dismiss timer (45s) - Claude should dismiss sooner via guidance_dismiss
+            clearTimeout(state.guidanceDismissTimer);
+            state.guidanceDismissTimer = setTimeout(() => {
+                console.log('[GUIDANCE] Fallback auto-dismiss after 45s');
+                dismissGuidance();
+            }, 45000);
         }
         
         function formatGuidanceText(text) {
@@ -3418,6 +3064,10 @@
         }
         
         function dismissGuidance() {
+            // Clear fallback timer
+            clearTimeout(state.guidanceDismissTimer);
+            state.guidanceDismissTimer = null;
+            
             dom.guidanceState.classList.remove('active');
             dom.listeningState.style.display = 'flex';
             dom.teleprompter.classList.remove('has-guidance');
@@ -3427,92 +3077,14 @@
             state.hasVibratedForCurrentGuidance = false;
         }
         
-        // ==================== OUTCOME ====================
-        function recordOutcome(closed) {
-            state.callOutcome = closed;
-            
-            if (closed) {
-                showReviewScreen();
-            } else {
-                showScreen('nocloseScreen');
-            }
-        }
-        
-        function showReviewScreen() {
-            dom.statDuration.textContent = formatTime(state.seconds);
-            dom.statTips.textContent = state.guidanceHistory.length;
-            
-            if (state.guidanceHistory.length === 0) {
-                dom.reviewCards.innerHTML = '<div class="review-empty">No tips were triggered during this call.</div>';
-            } else {
-                dom.reviewCards.innerHTML = state.guidanceHistory.map((item, i) => `
-                    <div class="review-card" data-index="${i}" onclick="Coachd.selectTip(${i})">
-                        <div class="review-card-header">
-                            <span class="review-card-number">Tip ${i + 1}</span>
-                            <div class="review-card-check">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-                                    <polyline points="20 6 9 17 4 12"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="review-card-text">${item.text}</div>
-                    </div>
-                `).join('');
-            }
-            
-            showScreen('reviewScreen');
-        }
-        
-        function selectTip(index) {
-            document.querySelectorAll('.review-card').forEach(c => c.classList.remove('selected'));
-            
-            if (state.selectedTipIndex === index) {
-                state.selectedTipIndex = null;
-            } else {
-                state.selectedTipIndex = index;
-                document.querySelector(`.review-card[data-index="${index}"]`).classList.add('selected');
-            }
-        }
-        
-        async function submitOutcome() {
-            const payload = {
-                session_id: state.sessionId,
-                duration_seconds: state.seconds,
-                outcome: state.callOutcome ? 'closed' : 'not_closed',
-                guidance_count: state.guidanceHistory.length,
-                guidance_used: state.guidanceHistory.map(g => g.text),
-                most_helpful_index: state.selectedTipIndex,
-                most_helpful_text: state.selectedTipIndex !== null ? state.guidanceHistory[state.selectedTipIndex]?.text : null,
-                final_objection: !state.callOutcome ? dom.finalObjection.value : null,
-                timestamp: new Date().toISOString(),
-                agency: state.agency,
-                agent_name: state.agentName,
-                call_type: state.callType
-            };
-            
-            try {
-                await fetch(CONFIG.outcomeEndpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-            } catch (e) {
-                console.error('Failed to submit outcome:', e);
-            }
-        }
-        
-        async function submitAndNewCall() {
-            await submitOutcome();
-            newCall();
-        }
-        
-        function newCall() {
+        // ==================== SESSION COMPLETE ====================
+        function startNewCall() {
             dom.timer.textContent = '0:00';
-            dom.finalObjection.value = '';
             state.guidanceHistory = [];
             state.selectedTipIndex = null;
             state.sessionId = null;
             state.clientPhone = null;
+            state.seconds = 0;
             if (dom.clientPhoneInput) dom.clientPhoneInput.value = '';
             dismissGuidance();
             resetCaptions();
@@ -3520,7 +3092,6 @@
         }
         
         function goHome() {
-            submitOutcome();
             showPageLoader();
             setTimeout(() => {
                 window.location.href = '/';
@@ -3532,10 +3103,8 @@
                 if (confirm('End this session?')) endCall();
             } else if (dom.connectingScreen.classList.contains('active')) {
                 cancelCall();
-            } else if (dom.reviewScreen.classList.contains('active') || 
-                       dom.nocloseScreen.classList.contains('active') ||
-                       dom.outcomeScreen.classList.contains('active')) {
-                newCall();
+            } else if (dom.completeScreen.classList.contains('active')) {
+                startNewCall();
             } else if (dom.startScreen.classList.contains('active')) {
                 goHome();
             } else if (dom.identifyScreen.classList.contains('active')) {
@@ -3571,9 +3140,7 @@
             cancelCall,
             endCall,
             dismissGuidance,
-            recordOutcome,
-            selectTip,
-            submitAndNewCall,
+            startNewCall,
             goHome,
             handleBack,
             saveIdentity,

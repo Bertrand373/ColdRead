@@ -313,6 +313,9 @@ Be the coach that makes agents close deals they would have lost."""
         self.last_analysis_time = 0
         self.is_analyzing = False
         self.guidance_count = 0
+        # Track active guidance for smart dismiss
+        self.active_guidance = None  # {"text": str, "trigger": str, "time": float}
+        self.is_checking_stale = False
     
     def _format_prep_context(self) -> str:
         """Format Quick Prep context if agent filled it out"""
@@ -483,6 +486,88 @@ Remember:
                     return stage
         
         return "unknown"
+    
+    def set_active_guidance(self, guidance_text: str, trigger: str):
+        """Mark guidance as active for stale checking"""
+        self.active_guidance = {
+            "text": guidance_text,
+            "trigger": trigger,
+            "time": time.time()
+        }
+    
+    def clear_active_guidance(self):
+        """Clear active guidance (dismissed)"""
+        self.active_guidance = None
+    
+    async def check_guidance_stale(self, recent_transcript: str, conversation: ConversationBuffer) -> bool:
+        """
+        Check if the active guidance is now stale and should be dismissed.
+        Returns True if guidance should be dismissed.
+        
+        Called after each transcript when guidance is active.
+        """
+        if not self.active_guidance or not self.client:
+            return False
+        
+        if self.is_checking_stale:
+            return False
+        
+        # Don't check too soon after guidance was given (give agent time to read/use it)
+        if time.time() - self.active_guidance["time"] < 5.0:
+            return False
+        
+        self.is_checking_stale = True
+        
+        try:
+            recent_context = conversation.get_recent_context(4)
+            
+            check_prompt = f"""You are monitoring a live sales call. Guidance was shown to the agent.
+
+GUIDANCE THAT WAS SHOWN:
+"{self.active_guidance['text'][:200]}"
+
+TRIGGERED BY CLIENT SAYING:
+"{self.active_guidance['trigger']}"
+
+WHAT HAS BEEN SAID SINCE:
+{recent_context}
+
+MOST RECENT UTTERANCE:
+"{recent_transcript}"
+
+Is this guidance now STALE and should be dismissed? Answer YES if:
+- The agent delivered the rebuttal or something similar
+- The conversation has moved past this objection
+- The client has responded and topic changed
+- 3+ turns have passed and the moment is over
+
+Answer NO if:
+- The objection is still unresolved
+- Agent hasn't addressed it yet
+- Still relevant to current discussion
+
+Respond with exactly one word: YES or NO"""
+
+            response = await self.client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=10,
+                messages=[{"role": "user", "content": check_prompt}]
+            )
+            
+            result = response.content[0].text.strip().upper()
+            should_dismiss = result.startswith("YES")
+            
+            if should_dismiss:
+                print(f"[SmartDismiss] Guidance stale - dismissing", flush=True)
+                self.active_guidance = None
+            
+            return should_dismiss
+            
+        except Exception as e:
+            logger.error(f"Stale check error: {e}")
+            return False
+        finally:
+            self.is_checking_stale = False
 
 
 class ContextExtractor:
@@ -967,7 +1052,11 @@ class ClientStreamHandler:
                 # Extract context from client speech
                 ContextExtractor.extract_from_client(transcript, self.conversation.extracted)
                 
-                # Trigger Claude analysis
+                # Check if active guidance is now stale (smart dismiss)
+                if self._analyzer and self._analyzer.active_guidance:
+                    asyncio.create_task(self._check_stale_guidance(transcript))
+                
+                # Trigger Claude analysis for new guidance
                 if self._analyzer and not self._generating_guidance:
                     asyncio.create_task(self._run_analysis(transcript))
                     
@@ -1010,6 +1099,9 @@ class ClientStreamHandler:
                     "is_reminder": is_reminder
                 })
                 
+                # Track active guidance for smart dismiss
+                self._analyzer.set_active_guidance(full_guidance, client_text[:50])
+                
                 # Store in session
                 await session_manager.add_guidance(self.session_id, {
                     "trigger": client_text[:50],
@@ -1022,6 +1114,18 @@ class ClientStreamHandler:
             logger.error(f"[ClientStream] Analysis error: {e}")
         finally:
             self._generating_guidance = False
+    
+    async def _check_stale_guidance(self, recent_transcript: str):
+        """Check if active guidance is stale and should be dismissed"""
+        try:
+            should_dismiss = await self._analyzer.check_guidance_stale(
+                recent_transcript, 
+                self.conversation
+            )
+            if should_dismiss:
+                await self._broadcast({"type": "guidance_dismiss"})
+        except Exception as e:
+            logger.error(f"[ClientStream] Stale check error: {e}")
     
     async def _broadcast(self, message: dict):
         """Send to frontend"""
