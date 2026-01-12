@@ -144,17 +144,23 @@ def generate_agent_conference_texml(session_id: str) -> str:
     print(f"[TeXML] Conference: {conference_name}", flush=True)
     print(f"[TeXML] Agent stream: {agent_stream_url}", flush=True)
     
+    # Traditional US ringback tone (440Hz + 480Hz, 2s on, 4s off)
+    # Plays while agent waits, stops automatically when client joins
+    # This is the natural phone experience - ringing stops = they answered
+    ringback_url = f"{settings.base_url}/api/telnyx/ringback"
+    
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Start>
         <Stream url="{agent_stream_url}" track="inbound_track" />
     </Start>
-    <Say voice="Polly.Matthew" language="en-US">Connected. Dialing client now.</Say>
+    <Say voice="Polly.Matthew" language="en-US">Calling.</Say>
     <Dial>
         <Conference
             startConferenceOnEnter="true"
             endConferenceOnExit="true"
-            beep="false">
+            beep="false"
+            waitUrl="{ringback_url}">
             {conference_name}
         </Conference>
     </Dial>

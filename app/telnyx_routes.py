@@ -362,6 +362,23 @@ async def conference_status(request: Request):
     return Response(content="", status_code=200)
 
 
+@router.get("/ringback")
+@router.post("/ringback")
+async def ringback_audio():
+    """
+    Returns TeXML that plays US ringback tone while agent waits.
+    Traditional 440Hz + 480Hz tone, 2 sec on, 4 sec off.
+    When client joins, this stops automatically - the natural phone experience.
+    """
+    ringback_file = f"{settings.base_url}/static/ringback.wav"
+    texml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Play loop="0">{ringback_file}</Play>
+</Response>"""
+    
+    return Response(content=texml, media_type="application/xml")
+
+
 @router.post("/recording-complete")
 async def recording_complete(request: Request):
     """Webhook: Recording finished"""
