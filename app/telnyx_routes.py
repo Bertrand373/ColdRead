@@ -107,13 +107,18 @@ async def start_call(data: StartCallRequest):
     # Call the agent
     result = initiate_agent_call(agent_phone, session.session_id)
     
+    print(f"[StartCall] initiate_agent_call result: {result}", flush=True)
+    
     if not result["success"]:
         await session_manager.update_session(session.session_id, status=CallStatus.FAILED)
         raise HTTPException(status_code=500, detail=result.get("error", "Failed to start call"))
     
+    call_sid = result.get("call_control_id", "")
+    print(f"[StartCall] Storing agent_call_sid: {call_sid}", flush=True)
+    
     await session_manager.update_session(
         session.session_id,
-        agent_call_sid=result["call_control_id"],
+        agent_call_sid=call_sid,
         status=CallStatus.AGENT_RINGING
     )
     
@@ -260,13 +265,16 @@ async def incoming_call(request: Request):
 @router.post("/agent-answered")
 async def agent_answered(request: Request):
     """
-    Webhook: Agent has answered the outbound call.
+    Webhook: Something answered the outbound call (could be human OR voicemail).
     Return TeXML with DTMF gate - agent must press 1 to proceed.
     This prevents voicemail/declined calls from triggering client dial.
+    
+    NOTE: We do NOT notify frontend here because voicemail can trigger this.
+    Frontend stays on "Calling your phone..." until agent presses 1 (agent-ready).
     """
     session_id = request.query_params.get("session_id", "unknown")
     
-    logger.info(f"Agent answered for session {session_id}")
+    print(f"[AgentAnswered] Webhook fired for session {session_id}", flush=True)
     
     # Get the session
     session = await session_manager.get_session(session_id)
@@ -277,11 +285,8 @@ async def agent_answered(request: Request):
         started_at=datetime.utcnow()
     )
     
-    # Broadcast to frontend that agent answered, waiting for confirmation
-    await session_manager._broadcast_to_session(session_id, {
-        "type": "agent_answered",
-        "message": "Press 1 when ready"
-    })
+    # DO NOT broadcast to frontend yet - could be voicemail
+    # Frontend will update when agent-ready fires (after pressing 1)
     
     # If client phone provided, return DTMF gate TeXML
     # Agent must press 1 before we dial client

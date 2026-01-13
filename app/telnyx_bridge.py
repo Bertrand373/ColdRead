@@ -102,9 +102,16 @@ def initiate_agent_call(agent_phone: str, session_id: str) -> dict:
         )
         
         if response.status_code in [200, 201]:
-            data = response.json().get("data", {})
+            response_json = response.json()
+            print(f"[Telnyx] Full response: {response_json}", flush=True)
+            data = response_json.get("data", {})
             call_control_id = data.get("call_control_id", "") or data.get("call_sid", "")
             
+            # Also check top level for call_sid (TeXML format)
+            if not call_control_id:
+                call_control_id = response_json.get("call_sid", "") or response_json.get("sid", "")
+            
+            print(f"[Telnyx] Extracted call_control_id: {call_control_id}", flush=True)
             logger.info(f"Initiated agent call: {call_control_id} for session {session_id}")
             
             return {

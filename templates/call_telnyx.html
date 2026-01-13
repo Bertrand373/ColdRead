@@ -2420,14 +2420,6 @@
                 case 'session_update':
                     handleSessionUpdate(msg.data || msg);
                     break;
-                case 'agent_answered':
-                    // Agent picked up, waiting for DTMF confirmation
-                    console.log('📞 Agent answered, waiting for confirmation...');
-                    updateConnectionStep('agent', 'active');
-                    document.getElementById('stepAgentText').textContent = 'Press 1 when ready';
-                    document.getElementById('connectingTitle').textContent = 'Answer Your Phone';
-                    document.getElementById('connectingSubtitle').textContent = 'Press 1 to start the call';
-                    break;
                 case 'client_dialing':
                     // Agent confirmed (pressed 1), now dialing client
                     console.log('📞 Agent confirmed, dialing client...');
