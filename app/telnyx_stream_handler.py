@@ -36,18 +36,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# Shared DeepgramClient instance - SDK may have issues with multiple clients
-_deepgram_client: Optional[DeepgramClient] = None
-
-def get_deepgram_client() -> Optional[DeepgramClient]:
-    """Get or create shared Deepgram client"""
-    global _deepgram_client
-    if _deepgram_client is None and settings.deepgram_api_key:
-        _deepgram_client = DeepgramClient(settings.deepgram_api_key)
-        logger.info("[Deepgram] Shared client created")
-    return _deepgram_client
-
-
 # Shared conversation buffer per session
 _conversation_buffers: Dict[str, 'ConversationBuffer'] = {}
 
@@ -298,36 +286,21 @@ When you DO fire guidance, make it UNCANNY by referencing:
 - What stage of the presentation they're in
 - What products have been discussed
 
-=== CRITICAL OUTPUT RULES ===
+RESPONSE FORMAT - CRITICAL:
+Your FIRST CHARACTER determines everything. No preamble, no reasoning, no analysis.
 
-YOUR OUTPUT IS DISPLAYED DIRECTLY ON THE AGENT'S SCREEN AS A TELEPROMPTER.
-The agent will READ YOUR WORDS OUT LOUD to the client.
+- If guidance needed: Start with "SAY:" then the EXACT words. 2-4 sentences. Conversational.
+- If reminder needed: Start with "📋" then the nudge
+- If no action needed: Output ONLY the text: NO_GUIDANCE_NEEDED
 
-✅ CORRECT OUTPUT (exact script to read):
-"I completely understand wanting to talk to your wife - that shows you're a thoughtful husband. Here's what we can do: let's lock in this rate today while you're still healthy, and you have 30 days to cancel with a full refund if she's not on board."
+FORBIDDEN - NEVER OUTPUT THESE:
+- Never start with "The client...", "Based on...", "Looking at...", "Since...", "Given..."
+- Never explain your reasoning
+- Never output thinking or analysis
+- The agent sees your raw output IN REAL TIME - keep it clean
 
-❌ WRONG - Never echo client speech:
-"I don't know if life insurance is for me, bro."
-
-❌ WRONG - Never give commentary/observations:
-"This call has gone downhill." 
-"The client seems resistant."
-"Things are getting heated."
-
-❌ WRONG - Never give meta-instructions:
-"Try to calm them down."
-"You should apologize."
-"Redirect the conversation."
-
-ONLY OUTPUT:
-1. The EXACT words for the agent to say (in quotes, as a script) - OR -
-2. "📋 REMINDER:" followed by a brief nudge - OR -
-3. NO_GUIDANCE_NEEDED
-
-If the conversation goes off the rails (cursing, hostility), give the agent WORDS TO SAY to recover:
-"Sir, I apologize if I came across wrong - I'm just passionate about making sure families are protected. Can we start fresh?"
-
-NOT commentary about the situation.
+GOOD: SAY: "I completely understand, and that's exactly why this is so important..."
+BAD: The client seems hesitant because they mentioned affordability earlier. SAY: "I understand..."
 
 Be the coach that makes agents close deals they would have lost."""
     
@@ -339,9 +312,6 @@ Be the coach that makes agents close deals they would have lost."""
         self.last_analysis_time = 0
         self.is_analyzing = False
         self.guidance_count = 0
-        # Track active guidance for smart dismiss
-        self.active_guidance = None  # {"text": str, "trigger": str, "time": float}
-        self.is_checking_stale = False
     
     def _format_prep_context(self) -> str:
         """Format Quick Prep context if agent filled it out"""
@@ -460,13 +430,11 @@ Remember:
 - Only fire on objections, hesitations, or missed critical stages
 - NOT on acknowledgments, confirmations, or clarifying questions
 - Make guidance specific using the extracted context
-- Respect the presentation flow
-- OUTPUT ONLY: exact script in quotes, 📋 REMINDER, or NO_GUIDANCE_NEEDED"""
+- Respect the presentation flow"""
 
             collected_text = ""
             input_tokens = 0
             output_tokens = 0
-            first_check_done = False
             
             async with self.client.messages.stream(
                 model="claude-sonnet-4-20250514",
@@ -480,29 +448,6 @@ Remember:
                     # Check early if it's NO_GUIDANCE_NEEDED
                     if "NO_GUIDANCE" in collected_text.upper():
                         return
-                    
-                    # Safety check after first ~30 chars
-                    if not first_check_done and len(collected_text) > 30:
-                        first_check_done = True
-                        trimmed = collected_text.strip()
-                        
-                        # Check if echoing client speech (first 20 chars match)
-                        if client_text and len(client_text) > 10:
-                            client_start = client_text[:20].lower().strip()
-                            output_start = trimmed[:20].lower()
-                            if client_start and output_start.startswith(client_start[:15]):
-                                print(f"[Claude] Filtering: echoing client speech", flush=True)
-                                return
-                        
-                        # Check if it's commentary (doesn't start with quote or 📋)
-                        # Valid starts: " ' " 📋 "Listen "Sir "I "Look "Here's "Let "That's "You "What "Mr "Mrs
-                        valid_starts = ('"', "'", '"', '📋', '"', 'Listen', 'Sir', 'I ', 'Look', "Here's", 'Let', "That's", 'You', 'What', 'Mr', 'Mrs', 'Ma\'am', 'Hey')
-                        if not any(trimmed.startswith(s) for s in valid_starts):
-                            # Could be commentary - check for red flag words
-                            commentary_flags = ['this call', 'the client', 'seems', 'appears', 'getting', 'gone', 'has become', 'situation']
-                            if any(flag in trimmed.lower() for flag in commentary_flags):
-                                print(f"[Claude] Filtering: commentary detected", flush=True)
-                                return
                     
                     yield text
                 
@@ -537,88 +482,6 @@ Remember:
                     return stage
         
         return "unknown"
-    
-    def set_active_guidance(self, guidance_text: str, trigger: str):
-        """Mark guidance as active for stale checking"""
-        self.active_guidance = {
-            "text": guidance_text,
-            "trigger": trigger,
-            "time": time.time()
-        }
-    
-    def clear_active_guidance(self):
-        """Clear active guidance (dismissed)"""
-        self.active_guidance = None
-    
-    async def check_guidance_stale(self, recent_transcript: str, conversation: ConversationBuffer) -> bool:
-        """
-        Check if the active guidance is now stale and should be dismissed.
-        Returns True if guidance should be dismissed.
-        
-        Called after each transcript when guidance is active.
-        """
-        if not self.active_guidance or not self.client:
-            return False
-        
-        if self.is_checking_stale:
-            return False
-        
-        # Don't check too soon after guidance was given (give agent time to read/use it)
-        if time.time() - self.active_guidance["time"] < 5.0:
-            return False
-        
-        self.is_checking_stale = True
-        
-        try:
-            recent_context = conversation.get_recent_context(4)
-            
-            check_prompt = f"""You are monitoring a live sales call. Guidance was shown to the agent.
-
-GUIDANCE THAT WAS SHOWN:
-"{self.active_guidance['text'][:200]}"
-
-TRIGGERED BY CLIENT SAYING:
-"{self.active_guidance['trigger']}"
-
-WHAT HAS BEEN SAID SINCE:
-{recent_context}
-
-MOST RECENT UTTERANCE:
-"{recent_transcript}"
-
-Is this guidance now STALE and should be dismissed? Answer YES if:
-- The agent delivered the rebuttal or something similar
-- The conversation has moved past this objection
-- The client has responded and topic changed
-- 3+ turns have passed and the moment is over
-
-Answer NO if:
-- The objection is still unresolved
-- Agent hasn't addressed it yet
-- Still relevant to current discussion
-
-Respond with exactly one word: YES or NO"""
-
-            response = await self.client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=10,
-                messages=[{"role": "user", "content": check_prompt}]
-            )
-            
-            result = response.content[0].text.strip().upper()
-            should_dismiss = result.startswith("YES")
-            
-            if should_dismiss:
-                print(f"[SmartDismiss] Guidance stale - dismissing", flush=True)
-                self.active_guidance = None
-            
-            return should_dismiss
-            
-        except Exception as e:
-            logger.error(f"Stale check error: {e}")
-            return False
-        finally:
-            self.is_checking_stale = False
 
 
 class ContextExtractor:
@@ -787,7 +650,7 @@ class AgentStreamHandler:
         self.deepgram = None
         self.connection = None
         self.is_running = False
-        self._deepgram_connected = False  # Track if Deepgram actually connected
+        self._connection_dead = False  # Prevents log spam on disconnect
         self.conversation = get_conversation_buffer(session_id)
         
         self._total_audio_bytes = 0
@@ -796,26 +659,17 @@ class AgentStreamHandler:
         logger.info(f"[AgentStream] Created for session {session_id}")
     
     async def start(self) -> bool:
-        """Initialize handler - Deepgram connects later via connect_deepgram()"""
+        """Initialize Deepgram for agent audio"""
         print(f"[AgentStream] Starting for {self.session_id}", flush=True)
         self._session_start_time = time.time()
-        self.is_running = True
-        # Don't connect Deepgram yet - wait until called explicitly
-        # This avoids the HTTP 400 that happens when Agent connects before Client
-        return True
-    
-    async def connect_deepgram(self) -> bool:
-        """Connect to Deepgram - called AFTER client stream is established"""
-        if self._deepgram_connected:
+        
+        if not settings.deepgram_api_key:
+            logger.warning("[AgentStream] No Deepgram key")
+            self.is_running = True
             return True
-            
-        self.deepgram = get_deepgram_client()
-        if not self.deepgram:
-            logger.warning("[AgentStream] No Deepgram client available")
-            return False
         
         try:
-            print(f"[AgentStream] Connecting to Deepgram now...", flush=True)
+            self.deepgram = DeepgramClient(settings.deepgram_api_key)
             self.connection = self.deepgram.listen.asynclive.v("1")
             
             self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
@@ -828,7 +682,7 @@ class AgentStreamHandler:
                 language="en-US",
                 smart_format=True,
                 punctuate=True,
-                interim_results=True,
+                interim_results=False,  # Only finals for agent
                 utterance_end_ms=1000,
                 encoding="linear16",
                 sample_rate=self.SAMPLE_RATE,
@@ -836,15 +690,15 @@ class AgentStreamHandler:
             )
             
             await self.connection.start(options)
-            self._deepgram_connected = True
+            self.is_running = True
             
-            print(f"[AgentStream] Deepgram connected!", flush=True)
+            print(f"[AgentStream] Deepgram connected", flush=True)
             return True
             
         except Exception as e:
             logger.error(f"[AgentStream] Deepgram error: {e}")
-            print(f"[AgentStream] Deepgram FAILED: {e}", flush=True)
-            return False
+            self.is_running = True
+            return True
     
     async def handle_telnyx_message(self, message: dict):
         """Process Telnyx message with agent audio"""
@@ -864,10 +718,13 @@ class AgentStreamHandler:
                     self._total_audio_bytes += len(ulaw_audio)
                     pcm_audio = audioop.ulaw2lin(ulaw_audio, 2)
                     
-                    if self.connection and self._deepgram_connected:
+                    if self.connection and self.is_running and not self._connection_dead:
                         await self.connection.send(pcm_audio)
                 except Exception as e:
-                    logger.error(f"[AgentStream] Audio error: {e}")
+                    # Only log first error, then mark connection as dead
+                    if not self._connection_dead:
+                        self._connection_dead = True
+                        print(f"[AgentStream] Deepgram disconnected: {str(e)[:80]}", flush=True)
         elif event == "stop":
             await self.stop()
     
@@ -935,12 +792,6 @@ class AgentStreamHandler:
                 await asyncio.wait_for(self.connection.finish(), timeout=3.0)
             except:
                 pass
-        
-        # Notify frontend that call has ended - triggers auto-cleanup
-        await session_manager._broadcast_to_session(self.session_id, {
-            "type": "call_ended", 
-            "party": "agent"
-        })
 
 
 class ClientStreamHandler:
@@ -956,6 +807,7 @@ class ClientStreamHandler:
         self.deepgram = None
         self.connection = None
         self.is_running = False
+        self._connection_dead = False  # Prevents log spam on disconnect
         self.conversation = get_conversation_buffer(session_id)
         
         self._total_audio_bytes = 0
@@ -987,15 +839,14 @@ class ClientStreamHandler:
                 client_context=client_context
             )
         
-        # Use shared Deepgram client
-        self.deepgram = get_deepgram_client()
-        if not self.deepgram:
-            logger.warning("[ClientStream] No Deepgram client available")
+        if not settings.deepgram_api_key:
+            logger.warning("[ClientStream] No Deepgram key")
             self.is_running = True
-            await self._broadcast({"type": "client_connected"})
+            await self._broadcast({"type": "ready"})
             return True
         
         try:
+            self.deepgram = DeepgramClient(settings.deepgram_api_key)
             self.connection = self.deepgram.listen.asynclive.v("1")
             
             self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
@@ -1020,13 +871,9 @@ class ClientStreamHandler:
             
             print(f"[ClientStream] Deepgram connected", flush=True)
             
-            # Now trigger Agent's Deepgram connection (delayed to avoid HTTP 400)
-            await self._trigger_agent_deepgram()
-            
-            # Notify frontend that client is connected - triggers UI update
             await self._broadcast({
-                "type": "client_connected",
-                "message": "Client connected - coaching active"
+                "type": "ready",
+                "message": "Coaching active"
             })
             
             return True
@@ -1035,18 +882,6 @@ class ClientStreamHandler:
             logger.error(f"[ClientStream] Deepgram error: {e}")
             self.is_running = True
             return True
-    
-    async def _trigger_agent_deepgram(self):
-        """Trigger Agent's Deepgram connection after Client is established"""
-        try:
-            if self.session_id in _agent_handlers:
-                agent_handler = _agent_handlers[self.session_id]
-                print(f"[ClientStream] Triggering Agent Deepgram connection...", flush=True)
-                await agent_handler.connect_deepgram()
-            else:
-                print(f"[ClientStream] No agent handler found for {self.session_id}", flush=True)
-        except Exception as e:
-            logger.error(f"[ClientStream] Failed to trigger agent Deepgram: {e}")
     
     async def handle_telnyx_message(self, message: dict):
         """Process Telnyx message with client audio"""
@@ -1066,10 +901,13 @@ class ClientStreamHandler:
                     self._total_audio_bytes += len(ulaw_audio)
                     pcm_audio = audioop.ulaw2lin(ulaw_audio, 2)
                     
-                    if self.connection and self.is_running:
+                    if self.connection and self.is_running and not self._connection_dead:
                         await self.connection.send(pcm_audio)
                 except Exception as e:
-                    logger.error(f"[ClientStream] Audio error: {e}")
+                    # Only log first error, then mark connection as dead
+                    if not self._connection_dead:
+                        self._connection_dead = True
+                        print(f"[ClientStream] Deepgram disconnected: {str(e)[:80]}", flush=True)
         elif event == "stop":
             await self.stop()
     
@@ -1110,11 +948,7 @@ class ClientStreamHandler:
                 # Extract context from client speech
                 ContextExtractor.extract_from_client(transcript, self.conversation.extracted)
                 
-                # Check if active guidance is now stale (smart dismiss)
-                if self._analyzer and self._analyzer.active_guidance:
-                    asyncio.create_task(self._check_stale_guidance(transcript))
-                
-                # Trigger Claude analysis for new guidance
+                # Trigger Claude analysis
                 if self._analyzer and not self._generating_guidance:
                     asyncio.create_task(self._run_analysis(transcript))
                     
@@ -1157,9 +991,6 @@ class ClientStreamHandler:
                     "is_reminder": is_reminder
                 })
                 
-                # Track active guidance for smart dismiss
-                self._analyzer.set_active_guidance(full_guidance, client_text[:50])
-                
                 # Store in session
                 await session_manager.add_guidance(self.session_id, {
                     "trigger": client_text[:50],
@@ -1172,18 +1003,6 @@ class ClientStreamHandler:
             logger.error(f"[ClientStream] Analysis error: {e}")
         finally:
             self._generating_guidance = False
-    
-    async def _check_stale_guidance(self, recent_transcript: str):
-        """Check if active guidance is stale and should be dismissed"""
-        try:
-            should_dismiss = await self._analyzer.check_guidance_stale(
-                recent_transcript, 
-                self.conversation
-            )
-            if should_dismiss:
-                await self._broadcast({"type": "guidance_dismiss"})
-        except Exception as e:
-            logger.error(f"[ClientStream] Stale check error: {e}")
     
     async def _broadcast(self, message: dict):
         """Send to frontend"""
@@ -1218,8 +1037,7 @@ class ClientStreamHandler:
             except:
                 pass
         
-        # Notify frontend that call has ended - triggers auto-cleanup
-        await self._broadcast({"type": "call_ended", "party": "client"})
+        await self._broadcast({"type": "stream_ended"})
 
 
 # Handler management

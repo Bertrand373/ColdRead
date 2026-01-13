@@ -3197,22 +3197,13 @@
         }
         
         function handleGuidanceStart(msg) {
-            console.log('[GUIDANCE_START] Guidance incoming');
+            console.log('[GUIDANCE_START] Buffering - waiting for valid marker');
             
-            // Audio + haptic notification - guidance is coming
-            playNotificationSound();
-            if (navigator.vibrate) {
-                navigator.vibrate([50, 30, 50]);
-            }
-            state.hasVibratedForCurrentGuidance = true;
-            
-            // Prepare UI for incoming guidance
-            dom.listeningState.style.display = 'none';
-            dom.teleprompter.classList.add('has-guidance');
-            dom.guidanceText.innerHTML = '<span class="cursor"></span>';
-            dom.guidanceState.classList.add('active');
-            
+            // DON'T show UI yet - buffer until we validate it's real guidance
+            // This prevents "thinking out loud" from flashing on screen
             state.streamingGuidance = '';
+            state.guidanceValidated = false;  // Wait for SAY: or 📋 marker
+            state.hasVibratedForCurrentGuidance = false;
         }
         
         function handleGuidanceChunk(msg) {
@@ -3220,25 +3211,92 @@
             if (!chunk) return;
             
             state.streamingGuidance += chunk;
+            const buffer = state.streamingGuidance.trim();
+            const bufferUpper = buffer.toUpperCase();
             
-            // Early abort if it looks like a NO response
-            const current = state.streamingGuidance.trim().toUpperCase();
-            if (current === 'NO' || current.startsWith('NO_GUIDANCE') || current.startsWith('NO GUIDANCE')) {
+            // Early abort patterns - Claude is reasoning, not guiding
+            const ABORT_PATTERNS = [
+                'NO_GUIDANCE', 'NO GUIDANCE', 
+                'THE CLIENT', 'BASED ON', 'LOOKING AT', 'SINCE THE', 'GIVEN THE',
+                'I NOTICE', 'IT SEEMS', 'IT APPEARS', 'THIS IS', 'LET ME',
+                'ANALYZING', 'CONSIDERING', 'THE AGENT'
+            ];
+            
+            for (const pattern of ABORT_PATTERNS) {
+                if (bufferUpper.startsWith(pattern) || bufferUpper === 'NO') {
+                    console.log('[GUIDANCE_CHUNK] Abort - reasoning detected:', buffer.substring(0, 30));
+                    state.streamingGuidance = '';
+                    state.guidanceValidated = false;
+                    return;
+                }
+            }
+            
+            // Valid guidance markers - Claude is giving actual guidance
+            const hasValidMarker = bufferUpper.startsWith('SAY:') || buffer.startsWith('📋') || buffer.startsWith('"');
+            
+            // If we haven't validated yet, check for marker
+            if (!state.guidanceValidated) {
+                if (hasValidMarker) {
+                    console.log('[GUIDANCE_CHUNK] Valid marker found, showing guidance');
+                    state.guidanceValidated = true;
+                    
+                    // NOW show UI and notify
+                    playNotificationSound();
+                    if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+                    state.hasVibratedForCurrentGuidance = true;
+                    
+                    dom.listeningState.style.display = 'none';
+                    dom.teleprompter.classList.add('has-guidance');
+                    dom.guidanceState.classList.add('active');
+                } else if (buffer.length > 25) {
+                    // Buffer getting long with no valid marker - abort
+                    console.log('[GUIDANCE_CHUNK] No marker after 25 chars, aborting:', buffer.substring(0, 25));
+                    state.streamingGuidance = '';
+                    return;
+                } else {
+                    // Keep buffering silently
+                    return;
+                }
+            }
+            
+            // Strip marker for display
+            let displayText = buffer;
+            if (bufferUpper.startsWith('SAY:')) {
+                displayText = buffer.substring(4).trim();
+            } else if (buffer.startsWith('📋')) {
+                displayText = buffer.substring(2).trim();
+            }
+            
+            dom.guidanceText.innerHTML = formatGuidanceText(displayText) + '<span class="cursor"></span>';
+        }
+        
+        function handleGuidanceComplete(msg) {
+            let fullText = msg.full_text || state.streamingGuidance || '';
+            const trimmed = fullText.trim();
+            const trimmedUpper = trimmed.toUpperCase();
+            
+            // Filter out non-guidance responses
+            const ABORT_PATTERNS = ['NO_GUIDANCE', 'NO GUIDANCE', 'THE CLIENT', 'BASED ON', 
+                'LOOKING AT', 'SINCE THE', 'GIVEN THE', 'I NOTICE', 'THE AGENT'];
+            
+            for (const pattern of ABORT_PATTERNS) {
+                if (trimmedUpper.startsWith(pattern) || trimmedUpper === 'NO') {
+                    console.log('[GUIDANCE_COMPLETE] Filtered out reasoning');
+                    dismissGuidance();
+                    return;
+                }
+            }
+            
+            if (!fullText || fullText.length < 10) {
                 dismissGuidance();
                 return;
             }
             
-            dom.guidanceText.innerHTML = formatGuidanceText(state.streamingGuidance) + '<span class="cursor"></span>';
-        }
-        
-        function handleGuidanceComplete(msg) {
-            const fullText = msg.full_text || state.streamingGuidance || '';
-            
-            // Filter out non-guidance responses (NO, NO_GUIDANCE_NEEDED, etc.)
-            const trimmed = fullText.trim().toUpperCase();
-            if (!fullText || trimmed === 'NO' || trimmed.includes('NO_GUIDANCE') || fullText.length < 10) {
-                dismissGuidance();
-                return;
+            // Strip SAY: marker if present
+            if (trimmedUpper.startsWith('SAY:')) {
+                fullText = trimmed.substring(4).trim();
+            } else if (trimmed.startsWith('📋')) {
+                fullText = trimmed.substring(2).trim();
             }
             
             const sayThis = extractSayThis(fullText);
@@ -3252,9 +3310,18 @@
             
             // Final display - no cursor
             const displayText = sayThis || fullText;
+            
+            // Ensure UI is shown (in case buffering skipped it)
+            if (!state.guidanceValidated) {
+                dom.listeningState.style.display = 'none';
+                dom.teleprompter.classList.add('has-guidance');
+                dom.guidanceState.classList.add('active');
+            }
+            
             dom.guidanceText.innerHTML = formatGuidanceText(displayText);
             
             state.streamingGuidance = '';
+            state.guidanceValidated = false;
             state.hasVibratedForCurrentGuidance = false;
             
             // Start fallback dismiss timer (45s) - Claude should dismiss sooner via guidance_dismiss
