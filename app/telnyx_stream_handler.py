@@ -1,9 +1,10 @@
 """
-Coachd Telnyx Stream Handler - Elite Guidance System
-=====================================================
+Coachd Telnyx Stream Handler - Elite Guidance System + Sentiment Analysis
+==========================================================================
 ARCHITECTURE:
 - Agent stream: Deepgram → context extraction + stage tracking (silent)
 - Client stream: Deepgram → objection/hesitation detection → guidance
+- Sentiment: Pattern-based real-time detection → frontend indicator
 
 Claude sees BOTH sides, extracts context continuously, and fires guidance ONLY when:
 1. Client raises objection (price, spouse, stall, trust)
@@ -21,8 +22,10 @@ import asyncio
 import base64
 import time
 import audioop
-from typing import Dict, Optional
+import re
+from typing import Dict, Optional, List, Tuple
 from dataclasses import dataclass, field
+from enum import Enum
 
 from deepgram import DeepgramClient, LiveTranscriptionEvents, LiveOptions
 import anthropic
@@ -34,6 +37,244 @@ from .vector_db import get_vector_db
 
 import logging
 logger = logging.getLogger(__name__)
+
+
+# ==================== SENTIMENT ANALYSIS ====================
+
+class SentimentLevel(Enum):
+    """Client engagement levels"""
+    COLD = 1       # Disengaged, exit signals
+    COOLING = 2    # Hesitation, resistance building
+    NEUTRAL = 3    # Information gathering
+    WARMING = 4    # Interest building
+    HOT = 5        # Engaged, buying signals
+
+
+@dataclass
+class SentimentState:
+    """Tracks sentiment with history for trajectory"""
+    level: SentimentLevel = SentimentLevel.NEUTRAL
+    confidence: float = 0.5  # 0-1 how confident we are
+    trajectory: str = "stable"  # "warming", "cooling", "stable"
+    predictive_tip: str = ""  # What we predict is coming
+    last_update: float = 0
+    history: List[Tuple[float, SentimentLevel]] = field(default_factory=list)
+    
+    def update(self, new_level: SentimentLevel, confidence: float = 0.6, tip: str = ""):
+        """Update sentiment with trajectory calculation"""
+        now = time.time()
+        
+        # Add to history
+        self.history.append((now, new_level))
+        # Keep last 10 data points
+        if len(self.history) > 10:
+            self.history = self.history[-10:]
+        
+        # Calculate trajectory from recent history
+        if len(self.history) >= 3:
+            recent = self.history[-3:]
+            values = [s[1].value for s in recent]
+            avg_change = (values[-1] - values[0]) / len(values)
+            
+            if avg_change > 0.3:
+                self.trajectory = "warming"
+            elif avg_change < -0.3:
+                self.trajectory = "cooling"
+            else:
+                self.trajectory = "stable"
+        
+        self.level = new_level
+        self.confidence = confidence
+        self.predictive_tip = tip
+        self.last_update = now
+    
+    def decay_to_neutral(self, silence_seconds: float = 30):
+        """Decay toward neutral after silence"""
+        if time.time() - self.last_update > silence_seconds:
+            if self.level != SentimentLevel.NEUTRAL:
+                self.level = SentimentLevel.NEUTRAL
+                self.confidence = 0.5
+                self.trajectory = "stable"
+                self.predictive_tip = ""
+
+
+class SentimentAnalyzer:
+    """
+    Real-time sentiment analysis using pattern matching.
+    Fast, low-latency approach for immediate feedback.
+    """
+    
+    # Minimum interval between updates (prevents UI flickering)
+    UPDATE_COOLDOWN = 1.5
+    
+    # Pattern categories with weights
+    HOT_PATTERNS = [
+        # Direct buying signals
+        (r"what'?s the next step", 0.9, "Buying signal! Push to close"),
+        (r"how do (i|we) (sign up|get started|enroll)", 0.95, "Ready to buy! Move to application"),
+        (r"that sounds (good|great|reasonable|fair)", 0.7, "Positive reaction - build momentum"),
+        (r"i('m| am) interested", 0.85, "High interest - present options"),
+        (r"tell me more", 0.7, "Engaged - keep building value"),
+        (r"when (can|does) (it|this|coverage) start", 0.9, "Ready to commit!"),
+        (r"can (i|we) do (that|this) today", 0.95, "Immediate intent - close now"),
+        # Engagement signals
+        (r"that makes sense", 0.6, ""),
+        (r"i (see|understand|get it)", 0.5, ""),
+        (r"(oh|ah) (okay|i see)", 0.55, ""),
+        # Questions showing interest
+        (r"what about (my|the) (spouse|wife|husband|kids)", 0.7, "Family interest - expand coverage"),
+        (r"does (it|that|this) cover", 0.7, "Coverage questions = buying interest"),
+        (r"and (the|my) (spouse|family) (is|would be) covered", 0.75, ""),
+    ]
+    
+    WARMING_PATTERNS = [
+        (r"(hmm|hm+)", 0.5, ""),
+        (r"okay,? (so|and)", 0.5, ""),
+        (r"how much (is|would)", 0.55, "Price question - prepare value justification"),
+        (r"what if", 0.5, ""),
+        (r"let me (think|see)", 0.45, "Processing - give them space"),
+        (r"that'?s (interesting|good to know)", 0.5, ""),
+        (r"(right|okay|yes),? (and|so|but)", 0.5, ""),
+    ]
+    
+    COOLING_PATTERNS = [
+        (r"i'?m not sure", 0.6, "Doubt emerging - reinforce value"),
+        (r"i don'?t know (if|about)", 0.65, "Uncertainty - address concerns"),
+        (r"(maybe|perhaps)", 0.5, ""),
+        (r"i('ll| will) have to (think|talk)", 0.7, "Objection incoming - prepare rebuttal"),
+        (r"we('ll| will) (think|talk|discuss)", 0.7, "Spouse objection likely"),
+        (r"(that'?s|it'?s) a lot", 0.65, "Price resistance building"),
+        (r"i (guess|suppose)", 0.6, "Weak commitment - value reinforcement needed"),
+        (r"(um|uh),? (well|i mean)", 0.55, "Hesitation detected"),
+        (r"can you (send|mail|email)", 0.7, "Stall tactic coming - redirect to today"),
+    ]
+    
+    COLD_PATTERNS = [
+        (r"(not|don'?t) (need|want) (it|this|any)", 0.85, "Hard objection - find underlying concern"),
+        (r"can'?t afford", 0.8, "Budget objection - prepare down-close"),
+        (r"(too|very) expensive", 0.8, "Price objection"),
+        (r"already have (insurance|coverage)", 0.75, "Existing coverage objection"),
+        (r"not (a good|the right) time", 0.8, "Stall tactic"),
+        (r"call (me )?(back|later|another)", 0.85, "Exit attempt - urgency needed"),
+        (r"(not interested|no thanks)", 0.9, "Hard no - pivot to referrals"),
+        (r"(send|just mail) (me )?(something|info)", 0.85, "Stall - must close today"),
+        (r"(talk to|ask) (my |the )?(wife|husband|spouse)", 0.75, "Spouse objection"),
+        (r"(i|we) need to (think|discuss|talk)", 0.75, "Think-about-it objection"),
+        (r"what'?s the catch", 0.6, "Trust issue - build credibility"),
+        (r"(sounds|seems) too good", 0.55, "Skepticism - address with proof"),
+    ]
+    
+    def __init__(self, session_id: str):
+        self.session_id = session_id
+        self.state = SentimentState()
+        self.last_analysis_time = 0
+        self._presentation_stage = "intro"  # Context matters
+        
+    def analyze(self, text: str, speaker: str = "client", stage: str = None) -> Optional[dict]:
+        """
+        Analyze text for sentiment signals.
+        Returns dict if update needed, None if no change.
+        """
+        now = time.time()
+        
+        # Cooldown check
+        if now - self.last_analysis_time < self.UPDATE_COOLDOWN:
+            return None
+        
+        text_lower = text.lower().strip()
+        if len(text_lower) < 3:
+            return None
+        
+        # Update stage context if provided
+        if stage:
+            self._presentation_stage = stage
+        
+        # Check for decay
+        self.state.decay_to_neutral()
+        
+        # Analyze patterns (client speech only for now)
+        if speaker == "client":
+            result = self._analyze_client(text_lower)
+            if result:
+                self.last_analysis_time = now
+                return result
+        
+        return None
+    
+    def _analyze_client(self, text: str) -> Optional[dict]:
+        """Analyze client speech for sentiment"""
+        
+        best_match = None
+        best_weight = 0
+        best_tip = ""
+        detected_level = None
+        
+        # Check HOT patterns
+        for pattern, weight, tip in self.HOT_PATTERNS:
+            if re.search(pattern, text, re.IGNORECASE):
+                if weight > best_weight:
+                    best_weight = weight
+                    best_match = SentimentLevel.HOT
+                    best_tip = tip
+                    detected_level = SentimentLevel.HOT
+        
+        # Check WARMING patterns
+        for pattern, weight, tip in self.WARMING_PATTERNS:
+            if re.search(pattern, text, re.IGNORECASE):
+                if weight > best_weight:
+                    best_weight = weight
+                    best_match = SentimentLevel.WARMING
+                    best_tip = tip
+                    detected_level = SentimentLevel.WARMING
+        
+        # Check COOLING patterns
+        for pattern, weight, tip in self.COOLING_PATTERNS:
+            if re.search(pattern, text, re.IGNORECASE):
+                if weight > best_weight:
+                    best_weight = weight
+                    best_match = SentimentLevel.COOLING
+                    best_tip = tip
+                    detected_level = SentimentLevel.COOLING
+        
+        # Check COLD patterns
+        for pattern, weight, tip in self.COLD_PATTERNS:
+            if re.search(pattern, text, re.IGNORECASE):
+                if weight > best_weight:
+                    best_weight = weight
+                    best_match = SentimentLevel.COLD
+                    best_tip = tip
+                    detected_level = SentimentLevel.COLD
+        
+        # Only update if we found something significant
+        if best_match and best_weight >= 0.5:
+            # Context adjustment: cold at intro is normal
+            if self._presentation_stage in ["intro", "rapport"] and detected_level == SentimentLevel.NEUTRAL:
+                return None
+            
+            self.state.update(best_match, confidence=best_weight, tip=best_tip)
+            
+            return {
+                "type": "sentiment_update",
+                "level": self.state.level.name.lower(),
+                "level_value": self.state.level.value,
+                "confidence": self.state.confidence,
+                "trajectory": self.state.trajectory,
+                "tip": self.state.predictive_tip,
+            }
+        
+        return None
+    
+    def get_current_state(self) -> dict:
+        """Get current sentiment state for frontend"""
+        self.state.decay_to_neutral()
+        return {
+            "type": "sentiment_update",
+            "level": self.state.level.name.lower(),
+            "level_value": self.state.level.value,
+            "confidence": self.state.confidence,
+            "trajectory": self.state.trajectory,
+            "tip": self.state.predictive_tip,
+        }
 
 
 # Shared conversation buffer per session
@@ -398,41 +639,34 @@ Be the coach that makes agents close deals they would have lost."""
             training = self._get_relevant_training(client_text)
             
             # Detect what stage we might be in based on recent conversation
-            current_stage = self._detect_stage(recent_context)
+            detected_stage = self._detect_stage(recent_context)
             stages_status = conversation.extracted.get_stages_status()
             
-            user_prompt = f"""CONVERSATION CONTEXT:
+            user_prompt = f"""CONVERSATION SO FAR:
 {full_context}
-
----
 
 EXTRACTED CLIENT INFO:
 {extracted}
 
 {prep_context}
 
-PRESENTATION PROGRESS:
-{stages_status}
-Current Stage: {current_stage}
+LAST FEW EXCHANGES:
+{recent_context}
 
 AGENT JUST SAID: "{last_agent}"
-
 CLIENT JUST SAID: "{client_text}"
 
+DETECTED STAGE: {detected_stage}
+
+PRESENTATION PROGRESS:
+{stages_status}
+
 RELEVANT TRAINING:
-{training[:2000] if training else "Use Globe Life standard techniques."}
+{training if training else "No specific training retrieved"}
 
----
+Based on what the client just said, do they need guidance? Remember your response format."""
 
-Analyze this moment. Does the agent need guidance RIGHT NOW?
-
-Remember:
-- Only fire on objections, hesitations, or missed critical stages
-- NOT on acknowledgments, confirmations, or clarifying questions
-- Make guidance specific using the extracted context
-- Respect the presentation flow"""
-
-            collected_text = ""
+            # Stream the response
             input_tokens = 0
             output_tokens = 0
             
@@ -442,11 +676,12 @@ Remember:
                 system=self.SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": user_prompt}]
             ) as stream:
+                full_response = ""
                 async for text in stream.text_stream:
-                    collected_text += text
+                    full_response += text
                     
-                    # Check early if it's NO_GUIDANCE_NEEDED
-                    if "NO_GUIDANCE" in collected_text.upper():
+                    # Check if this is a NO_GUIDANCE response
+                    if "NO_GUIDANCE" in full_response.upper():
                         return
                     
                     yield text
@@ -496,7 +731,6 @@ class ContextExtractor:
         text_lower = text.lower()
         
         # Coverage amounts
-        import re
         coverage_match = re.search(r'\$(\d{1,3}(?:,\d{3})*)\s*(?:of|in)?\s*(?:coverage|protection|whole life|term)', text, re.I)
         if coverage_match:
             amount = int(coverage_match.group(1).replace(',', ''))
@@ -551,8 +785,6 @@ class ContextExtractor:
         """Extract context from what the client says"""
         text_lower = text.lower()
         
-        import re
-        
         # Age
         age_patterns = [
             r"i(?:'m| am)\s*(\d{2})",
@@ -599,48 +831,35 @@ class ContextExtractor:
                 context.budget = budget
         
         # Tobacco
-        if any(phrase in text_lower for phrase in ['i smoke', 'i do smoke', 'yes tobacco', 'i use tobacco', 'i chew']):
+        if any(phrase in text_lower for phrase in ['i smoke', 'i do smoke', 'yes i smoke', 'smoker']):
             context.tobacco = True
-        elif any(phrase in text_lower for phrase in ["don't smoke", "no tobacco", "i don't smoke", "non-smoker"]):
+        elif any(phrase in text_lower for phrase in ["don't smoke", "don't use tobacco", "no tobacco", "non-smoker", "nonsmoker"]):
             context.tobacco = False
         
-        # Health issues mentioned
+        # Health issues
         health_keywords = {
-            'blood pressure': 'High BP',
-            'high blood pressure': 'High BP',
+            'blood pressure': 'High Blood Pressure',
+            'high blood pressure': 'High Blood Pressure',
             'diabetes': 'Diabetes',
             'diabetic': 'Diabetes',
-            'heart': 'Heart Condition',
             'cancer': 'Cancer History',
-            'stroke': 'Stroke History'
+            'heart': 'Heart Issues',
+            'cardiovascular': 'Heart Issues'
         }
-        for keyword, label in health_keywords.items():
-            if keyword in text_lower and label not in context.health_issues:
-                context.health_issues.append(label)
-        
-        # Family health history
-        if 'runs in' in text_lower or 'family history' in text_lower:
-            if 'cancer' in text_lower and 'Cancer' not in context.family_health_history:
-                context.family_health_history.append('Cancer')
-            if any(h in text_lower for h in ['heart', 'cardiac', 'cardiovascular']):
-                if 'Heart Disease' not in context.family_health_history:
-                    context.family_health_history.append('Heart Disease')
-        
-        # Names (simple extraction)
-        name_match = re.search(r"(?:i'm|i am|my name is|this is)\s+([A-Z][a-z]+)", text)
-        if name_match and not context.client_name:
-            context.client_name = name_match.group(1)
-        
-        spouse_match = re.search(r"(?:my (?:wife|husband|spouse)(?:'s name is|,?\s+)?)\s*([A-Z][a-z]+)", text)
-        if spouse_match:
-            context.spouse_name = spouse_match.group(1)
+        for keyword, condition in health_keywords.items():
+            if keyword in text_lower and condition not in context.health_issues:
+                # Check if they're saying they DON'T have it
+                denial_patterns = [f"no {keyword}", f"don't have {keyword}", f"never had {keyword}"]
+                is_denial = any(p in text_lower for p in denial_patterns)
+                if not is_denial:
+                    context.health_issues.append(condition)
 
 
 class AgentStreamHandler:
     """
-    Handles AGENT audio stream.
-    Transcribes via Deepgram, extracts context, tracks stages.
-    NOT shown to agent (they know what they said).
+    Handles agent audio stream.
+    Transcribes via Deepgram, extracts context, tracks presentation stage.
+    Does NOT display to agent (they know what they're saying).
     """
     
     SAMPLE_RATE = 8000
@@ -682,8 +901,8 @@ class AgentStreamHandler:
                 language="en-US",
                 smart_format=True,
                 punctuate=True,
-                interim_results=False,  # Only finals for agent
-                utterance_end_ms=1000,
+                interim_results=False,  # Only final for agent (context extraction)
+                utterance_end_ms=1500,
                 encoding="linear16",
                 sample_rate=self.SAMPLE_RATE,
                 channels=1
@@ -732,7 +951,7 @@ class AgentStreamHandler:
         print(f"[AgentStream] Deepgram open", flush=True)
     
     async def _on_transcript(self, *args, **kwargs):
-        """Handle agent transcript - extract context, broadcast to frontend"""
+        """Handle agent transcript - extract context, track stage"""
         try:
             result = kwargs.get('result') or (args[1] if len(args) > 1 else None)
             if not result:
@@ -743,7 +962,9 @@ class AgentStreamHandler:
                 return
             
             transcript = alternatives[0].transcript
-            if not transcript or not result.is_final:
+            is_final = result.is_final
+            
+            if not transcript or not is_final:
                 return
             
             print(f"[AgentStream] AGENT: {transcript[:60]}", flush=True)
@@ -754,8 +975,8 @@ class AgentStreamHandler:
             # Extract context from agent speech
             ContextExtractor.extract_from_agent(transcript, self.conversation.extracted)
             
-            # Broadcast to frontend for transcript sidebar
-            await session_manager._broadcast_to_session(self.session_id, {
+            # Send to frontend for transcript display
+            await self._broadcast({
                 "type": "agent_transcript",
                 "text": transcript,
                 "is_final": True
@@ -764,9 +985,16 @@ class AgentStreamHandler:
         except Exception as e:
             logger.error(f"[AgentStream] Transcript error: {e}")
     
+    async def _broadcast(self, message: dict):
+        """Send to frontend"""
+        await session_manager._broadcast_to_session(self.session_id, message)
+    
     async def _on_error(self, *args, **kwargs):
         error = kwargs.get('error') or (args[1] if len(args) > 1 else "Unknown")
-        logger.error(f"[AgentStream] Deepgram error: {error}")
+        # Only log first error
+        if not self._connection_dead:
+            self._connection_dead = True
+            print(f"[AgentStream] Audio error: {str(error)[:80]}", flush=True)
     
     async def _on_close(self, *args, **kwargs):
         logger.info(f"[AgentStream] Deepgram closed")
@@ -796,8 +1024,8 @@ class AgentStreamHandler:
 
 class ClientStreamHandler:
     """
-    Handles CLIENT audio stream.
-    Transcribes via Deepgram, displays live, triggers Claude analysis.
+    Handles client audio stream.
+    Transcribes via Deepgram, displays live, triggers Claude analysis and sentiment updates.
     """
     
     SAMPLE_RATE = 8000
@@ -817,6 +1045,9 @@ class ClientStreamHandler:
         # Claude analyzer
         self._analyzer = None
         self._generating_guidance = False
+        
+        # Sentiment analyzer
+        self._sentiment = None
         
         logger.info(f"[ClientStream] Created for session {session_id}")
     
@@ -838,6 +1069,12 @@ class ClientStreamHandler:
                 self.conversation.agency,
                 client_context=client_context
             )
+        
+        # Initialize sentiment analyzer
+        self._sentiment = SentimentAnalyzer(self.session_id)
+        
+        # Send initial sentiment state (neutral)
+        await self._broadcast(self._sentiment.get_current_state())
         
         if not settings.deepgram_api_key:
             logger.warning("[ClientStream] No Deepgram key")
@@ -915,7 +1152,7 @@ class ClientStreamHandler:
         print(f"[ClientStream] Deepgram open", flush=True)
     
     async def _on_transcript(self, *args, **kwargs):
-        """Handle client transcript - display and analyze"""
+        """Handle client transcript - display, analyze sentiment, and trigger guidance"""
         try:
             result = kwargs.get('result') or (args[1] if len(args) > 1 else None)
             if not result:
@@ -948,7 +1185,18 @@ class ClientStreamHandler:
                 # Extract context from client speech
                 ContextExtractor.extract_from_client(transcript, self.conversation.extracted)
                 
-                # Trigger Claude analysis
+                # Analyze sentiment (fast, pattern-based)
+                if self._sentiment:
+                    current_stage = self.conversation.extracted.current_stage
+                    sentiment_update = self._sentiment.analyze(
+                        transcript, 
+                        speaker="client", 
+                        stage=current_stage
+                    )
+                    if sentiment_update:
+                        await self._broadcast(sentiment_update)
+                
+                # Trigger Claude analysis (may fire guidance)
                 if self._analyzer and not self._generating_guidance:
                     asyncio.create_task(self._run_analysis(transcript))
                     
@@ -1010,7 +1258,10 @@ class ClientStreamHandler:
     
     async def _on_error(self, *args, **kwargs):
         error = kwargs.get('error') or (args[1] if len(args) > 1 else "Unknown")
-        logger.error(f"[ClientStream] Deepgram error: {error}")
+        # Only log first error
+        if not self._connection_dead:
+            self._connection_dead = True
+            print(f"[ClientStream] Audio error: {str(error)[:80]}", flush=True)
     
     async def _on_close(self, *args, **kwargs):
         logger.info(f"[ClientStream] Deepgram closed")
@@ -1048,44 +1299,31 @@ _agent_handlers: Dict[str, AgentStreamHandler] = {}
 async def get_or_create_client_handler(session_id: str) -> ClientStreamHandler:
     """Get or create client stream handler"""
     if session_id not in _client_handlers:
-        handler = ClientStreamHandler(session_id)
-        if await handler.start():
-            _client_handlers[session_id] = handler
-        else:
-            raise Exception("Failed to start client handler")
+        _client_handlers[session_id] = ClientStreamHandler(session_id)
     return _client_handlers[session_id]
 
 
 async def get_or_create_agent_handler(session_id: str) -> AgentStreamHandler:
     """Get or create agent stream handler"""
     if session_id not in _agent_handlers:
-        handler = AgentStreamHandler(session_id)
-        if await handler.start():
-            _agent_handlers[session_id] = handler
-        else:
-            raise Exception("Failed to start agent handler")
+        _agent_handlers[session_id] = AgentStreamHandler(session_id)
     return _agent_handlers[session_id]
 
 
-async def remove_handler(session_id: str):
-    """Remove handlers and cleanup for session"""
+async def cleanup_handlers(session_id: str):
+    """Clean up handlers for a session"""
     if session_id in _client_handlers:
-        handler = _client_handlers.pop(session_id)
-        await handler.stop()
+        await _client_handlers[session_id].stop()
+        del _client_handlers[session_id]
+    
     if session_id in _agent_handlers:
-        handler = _agent_handlers.pop(session_id)
-        await handler.stop()
+        await _agent_handlers[session_id].stop()
+        del _agent_handlers[session_id]
+    
     remove_conversation_buffer(session_id)
 
 
-def get_session_transcript(session_id: str) -> list:
-    """Get full transcript for post-call analysis"""
-    if session_id in _conversation_buffers:
-        return _conversation_buffers[session_id].get_full_transcript()
-    return []
-
-
 def get_deepgram_client():
-    """Legacy function - returns Deepgram client singleton"""
+    """Get a Deepgram client instance"""
     from deepgram import DeepgramClient
     return DeepgramClient(api_key=settings.deepgram_api_key)

@@ -983,6 +983,156 @@
             margin-top: 8px;
         }
         
+        /* ========== SENTIMENT INDICATOR ========== */
+        .sentiment-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            margin-top: 24px;
+            padding: 12px 20px;
+            background: var(--surface);
+            border-radius: 12px;
+            min-width: 180px;
+            transition: all 0.4s ease;
+            opacity: 0.9;
+        }
+        
+        .sentiment-indicator.hidden {
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+        }
+        
+        .sentiment-main {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .sentiment-emoji {
+            font-size: 1.4rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .sentiment-indicator.warming .sentiment-emoji {
+            animation: bounceUp 0.5s ease;
+        }
+        
+        .sentiment-indicator.cooling .sentiment-emoji {
+            animation: bounceDown 0.5s ease;
+        }
+        
+        @keyframes bounceUp {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+        
+        @keyframes bounceDown {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(4px); }
+        }
+        
+        .sentiment-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+        
+        .sentiment-trajectory {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+        
+        .sentiment-trajectory.warming {
+            color: var(--success);
+        }
+        
+        .sentiment-trajectory.cooling {
+            color: var(--danger);
+        }
+        
+        .sentiment-tip {
+            font-size: 0.75rem;
+            color: var(--accent-dark);
+            text-align: center;
+            max-width: 200px;
+            line-height: 1.4;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .sentiment-tip.visible {
+            opacity: 1;
+            max-height: 50px;
+            margin-top: 4px;
+        }
+        
+        /* Sentiment level colors */
+        .sentiment-indicator[data-level="hot"] {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        
+        .sentiment-indicator[data-level="hot"] .sentiment-label {
+            color: var(--success);
+        }
+        
+        .sentiment-indicator[data-level="warming"] {
+            background: rgba(96, 165, 250, 0.1);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+        }
+        
+        .sentiment-indicator[data-level="warming"] .sentiment-label {
+            color: var(--accent-dark);
+        }
+        
+        .sentiment-indicator[data-level="neutral"] {
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+        
+        .sentiment-indicator[data-level="cooling"] {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+        
+        .sentiment-indicator[data-level="cooling"] .sentiment-label {
+            color: #D97706;
+        }
+        
+        .sentiment-indicator[data-level="cold"] {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        
+        .sentiment-indicator[data-level="cold"] .sentiment-label {
+            color: var(--danger);
+        }
+        
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .sentiment-indicator {
+                margin-top: 20px;
+                padding: 10px 16px;
+                min-width: 160px;
+            }
+            
+            .sentiment-emoji {
+                font-size: 1.2rem;
+            }
+            
+            .sentiment-label {
+                font-size: 0.7rem;
+            }
+        }
+        
         .guidance-state {
             display: none;
             flex-direction: column;
@@ -1828,6 +1978,16 @@
                             <div class="listening-ring"></div>
                             <div class="listening-text">Ready</div>
                             <div class="listening-hint">Connected — coaching active</div>
+                            
+                            <!-- Sentiment Indicator -->
+                            <div class="sentiment-indicator hidden" id="sentimentIndicator" data-level="neutral">
+                                <div class="sentiment-main">
+                                    <span class="sentiment-emoji" id="sentimentEmoji">😐</span>
+                                    <span class="sentiment-label" id="sentimentLabel">Listening</span>
+                                    <span class="sentiment-trajectory" id="sentimentTrajectory"></span>
+                                </div>
+                                <div class="sentiment-tip" id="sentimentTip"></div>
+                            </div>
                         </div>
                         
                         <div class="guidance-state" id="guidanceState">
@@ -1949,7 +2109,16 @@
                 kidsCount: null,
                 tobacco: null,
                 budget: null
-            }
+            },
+            // Sentiment tracking
+            currentSentiment: {
+                level: 'neutral',
+                trajectory: 'stable',
+                tip: ''
+            },
+            sentimentVisible: false,
+            // Guidance validation
+            guidanceValidated: false
         };
         
         // ==================== DOM ====================
@@ -1984,7 +2153,13 @@
             // Transcript sidebar
             get transcriptSidebar() { return document.getElementById('transcriptSidebar'); },
             get transcriptFeed() { return document.getElementById('transcriptFeed'); },
-            get transcriptEmpty() { return document.getElementById('transcriptEmpty'); }
+            get transcriptEmpty() { return document.getElementById('transcriptEmpty'); },
+            // Sentiment indicator
+            get sentimentIndicator() { return document.getElementById('sentimentIndicator'); },
+            get sentimentEmoji() { return document.getElementById('sentimentEmoji'); },
+            get sentimentLabel() { return document.getElementById('sentimentLabel'); },
+            get sentimentTrajectory() { return document.getElementById('sentimentTrajectory'); },
+            get sentimentTip() { return document.getElementById('sentimentTip'); }
         };
         
         // ==================== INIT ====================
@@ -2641,6 +2816,9 @@
                     break;
                 case 'guidance_dismiss':
                     dismissGuidance();
+                    break;
+                case 'sentiment_update':
+                    handleSentimentUpdate(msg);
                     break;
                 case 'bridge':
                     handleBridge(msg);
@@ -3393,10 +3571,92 @@
             dom.guidanceState.classList.remove('active');
             dom.listeningState.style.display = 'flex';
             dom.teleprompter.classList.remove('has-guidance');
-            hideDownCloseIndicator();
             dom.guidanceText.innerHTML = '';
             state.streamingGuidance = '';
             state.hasVibratedForCurrentGuidance = false;
+        }
+        
+        // ==================== SENTIMENT ====================
+        const SENTIMENT_CONFIG = {
+            cold: { emoji: '❄️', label: 'Cold', color: 'danger' },
+            cooling: { emoji: '⚠️', label: 'Cooling', color: 'warning' },
+            neutral: { emoji: '😐', label: 'Listening', color: 'neutral' },
+            warming: { emoji: '⚡', label: 'Warming', color: 'accent' },
+            hot: { emoji: '🔥', label: 'Hot', color: 'success' }
+        };
+        
+        const TRAJECTORY_SYMBOLS = {
+            warming: '↑',
+            cooling: '↓',
+            stable: ''
+        };
+        
+        function handleSentimentUpdate(msg) {
+            const level = msg.level || 'neutral';
+            const trajectory = msg.trajectory || 'stable';
+            const tip = msg.tip || '';
+            const confidence = msg.confidence || 0.5;
+            
+            console.log('[SENTIMENT]', level, trajectory, tip ? `"${tip}"` : '');
+            
+            // Update state
+            state.currentSentiment = { level, trajectory, tip };
+            
+            // Get config for this level
+            const config = SENTIMENT_CONFIG[level] || SENTIMENT_CONFIG.neutral;
+            
+            // Update UI elements
+            if (dom.sentimentIndicator) {
+                // Set data attribute for CSS styling
+                dom.sentimentIndicator.setAttribute('data-level', level);
+                
+                // Remove old trajectory classes, add new one
+                dom.sentimentIndicator.classList.remove('warming', 'cooling', 'stable');
+                dom.sentimentIndicator.classList.add(trajectory);
+                
+                // Show indicator (fade in)
+                dom.sentimentIndicator.classList.remove('hidden');
+                state.sentimentVisible = true;
+            }
+            
+            if (dom.sentimentEmoji) {
+                dom.sentimentEmoji.textContent = config.emoji;
+            }
+            
+            if (dom.sentimentLabel) {
+                dom.sentimentLabel.textContent = config.label;
+            }
+            
+            if (dom.sentimentTrajectory) {
+                dom.sentimentTrajectory.textContent = TRAJECTORY_SYMBOLS[trajectory] || '';
+                dom.sentimentTrajectory.className = 'sentiment-trajectory';
+                if (trajectory !== 'stable') {
+                    dom.sentimentTrajectory.classList.add(trajectory);
+                }
+            }
+            
+            if (dom.sentimentTip) {
+                if (tip && confidence >= 0.6) {
+                    dom.sentimentTip.textContent = tip;
+                    dom.sentimentTip.classList.add('visible');
+                } else {
+                    dom.sentimentTip.classList.remove('visible');
+                }
+            }
+        }
+        
+        function resetSentiment() {
+            state.currentSentiment = { level: 'neutral', trajectory: 'stable', tip: '' };
+            state.sentimentVisible = false;
+            
+            if (dom.sentimentIndicator) {
+                dom.sentimentIndicator.classList.add('hidden');
+                dom.sentimentIndicator.setAttribute('data-level', 'neutral');
+                dom.sentimentIndicator.classList.remove('warming', 'cooling');
+            }
+            if (dom.sentimentTip) {
+                dom.sentimentTip.classList.remove('visible');
+            }
         }
         
         // ==================== SESSION COMPLETE ====================
@@ -3416,6 +3676,7 @@
             if (dom.clientPhoneInput) dom.clientPhoneInput.value = '';
             dismissGuidance();
             resetCaptions();
+            resetSentiment();
             resetConnectionSteps();
             // Remove connected class from icon
             document.getElementById('connectingIcon')?.classList.remove('connected');
