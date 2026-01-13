@@ -1323,6 +1323,25 @@ async def cleanup_handlers(session_id: str):
     remove_conversation_buffer(session_id)
 
 
+async def remove_handler(session_id: str, stream_type: str = "client"):
+    """Remove a specific handler (for backward compatibility with main.py)"""
+    if stream_type == "client" and session_id in _client_handlers:
+        await _client_handlers[session_id].stop()
+        del _client_handlers[session_id]
+    elif stream_type == "agent" and session_id in _agent_handlers:
+        await _agent_handlers[session_id].stop()
+        del _agent_handlers[session_id]
+
+
+def get_active_handlers():
+    """Get counts of active handlers"""
+    return {
+        "client_handlers": len(_client_handlers),
+        "agent_handlers": len(_agent_handlers),
+        "sessions": list(set(list(_client_handlers.keys()) + list(_agent_handlers.keys())))
+    }
+
+
 def get_deepgram_client():
     """Get a Deepgram client instance"""
     from deepgram import DeepgramClient
