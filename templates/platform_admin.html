@@ -914,6 +914,28 @@
             background: var(--color-surface);
         }
         
+        .modal-input.error {
+            border-color: var(--color-error);
+            box-shadow: 0 0 0 3px var(--color-error-soft);
+            animation: shake 0.4s ease;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+        
+        .modal-error {
+            display: none;
+            color: var(--color-error);
+            font-size: 0.875rem;
+            margin-top: -12px;
+            margin-bottom: 16px;
+        }
+        
+        .modal-error.visible { display: block; }
+        
         .modal-input::placeholder {
             color: var(--color-text-muted);
         }
@@ -1329,6 +1351,7 @@
             </div>
             <p class="modal-desc">Enter your password to access platform admin.</p>
             <input type="password" class="modal-input" id="passwordInput" placeholder="Password" autocomplete="off">
+            <p class="modal-error" id="passwordError">Invalid password. Please try again.</p>
             <div class="modal-actions">
                 <button class="modal-btn modal-btn-cancel" onclick="cancelAuth()">Back</button>
                 <button class="modal-btn modal-btn-confirm" onclick="submitPassword()">Continue</button>
@@ -1509,16 +1532,25 @@
         }
         
         async function submitPassword() {
-            const pwd = document.getElementById('passwordInput').value;
+            const input = document.getElementById('passwordInput');
+            const errorEl = document.getElementById('passwordError');
+            const pwd = input.value;
+            
+            // Clear previous error state
+            errorEl.classList.remove('visible');
+            
             const valid = await verifyPassword(pwd);
             if (valid) {
                 adminPassword = pwd;
                 sessionStorage.setItem('adminPassword', pwd);
                 unlockPage();
             } else {
-                showToast('Invalid password');
-                document.getElementById('passwordInput').value = '';
-                document.getElementById('passwordInput').focus();
+                // Show error with shake animation
+                input.classList.add('error');
+                errorEl.classList.add('visible');
+                setTimeout(() => input.classList.remove('error'), 400);
+                input.value = '';
+                input.focus();
             }
         }
         
@@ -1526,12 +1558,6 @@
         document.getElementById('passwordInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') submitPassword();
         });
-        
-        // Toast notification
-        function showToast(message) {
-            // Simple alert for now - could add toast UI later
-            alert(message);
-        }
         
         // Init auth on load
         initAuth();

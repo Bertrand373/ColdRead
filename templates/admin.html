@@ -746,29 +746,6 @@
         }
         
         /* ========== TOAST ========== */
-        .toast {
-            position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            padding: 12px 24px;
-            background: var(--color-text);
-            color: white;
-            border-radius: var(--radius-full);
-            font-size: 0.875rem;
-            font-weight: 500;
-            opacity: 0;
-            transition: all 0.3s ease;
-            z-index: 1000;
-        }
-        
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-        
-        .toast.error { background: var(--color-error); }
-        .toast.success { background: var(--color-accent); }
         
         /* ========== PASSWORD MODAL ========== */
         .modal-overlay {
@@ -870,6 +847,28 @@
             box-shadow: 0 0 0 3px var(--color-blue-soft);
             background: var(--color-bg);
         }
+        
+        .modal-input.error {
+            border-color: var(--color-error);
+            box-shadow: 0 0 0 3px var(--color-error-soft);
+            animation: shake 0.4s ease;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+        
+        .modal-error {
+            display: none;
+            color: var(--color-error);
+            font-size: 0.875rem;
+            margin-top: -12px;
+            margin-bottom: 16px;
+        }
+        
+        .modal-error.visible { display: block; }
         
         .modal-input::placeholder {
             color: var(--color-text-muted);
@@ -1309,8 +1308,6 @@
         </div>
     </main>
     
-    <div class="toast" id="toast"></div>
-    
     <!-- Password Modal -->
     <div class="modal-overlay" id="passwordModal">
         <div class="modal">
@@ -1325,6 +1322,7 @@
             </div>
             <p class="modal-desc">Enter your password to access the admin dashboard.</p>
             <input type="password" class="modal-input" id="passwordInput" placeholder="Password" autocomplete="off">
+            <p class="modal-error" id="passwordError">Invalid password. Please try again.</p>
             <div class="modal-actions">
                 <button class="modal-btn modal-btn-cancel" onclick="cancelAuth()">Back</button>
                 <button class="modal-btn modal-btn-confirm" onclick="submitPassword()">Continue</button>
@@ -1570,9 +1568,9 @@
                 
                 if (!res.ok) throw new Error('Upload failed');
                 
-                showToast(`Uploaded: ${file.name}`, 'success');
+                console.log(`Uploaded: ${file.name}`);
             } catch (e) {
-                showToast(`Failed: ${file.name}`, 'error');
+                console.error(`Upload failed: ${file.name}`, e);
             } finally {
                 document.getElementById('uploadOverlay').classList.remove('show');
             }
@@ -1628,9 +1626,9 @@
                 if (!res.ok) throw new Error('Delete failed');
                 
                 document.querySelector(`.doc-item[data-id="${id}"]`).remove();
-                showToast('Document deleted', 'success');
+                console.log('Document deleted');
             } catch (e) {
-                showToast('Delete failed', 'error');
+                console.error('Delete failed', e);
             } finally {
                 pendingDeleteId = null;
                 pendingDeleteName = null;
@@ -1733,6 +1731,11 @@
         
         async function submitPassword() {
             const pwd = document.getElementById('passwordInput').value;
+            const input = document.getElementById('passwordInput');
+            const errorEl = document.getElementById('passwordError');
+            
+            // Clear previous error state
+            errorEl.classList.remove('visible');
             
             if (document.body.classList.contains('locked')) {
                 // Initial auth - verify and unlock
@@ -1742,9 +1745,12 @@
                     sessionStorage.setItem('adminPassword', pwd);
                     unlockPage();
                 } else {
-                    showToast('Invalid password', 'error');
-                    document.getElementById('passwordInput').value = '';
-                    document.getElementById('passwordInput').focus();
+                    // Show error with shake animation
+                    input.classList.add('error');
+                    errorEl.classList.add('visible');
+                    setTimeout(() => input.classList.remove('error'), 400);
+                    input.value = '';
+                    input.focus();
                 }
             } else {
                 // Re-auth for specific action
@@ -1788,7 +1794,10 @@
                 if (res.status === 401) {
                     adminPassword = '';
                     sessionStorage.removeItem('adminPassword');
-                    showToast('Invalid password', 'error');
+                    // Show password modal with error
+                    document.getElementById('passwordError').classList.add('visible');
+                    document.getElementById('passwordModal').classList.add('visible');
+                    document.getElementById('passwordInput').focus();
                     return;
                 }
                 
@@ -1891,14 +1900,6 @@
             } catch (e) {
                 console.error('Failed to load objections:', e);
             }
-        }
-        
-        // ==================== TOAST ====================
-        function showToast(message, type = '') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = 'toast show ' + type;
-            setTimeout(() => toast.classList.remove('show'), 3000);
         }
     </script>
 </body>

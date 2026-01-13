@@ -217,12 +217,12 @@
         .logo {
             font-family: 'Outfit', sans-serif;
             font-weight: 600;
-            font-size: 1.25rem;
+            font-size: 1.1rem;
             letter-spacing: -0.02em;
             color: var(--text);
         }
         
-        .logo .ai { color: var(--accent); }
+        .logo .ai { color: var(--accent-dark); }
         
         .header-right {
             display: flex;
@@ -306,7 +306,7 @@
         }
         
         .status-indicator.ringing svg {
-            color: var(--accent);
+            color: var(--accent-dark);
             animation: pulse 1s ease-in-out infinite;
         }
         
@@ -378,7 +378,7 @@
         .identify-icon svg {
             width: 28px;
             height: 28px;
-            color: var(--accent);
+            color: var(--accent-dark);
         }
         
         .identify-title {
@@ -551,7 +551,7 @@
         .start-icon svg {
             width: 40px;
             height: 40px;
-            color: var(--accent);
+            color: var(--accent-dark);
         }
         
         .start-title {
@@ -588,7 +588,7 @@
             height: 18px;
             min-width: 18px;
             flex-shrink: 0;
-            color: var(--accent);
+            color: var(--accent-dark);
         }
         
         .start-btn {
@@ -772,7 +772,7 @@
         .connecting-icon svg {
             width: 36px;
             height: 36px;
-            color: var(--accent);
+            color: var(--accent-dark);
         }
         
         .connecting-title {
@@ -1020,7 +1020,7 @@
         
         /* Bold key phrases for quick scanning */
         .guidance-text .say-this {
-            color: var(--accent);
+            color: var(--accent-dark);
             font-weight: 600;
         }
         
@@ -1028,7 +1028,7 @@
             display: inline-block;
             width: 3px;
             height: 1.3em;
-            background: var(--accent);
+            background: var(--accent-dark);
             margin-left: 3px;
             animation: blink 0.6s infinite;
             vertical-align: text-bottom;
@@ -1045,7 +1045,7 @@
         }
         
         .loading-dots {
-            color: var(--accent);
+            color: var(--accent-dark);
             animation: loadingPulse 1.2s ease-in-out infinite;
             margin-left: 8px;
         }
@@ -1395,7 +1395,7 @@
             font-weight: 600;
             border-radius: 14px;
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: all 0.2s ease;
         }
         
         .complete-btn.primary {
@@ -1410,7 +1410,9 @@
             border: 1px solid var(--border);
         }
         
-        .complete-btn:hover { opacity: 0.9; }
+        .complete-btn.primary:hover { transform: translateY(-2px); }
+        .complete-btn.primary:active { transform: scale(0.98); }
+        .complete-btn.secondary:hover { background: var(--bg); }
 
         /* ========== ERROR MODAL ========== */
         .modal-overlay {
@@ -1802,7 +1804,7 @@
                 </div>
             </div>
             <div class="complete-actions">
-                <button class="complete-btn primary" onclick="startNewCall()">New Call</button>
+                <button class="complete-btn primary" onclick="Coachd.startNewCall()">New Call</button>
             </div>
         </div>
         
@@ -1865,6 +1867,9 @@
             selectedTipIndex: null,
             callOutcome: null,
             ws: null,
+            wsReconnectAttempts: 0,
+            wsMaxReconnectAttempts: 5,
+            wsReconnecting: false,
             agentFadeTimer: null,
             callerFadeTimer: null,
             clientFadeTimer: null,
@@ -2273,6 +2278,10 @@
             
             dom.startBtn.disabled = true;
             
+            // Reset reconnection state for new call
+            state.wsReconnectAttempts = 0;
+            state.wsReconnecting = false;
+            
             // Get client phone if provided (click-to-call mode)
             const clientPhone = dom.clientPhoneInput?.value?.trim() || '';
             state.clientPhone = clientPhone;
@@ -2341,29 +2350,35 @@
                 
                 state.ws.onopen = () => {
                     console.log('[WS] Connected');
+                    state.wsReconnectAttempts = 0;  // Reset on successful connect
+                    state.wsReconnecting = false;
+                    startKeepAlive();  // Keep mobile Safari alive
                     resolve();
                 };
                 
                 state.ws.onclose = (event) => {
                     console.log('[WS] Disconnected, code:', event.code, 'reason:', event.reason);
                     
-                    // If we're on the connecting screen, call was rejected/ended before answering
-                    if (dom.connectingScreen.classList.contains('active')) {
-                        console.log('[WS] Call ended while connecting');
-                        state.sessionId = null;
-                        setStatus('');
-                        showScreen('startScreen');
+                    // Don't reconnect if we intentionally closed (code 1000) or no session
+                    if (event.code === 1000 || !state.sessionId) {
+                        handleIntentionalClose();
+                        return;
                     }
-                    // If we're in an active call, show outcome screen
-                    else if (state.isInCall) {
-                        console.log('[WS] Call ended during active session');
-                        endCall();
+                    
+                    // Try to reconnect if we still have an active session
+                    if (state.sessionId && state.wsReconnectAttempts < state.wsMaxReconnectAttempts) {
+                        attemptReconnect();
+                    } else {
+                        handleIntentionalClose();
                     }
                 };
                 
                 state.ws.onerror = (err) => {
                     console.error('[WS] Error:', err);
-                    reject(err);
+                    // Don't reject on error if reconnecting - let onclose handle it
+                    if (!state.wsReconnecting) {
+                        reject(err);
+                    }
                 };
                 
                 state.ws.onmessage = (e) => {
@@ -2381,6 +2396,71 @@
                     }
                 }, 10000);
             });
+        }
+        
+        function handleIntentionalClose() {
+            stopKeepAlive();
+            
+            // If we're on the connecting screen, call was rejected/ended before answering
+            if (dom.connectingScreen.classList.contains('active')) {
+                console.log('[WS] Call ended while connecting');
+                state.sessionId = null;
+                setStatus('');
+                showScreen('startScreen');
+            }
+            // If we're in an active call, show outcome screen
+            else if (state.isInCall) {
+                console.log('[WS] Call ended during active session');
+                endCall();
+            }
+        }
+        
+        function attemptReconnect() {
+            state.wsReconnectAttempts++;
+            state.wsReconnecting = true;
+            
+            // Show reconnecting status
+            setStatus(`Reconnecting... (${state.wsReconnectAttempts}/${state.wsMaxReconnectAttempts})`);
+            
+            // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+            const delay = Math.min(1000 * Math.pow(2, state.wsReconnectAttempts - 1), 16000);
+            console.log(`[WS] Reconnecting in ${delay}ms (attempt ${state.wsReconnectAttempts}/${state.wsMaxReconnectAttempts})`);
+            
+            setTimeout(async () => {
+                if (!state.sessionId) {
+                    console.log('[WS] Session cleared, aborting reconnect');
+                    state.wsReconnecting = false;
+                    return;
+                }
+                
+                try {
+                    await connectWebSocket();
+                    console.log('[WS] Reconnected successfully');
+                    setStatus('');  // Clear reconnecting message
+                } catch (err) {
+                    console.error('[WS] Reconnect failed:', err);
+                    // onclose will handle next attempt
+                }
+            }, delay);
+        }
+        
+        // Mobile Safari keepalive - ping every 15 seconds to prevent connection timeout
+        let keepAliveInterval = null;
+        
+        function startKeepAlive() {
+            stopKeepAlive();
+            keepAliveInterval = setInterval(() => {
+                if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+                    state.ws.send(JSON.stringify({ type: 'ping' }));
+                }
+            }, 15000);
+        }
+        
+        function stopKeepAlive() {
+            if (keepAliveInterval) {
+                clearInterval(keepAliveInterval);
+                keepAliveInterval = null;
+            }
         }
         
         function handleMessage(msg) {
@@ -2454,15 +2534,6 @@
                     document.getElementById('connectingTitle').textContent = 'Redialing...';
                     document.getElementById('connectingSubtitle').textContent = 'Client didn\'t answer, trying again';
                     document.getElementById('stepClientText').textContent = 'Redialing...';
-                    
-                    // Speak announcement to agent
-                    if ('speechSynthesis' in window) {
-                        const utterance = new SpeechSynthesisUtterance('Calling client again');
-                        utterance.rate = 1.1;
-                        utterance.pitch = 1.0;
-                        utterance.volume = 1.0;
-                        speechSynthesis.speak(utterance);
-                    }
                     break;
                 case 'client_dialing':
                     // Client is being dialed (could be initial or redial)
@@ -3138,6 +3209,7 @@
             dom.guidanceState.classList.remove('active');
             dom.listeningState.style.display = 'flex';
             dom.teleprompter.classList.remove('has-guidance');
+            hideDownCloseIndicator();
             dom.guidanceText.innerHTML = '';
             state.streamingGuidance = '';
             state.hasVibratedForCurrentGuidance = false;
@@ -3228,15 +3300,8 @@
         };
     })();
     
-    // Expose to window for onclick handlers
-    window.Coachd = Coachd;
-    
     function handleBack() {
         Coachd.handleBack();
-    }
-    
-    function startNewCall() {
-        Coachd.startNewCall();
     }
     </script>
 </body>
