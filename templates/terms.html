@@ -169,20 +169,24 @@
             padding: 48px 24px 80px;
         }
         
-        .back-link {
+        .back-btn {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            color: var(--color-text-secondary);
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: #F5F5F5;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
             text-decoration: none;
-            font-size: 14px;
-            margin-bottom: 32px;
-            transition: color 0.15s;
+            margin-bottom: 24px;
         }
         
-        .back-link:hover { color: var(--color-text); }
-        
-        .back-link svg { width: 16px; height: 16px; }
+        .back-btn:hover { background: #E5E5E5; }
+        .back-btn:active { transform: scale(0.95); }
+        .back-btn svg { width: 20px; height: 20px; color: var(--color-text); }
         
         .logo {
             font-family: var(--font-display);
@@ -251,11 +255,10 @@
     </div>
 
     <div class="container">
-        <a href="/" class="back-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 12H5M12 19l-7-7 7-7"/>
+        <a href="/" class="back-btn" aria-label="Go back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M15 18l-6-6 6-6"/>
             </svg>
-            Back
         </a>
         
         <div class="logo">

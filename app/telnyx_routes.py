@@ -630,27 +630,30 @@ async def conference_status(request: Request):
 async def ringback_audio(request: Request):
     """
     Returns TeXML that plays US ringback tone while agent waits.
-    Traditional 440Hz + 480Hz tone, 2 sec on, 4 sec off.
     
     SESSION-AWARE: Once client connects (status=IN_PROGRESS), returns silence
     instead of ringback, causing the music to stop naturally.
+    
+    Uses short loops so we can check status more frequently.
     """
     session_id = request.query_params.get("session_id")
     
     # Check if client has connected
     if session_id:
         session = await session_manager.get_session(session_id)
+        print(f"[Ringback] Session {session_id} status: {session.status if session else 'None'}", flush=True)
         if session and session.status == CallStatus.IN_PROGRESS:
             # Client is connected - return silence to stop the ringback
             print(f"[Ringback] Client connected for {session_id}, returning silence", flush=True)
             silence_texml = """<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Pause length="60"/>
+    <Pause length="300"/>
 </Response>"""
             return Response(content=silence_texml, media_type="application/xml")
     
-    # Client not connected yet - play ringback
+    # Client not connected yet - play ringback (loop=1 so we check status after each play)
     ringback_file = f"{settings.base_url}/static/ringback.wav"
+    print(f"[Ringback] Playing ringback for {session_id}", flush=True)
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Play loop="1">{ringback_file}</Play>

@@ -199,9 +199,9 @@
         }
         
         .back-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
             background: var(--surface);
             border: none;
             cursor: pointer;
@@ -218,7 +218,8 @@
         .logo {
             font-family: 'Outfit', sans-serif;
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
         }
         
         .logo .name { color: var(--text); }
@@ -617,9 +618,9 @@
     <div class="app">
         <header class="header">
             <div class="header-left">
-                <button class="back-btn" onclick="window.location.href='/'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                <button class="back-btn" onclick="window.location.href='/'" aria-label="Go back">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <path d="M15 18l-6-6 6-6"/>
                     </svg>
                 </button>
                 <div class="logo">
