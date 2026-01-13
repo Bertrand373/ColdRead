@@ -487,16 +487,16 @@ async def call_status(request: Request):
                     # Client failed to connect (no_answer, busy, rejected, etc)
                     # Check if we should auto-redial
                     attempts = session.client_dial_attempts or 0
-                    print(f"[CallStatus] Client failed, attempt {attempts + 1} of 2", flush=True)
+                    print(f"[CallStatus] Client failed, attempt {attempts} of 2", flush=True)
                     
-                    if attempts < 1:
+                    if attempts < 2:
                         # First failure - auto-redial
                         await session_manager.update_session(session_id, client_dial_attempts=attempts + 1)
                         
                         # Notify frontend we're redialing
                         await session_manager._broadcast_to_session(session_id, {
                             "type": "redialing",
-                            "attempt": attempts + 2,
+                            "attempt": attempts + 1,
                             "message": "Redialing..."
                         })
                         
@@ -518,7 +518,7 @@ async def call_status(request: Request):
                             # Notify frontend
                             await session_manager._broadcast_to_session(session_id, {
                                 "type": "client_dialing",
-                                "attempt": attempts + 2,
+                                "attempt": attempts + 1,
                                 "message": "Calling client..."
                             })
                         else:
@@ -542,17 +542,60 @@ async def call_status(request: Request):
                             hangup_call(session.agent_call_sid)
                         await session_manager.end_session(session_id)
                 
-        elif status == "busy":
-            # Immediate busy signal - treat same as completed with busy cause
-            pass  # Will come through as completed with SIP code
-            
-        elif status == "no-answer":
-            # No answer - treat same as completed with no_answer cause  
-            pass  # Will come through as completed
-            
-        elif status == "failed":
-            # Call failed
-            pass  # Will come through as completed
+        elif status in ("busy", "no-answer", "failed"):
+            # Direct status (not wrapped in completed) - handle auto-redial
+            # Only relevant for client calls
+            if party == "client":
+                print(f"[CallStatus] Client {status}, triggering auto-redial check", flush=True)
+                attempts = session.client_dial_attempts or 0
+                
+                if attempts < 2:
+                    # First failure - auto-redial
+                    await session_manager.update_session(session_id, client_dial_attempts=attempts + 1)
+                    
+                    await session_manager._broadcast_to_session(session_id, {
+                        "type": "redialing",
+                        "attempt": attempts + 1,
+                        "message": "Redialing..."
+                    })
+                    
+                    print(f"[CallStatus] Auto-redialing client: {session.client_phone}", flush=True)
+                    result = add_client_to_conference(
+                        session.client_phone, 
+                        session_id, 
+                        session.agent_phone
+                    )
+                    
+                    if result["success"]:
+                        await session_manager.update_session(
+                            session_id,
+                            client_call_sid=result["call_control_id"],
+                            status=CallStatus.CLIENT_RINGING
+                        )
+                        await session_manager._broadcast_to_session(session_id, {
+                            "type": "client_dialing",
+                            "attempt": attempts + 1,
+                            "message": "Calling client..."
+                        })
+                    else:
+                        print(f"[CallStatus] Redial failed: {result.get('error')}", flush=True)
+                        await session_manager._broadcast_to_session(session_id, {
+                            "type": "client_unavailable",
+                            "message": "Couldn't reach client after 2 attempts."
+                        })
+                        if session.agent_call_sid:
+                            hangup_call(session.agent_call_sid)
+                        await session_manager.end_session(session_id)
+                else:
+                    # Second failure - give up
+                    print(f"[CallStatus] Client unreachable after 2 attempts ({status})", flush=True)
+                    await session_manager._broadcast_to_session(session_id, {
+                        "type": "client_unavailable", 
+                        "message": "Couldn't reach client after 2 attempts."
+                    })
+                    if session.agent_call_sid:
+                        hangup_call(session.agent_call_sid)
+                    await session_manager.end_session(session_id)
             
     except Exception as e:
         logger.error(f"Error handling call status: {e}")
