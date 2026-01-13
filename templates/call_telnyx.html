@@ -306,7 +306,7 @@
         }
         
         .status-indicator.ringing svg {
-            color: var(--accent-dark);
+            color: var(--accent);
             animation: pulse 1s ease-in-out infinite;
         }
         
@@ -378,7 +378,7 @@
         .identify-icon svg {
             width: 28px;
             height: 28px;
-            color: var(--accent-dark);
+            color: var(--accent);
         }
         
         .identify-title {
@@ -551,7 +551,7 @@
         .start-icon svg {
             width: 40px;
             height: 40px;
-            color: var(--accent-dark);
+            color: var(--accent);
         }
         
         .start-title {
@@ -588,7 +588,7 @@
             height: 18px;
             min-width: 18px;
             flex-shrink: 0;
-            color: var(--accent-dark);
+            color: var(--accent);
         }
         
         .start-btn {
@@ -772,7 +772,7 @@
         .connecting-icon svg {
             width: 36px;
             height: 36px;
-            color: var(--accent-dark);
+            color: var(--accent);
         }
         
         .connecting-title {
@@ -1020,7 +1020,7 @@
         
         /* Bold key phrases for quick scanning */
         .guidance-text .say-this {
-            color: var(--accent-dark);
+            color: var(--accent);
             font-weight: 600;
         }
         
@@ -1028,7 +1028,7 @@
             display: inline-block;
             width: 3px;
             height: 1.3em;
-            background: var(--accent-dark);
+            background: var(--accent);
             margin-left: 3px;
             animation: blink 0.6s infinite;
             vertical-align: text-bottom;
@@ -1045,7 +1045,7 @@
         }
         
         .loading-dots {
-            color: var(--accent-dark);
+            color: var(--accent);
             animation: loadingPulse 1.2s ease-in-out infinite;
             margin-left: 8px;
         }
@@ -3138,7 +3138,6 @@
             dom.guidanceState.classList.remove('active');
             dom.listeningState.style.display = 'flex';
             dom.teleprompter.classList.remove('has-guidance');
-            hideDownCloseIndicator();
             dom.guidanceText.innerHTML = '';
             state.streamingGuidance = '';
             state.hasVibratedForCurrentGuidance = false;
