@@ -1083,3 +1083,9 @@ def get_session_transcript(session_id: str) -> list:
     if session_id in _conversation_buffers:
         return _conversation_buffers[session_id].get_full_transcript()
     return []
+
+
+def get_deepgram_client():
+    """Legacy function - returns Deepgram client singleton"""
+    from deepgram import DeepgramClient
+    return DeepgramClient(api_key=settings.deepgram_api_key)
