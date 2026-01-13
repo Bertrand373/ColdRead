@@ -44,6 +44,7 @@ class CallSession:
     guidance_history: list = field(default_factory=list)
     websocket_clients: set = field(default_factory=set)
     client_context: Optional[dict] = None  # Quick Prep context from agent
+    client_dial_attempts: int = 0  # Track redial attempts (max 2)
     
     def to_dict(self) -> dict:
         return {

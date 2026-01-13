@@ -336,12 +336,16 @@ async def agent_ready(request: Request):
     # Broadcast to frontend that agent confirmed, now dialing client
     await session_manager._broadcast_to_session(session_id, {
         "type": "client_dialing",
+        "attempt": 1,
         "message": "Dialing client..."
     })
     
     # Dial the client using agent's phone as caller ID
     if session.client_phone:
-        logger.info(f"Dialing client {session.client_phone} for session {session_id}")
+        logger.info(f"Dialing client {session.client_phone} for session {session_id} (attempt 1)")
+        
+        # Track this as first attempt
+        await session_manager.update_session(session_id, client_dial_attempts=1)
         
         result = add_client_to_conference(
             session.client_phone, 
@@ -409,6 +413,9 @@ async def call_status(request: Request):
     """
     Webhook: TeXML call status updates.
     Handles: initiated, ringing, answered, completed (which includes no-answer, busy, failed, canceled)
+    
+    AUTO-REDIAL: When client doesn't answer on first attempt, automatically redials.
+    After 2nd failed attempt, ends the session and notifies frontend.
     """
     try:
         form = await request.form()
@@ -454,43 +461,98 @@ async def call_status(request: Request):
             
             print(f"[CallStatus] {party} completed with cause: {cause}", flush=True)
             
-            # Notify frontend
-            await session_manager._broadcast_to_session(session_id, {
-                "type": "call_ended",
-                "party": party,
-                "cause": cause
-            })
-            
-            # If agent call ended, end the session
-            # If client call ended but agent is still connected, just notify
+            # Handle based on party
             if party == "agent":
-                await session_manager.end_session(session_id)
-            elif party == "client" and cause != "normal":
-                # Client failed to connect - hang up agent too
-                if session.agent_call_sid:
-                    hangup_call(session.agent_call_sid)
+                # Agent hung up or call failed - end session
+                await session_manager._broadcast_to_session(session_id, {
+                    "type": "call_ended",
+                    "party": party,
+                    "cause": cause
+                })
                 await session_manager.end_session(session_id)
                 
+            elif party == "client":
+                # Client call ended
+                if cause == "normal":
+                    # Normal hangup during call - end session
+                    await session_manager._broadcast_to_session(session_id, {
+                        "type": "call_ended",
+                        "party": party,
+                        "cause": cause
+                    })
+                    if session.agent_call_sid:
+                        hangup_call(session.agent_call_sid)
+                    await session_manager.end_session(session_id)
+                else:
+                    # Client failed to connect (no_answer, busy, rejected, etc)
+                    # Check if we should auto-redial
+                    attempts = session.client_dial_attempts or 0
+                    print(f"[CallStatus] Client failed, attempt {attempts + 1} of 2", flush=True)
+                    
+                    if attempts < 1:
+                        # First failure - auto-redial
+                        await session_manager.update_session(session_id, client_dial_attempts=attempts + 1)
+                        
+                        # Notify frontend we're redialing
+                        await session_manager._broadcast_to_session(session_id, {
+                            "type": "redialing",
+                            "attempt": attempts + 2,
+                            "message": "Redialing..."
+                        })
+                        
+                        # Redial client (agent stays connected in conference)
+                        print(f"[CallStatus] Auto-redialing client: {session.client_phone}", flush=True)
+                        result = add_client_to_conference(
+                            session.client_phone, 
+                            session_id, 
+                            session.agent_phone  # Use agent's number as caller ID
+                        )
+                        
+                        if result["success"]:
+                            # Update client call SID
+                            await session_manager.update_session(
+                                session_id,
+                                client_call_sid=result["call_control_id"],
+                                status=CallStatus.CLIENT_RINGING
+                            )
+                            # Notify frontend
+                            await session_manager._broadcast_to_session(session_id, {
+                                "type": "client_dialing",
+                                "attempt": attempts + 2,
+                                "message": "Calling client..."
+                            })
+                        else:
+                            # Redial failed - give up
+                            print(f"[CallStatus] Redial failed: {result.get('error')}", flush=True)
+                            await session_manager._broadcast_to_session(session_id, {
+                                "type": "client_unavailable",
+                                "message": "Couldn't reach client after 2 attempts."
+                            })
+                            if session.agent_call_sid:
+                                hangup_call(session.agent_call_sid)
+                            await session_manager.end_session(session_id)
+                    else:
+                        # Second failure - give up
+                        print(f"[CallStatus] Client unreachable after 2 attempts", flush=True)
+                        await session_manager._broadcast_to_session(session_id, {
+                            "type": "client_unavailable", 
+                            "message": "Couldn't reach client after 2 attempts."
+                        })
+                        if session.agent_call_sid:
+                            hangup_call(session.agent_call_sid)
+                        await session_manager.end_session(session_id)
+                
         elif status == "busy":
-            await session_manager._broadcast_to_session(session_id, {
-                "type": "call_ended",
-                "party": party,
-                "cause": "busy"
-            })
+            # Immediate busy signal - treat same as completed with busy cause
+            pass  # Will come through as completed with SIP code
             
         elif status == "no-answer":
-            await session_manager._broadcast_to_session(session_id, {
-                "type": "call_ended",
-                "party": party,
-                "cause": "no_answer"
-            })
+            # No answer - treat same as completed with no_answer cause  
+            pass  # Will come through as completed
             
         elif status == "failed":
-            await session_manager._broadcast_to_session(session_id, {
-                "type": "call_ended",
-                "party": party,
-                "cause": "failed"
-            })
+            # Call failed
+            pass  # Will come through as completed
             
     except Exception as e:
         logger.error(f"Error handling call status: {e}")
@@ -522,16 +584,33 @@ async def conference_status(request: Request):
 
 @router.get("/ringback")
 @router.post("/ringback")
-async def ringback_audio():
+async def ringback_audio(request: Request):
     """
     Returns TeXML that plays US ringback tone while agent waits.
     Traditional 440Hz + 480Hz tone, 2 sec on, 4 sec off.
-    When client joins, this stops automatically - the natural phone experience.
+    
+    SESSION-AWARE: Once client connects (status=IN_PROGRESS), returns silence
+    instead of ringback, causing the music to stop naturally.
     """
+    session_id = request.query_params.get("session_id")
+    
+    # Check if client has connected
+    if session_id:
+        session = await session_manager.get_session(session_id)
+        if session and session.status == CallStatus.IN_PROGRESS:
+            # Client is connected - return silence to stop the ringback
+            print(f"[Ringback] Client connected for {session_id}, returning silence", flush=True)
+            silence_texml = """<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Pause length="60"/>
+</Response>"""
+            return Response(content=silence_texml, media_type="application/xml")
+    
+    # Client not connected yet - play ringback
     ringback_file = f"{settings.base_url}/static/ringback.wav"
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Play loop="0">{ringback_file}</Play>
+    <Play loop="1">{ringback_file}</Play>
 </Response>"""
     
     return Response(content=texml, media_type="application/xml")

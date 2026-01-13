@@ -1803,7 +1803,6 @@
             </div>
             <div class="complete-actions">
                 <button class="complete-btn primary" onclick="Coachd.startNewCall()">New Call</button>
-                <button class="complete-btn secondary" onclick="Coachd.goHome()">Done</button>
             </div>
         </div>
         
@@ -1821,9 +1820,8 @@
                     <h3 class="modal-title" id="errorModalTitle">Connection Failed</h3>
                 </div>
                 <p class="modal-desc" id="errorModalMessage">Unable to start the call. Please try again.</p>
-                <div class="modal-actions">
-                    <button class="modal-btn modal-btn-cancel" onclick="Coachd.closeErrorModal()">Cancel</button>
-                    <button class="modal-btn modal-btn-confirm" onclick="Coachd.closeErrorModal()">Try Again</button>
+                <div class="modal-actions" id="errorModalActions">
+                    <button class="modal-btn modal-btn-confirm" onclick="Coachd.closeErrorModal()">OK</button>
                 </div>
             </div>
         </div>
@@ -2420,15 +2418,6 @@
                 case 'session_update':
                     handleSessionUpdate(msg.data || msg);
                     break;
-                case 'client_dialing':
-                    // Agent confirmed (pressed 1), now dialing client
-                    console.log('📞 Agent confirmed, dialing client...');
-                    updateConnectionStep('agent', 'complete');
-                    updateConnectionStep('client', 'active');
-                    document.getElementById('stepAgentText').textContent = 'You\'re connected!';
-                    document.getElementById('connectingTitle').textContent = 'Calling Client...';
-                    document.getElementById('connectingSubtitle').textContent = 'Waiting for them to answer';
-                    break;
                 case 'client_connected':
                     // Click-to-call: Client answered - all connected!
                     console.log('✅ Client connected!');
@@ -2459,6 +2448,30 @@
                 case 'bridge':
                     handleBridge(msg);
                     break;
+                case 'redialing':
+                    // Auto-redial in progress (first attempt failed)
+                    console.log('🔄 Redialing client, attempt', msg.attempt || 2);
+                    document.getElementById('connectingTitle').textContent = 'Redialing...';
+                    document.getElementById('connectingSubtitle').textContent = 'Client didn\'t answer, trying again';
+                    document.getElementById('stepClientText').textContent = 'Redialing...';
+                    break;
+                case 'client_dialing':
+                    // Client is being dialed (could be initial or redial)
+                    console.log('📞 Dialing client, attempt', msg.attempt || 1);
+                    updateConnectionStep('agent', 'complete');
+                    updateConnectionStep('client', 'active');
+                    document.getElementById('stepAgentText').textContent = 'You\'re connected!';
+                    document.getElementById('connectingTitle').textContent = 'Calling Client...';
+                    document.getElementById('connectingSubtitle').textContent = msg.attempt > 1 
+                        ? 'Second attempt...' 
+                        : 'Waiting for them to answer';
+                    break;
+                case 'client_unavailable':
+                    // Client couldn't be reached after 2 attempts
+                    console.log('❌ Client unavailable after 2 attempts');
+                    cancelCall();
+                    showErrorModal('Client Unavailable', msg.message || 'Couldn\'t reach client after 2 attempts.');
+                    break;
                 case 'call_ended':
                     // Call ended by server (agent or client hung up, or timeout)
                     console.log('📵 Call ended by server:', msg.party || 'unknown', msg.cause || '');
@@ -2469,18 +2482,17 @@
                         let title = 'Call Ended';
                         let message = 'The call was disconnected.';
                         
-                        if (cause === 'timeout' || cause === 'no_answer') {
-                            title = 'No Answer';
-                            message = msg.party === 'client' 
-                                ? 'Client didn\'t answer. Try again later.'
-                                : 'Call wasn\'t answered in time.';
-                        } else if (cause === 'busy') {
-                            title = 'Line Busy';
-                            message = 'The line is busy. Try again later.';
-                        } else if (cause === 'rejected' || cause === 'call_rejected') {
-                            title = 'Call Declined';
-                            message = 'The call was declined.';
+                        // Agent-side failures (user declined our call, etc)
+                        if (msg.party === 'agent') {
+                            if (cause === 'timeout' || cause === 'no_answer') {
+                                title = 'No Answer';
+                                message = 'Please answer your phone to start coaching.';
+                            } else if (cause === 'rejected' || cause === 'call_rejected') {
+                                title = 'Call Declined';
+                                message = 'You declined the call.';
+                            }
                         }
+                        // Note: Client failures are handled by auto-redial + client_unavailable
                         
                         cancelCall();
                         showErrorModal(title, message);
@@ -2504,7 +2516,7 @@
                         
                         if (errorCode === 'client_dial_failed') {
                             title = 'Couldn\'t Reach Client';
-                            message = 'Unable to connect to the client. Please check the number and try again.';
+                            message = 'Unable to connect to the client. Please check the number.';
                         }
                         
                         // Return to start screen and show error
@@ -3125,6 +3137,7 @@
         
         // ==================== SESSION COMPLETE ====================
         function startNewCall() {
+            console.log('[StartNewCall] Resetting for new call');
             dom.timer.textContent = '0:00';
             state.guidanceHistory = [];
             state.selectedTipIndex = null;
@@ -3132,12 +3145,17 @@
             state.clientPhone = null;
             state.seconds = 0;
             state.isInCall = false;
+            if (state.ws) {
+                state.ws.close();
+                state.ws = null;
+            }
             if (dom.clientPhoneInput) dom.clientPhoneInput.value = '';
             dismissGuidance();
             resetCaptions();
             resetConnectionSteps();
             // Remove connected class from icon
             document.getElementById('connectingIcon')?.classList.remove('connected');
+            console.log('[StartNewCall] Showing start screen');
             showScreen('startScreen');
         }
         

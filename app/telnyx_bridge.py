@@ -178,6 +178,9 @@ def generate_agent_conference_texml(session_id: str) -> str:
     - Join conference so they can hear/talk to client
     - startConferenceOnEnter="true" - conference starts when agent joins
     - endConferenceOnExit="true" - conference ends if agent hangs up
+    
+    The waitUrl plays ringback while waiting. It's session-aware and will
+    return silence once the client connects, stopping the ringback naturally.
     """
     stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
     conference_name = f"coachd_{session_id}"
@@ -188,10 +191,8 @@ def generate_agent_conference_texml(session_id: str) -> str:
     print(f"[TeXML] Conference: {conference_name}", flush=True)
     print(f"[TeXML] Agent stream: {agent_stream_url}", flush=True)
     
-    # Traditional US ringback tone (440Hz + 480Hz, 2s on, 4s off)
-    # Plays while agent waits, stops automatically when client joins
-    # This is the natural phone experience - ringing stops = they answered
-    ringback_url = f"{settings.base_url}/api/telnyx/ringback"
+    # Session-aware ringback - stops automatically when client connects
+    ringback_url = f"{settings.base_url}/api/telnyx/ringback?session_id={session_id}"
     
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
