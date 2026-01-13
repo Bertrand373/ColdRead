@@ -717,15 +717,41 @@
             box-shadow: 0 0 0 3px var(--accent-soft);
         }
         
+        .client-phone-section .form-input.error {
+            border-color: var(--danger);
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        .client-phone-error {
+            font-size: 0.75rem;
+            color: var(--danger);
+            margin-top: 8px;
+            text-align: center;
+            display: none;
+        }
+        
+        .client-phone-error.visible {
+            display: block;
+        }
+        
+        /* Hide hint when error is showing */
+        .client-phone-error.visible + .client-phone-hint {
+            display: none;
+        }
+        
         .client-phone-hint {
             font-size: 0.75rem;
             color: var(--text-muted);
             margin-top: 8px;
             text-align: center;
         }
-            color: var(--text-muted);
-            margin-top: 8px;
-            text-align: center;
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-6px); }
+            80% { transform: translateX(6px); }
         }
         
         /* ========== CONNECTING SCREEN ========== */
@@ -914,9 +940,9 @@
             -webkit-overflow-scrolling: touch;
         }
         
-        /* Keep centered for guidance too - the guidance-state will handle overflow */
+        /* When guidance is shown, let guidance-state handle its own centering */
         .teleprompter.has-guidance {
-            justify-content: center;
+            justify-content: flex-start;
             padding: 24px;
         }
         
@@ -961,12 +987,13 @@
             display: none;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             width: 100%;
             max-width: 700px;
-            padding: 0 16px;
+            padding: 16px;
             box-sizing: border-box;
             position: relative;
+            /* Don't constrain height - let teleprompter handle scrolling */
         }
         
         .guidance-state.active { 
@@ -1016,6 +1043,7 @@
             text-align: center;
             overflow-wrap: break-word;
             word-wrap: break-word;
+            padding-bottom: 16px; /* Buffer for scroll */
         }
         
         /* Bold key phrases for quick scanning */
@@ -1256,6 +1284,8 @@
             display: flex;
             flex-direction: column;
             min-width: 0;
+            min-height: 0;  /* Critical for flex shrinking */
+            overflow: hidden;
             background: var(--bg);
         }
         
@@ -1319,6 +1349,35 @@
             .call-main {
                 order: 1;
                 flex: 1;
+                min-height: 0;
+                overflow: hidden;
+            }
+            
+            /* Teleprompter is the scroll container on mobile */
+            .call-main .teleprompter {
+                flex: 1;
+                min-height: 0;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            /* Only change alignment when guidance is shown */
+            .call-main .teleprompter.has-guidance {
+                justify-content: flex-start;
+                padding-top: 20px;
+            }
+            
+            /* Guidance flows naturally, no separate scroll */
+            .call-main .guidance-state {
+                /* Remove any constraints - teleprompter handles scroll */
+                flex-shrink: 0;
+                padding-bottom: 20px; /* Buffer at bottom for comfortable scrolling */
+            }
+            
+            .call-main .guidance-text {
+                /* Slightly smaller on mobile for better fit */
+                font-size: clamp(1.15rem, 4.5vw, 1.5rem);
+                line-height: 1.5;
             }
         }
         
@@ -1691,6 +1750,7 @@
                        class="form-input"
                        placeholder="(555) 123-4567"
                        autocomplete="tel">
+                <p class="client-phone-error" id="clientPhoneError">Please enter a valid phone number</p>
                 <div class="client-phone-hint">We'll dial your client after you answer</div>
             </div>
             
@@ -1916,6 +1976,7 @@
             get phoneDisplay() { return document.getElementById('phoneDisplay'); },
             get phoneDisplayNumber() { return document.getElementById('phoneDisplayNumber'); },
             get clientPhoneInput() { return document.getElementById('clientPhoneInput'); },
+            get clientPhoneError() { return document.getElementById('clientPhoneError'); },
             get callTypeHint() { return document.getElementById('callTypeHint'); },
             get errorModal() { return document.getElementById('errorModal'); },
             get errorModalTitle() { return document.getElementById('errorModalTitle'); },
@@ -1978,6 +2039,11 @@
             
             // Initialize transcript sidebar scroll tracking
             initTranscriptScroll();
+            
+            // Clear phone error when user starts typing
+            if (dom.clientPhoneInput) {
+                dom.clientPhoneInput.addEventListener('input', clearPhoneError);
+            }
         }
         
         function loadClientContext() {
@@ -2272,19 +2338,70 @@
         }
         
         // ==================== TELNYX CALL FLOW ====================
+        
+        // Helper to validate phone number
+        function validatePhoneNumber(phone) {
+            // Strip non-digits
+            const digits = phone.replace(/\D/g, '');
+            // US numbers: 10 digits, or 11 starting with 1
+            return digits.length === 10 || (digits.length === 11 && digits.startsWith('1'));
+        }
+        
+        // Helper to show phone validation error
+        function showPhoneError(message) {
+            const input = dom.clientPhoneInput;
+            const error = dom.clientPhoneError;
+            
+            if (input) {
+                input.classList.add('error');
+                // Remove error class after animation
+                setTimeout(() => input.classList.remove('error'), 500);
+            }
+            
+            if (error) {
+                error.textContent = message;
+                error.classList.add('visible');
+            }
+        }
+        
+        // Helper to clear phone validation error
+        function clearPhoneError() {
+            const input = dom.clientPhoneInput;
+            const error = dom.clientPhoneError;
+            
+            if (input) input.classList.remove('error');
+            if (error) error.classList.remove('visible');
+        }
+        
         async function startCall() {
             // Warm up audio on user gesture (iOS requirement)
             warmUpAudio();
             
+            // Clear any previous error
+            clearPhoneError();
+            
+            // Get client phone - now mandatory
+            const clientPhone = dom.clientPhoneInput?.value?.trim() || '';
+            
+            // Validate phone number
+            if (!clientPhone) {
+                showPhoneError('Client phone number is required');
+                dom.clientPhoneInput?.focus();
+                return;
+            }
+            
+            if (!validatePhoneNumber(clientPhone)) {
+                showPhoneError('Please enter a valid 10-digit phone number');
+                dom.clientPhoneInput?.focus();
+                return;
+            }
+            
+            state.clientPhone = clientPhone;
             dom.startBtn.disabled = true;
             
             // Reset reconnection state for new call
             state.wsReconnectAttempts = 0;
             state.wsReconnecting = false;
-            
-            // Get client phone if provided (click-to-call mode)
-            const clientPhone = dom.clientPhoneInput?.value?.trim() || '';
-            state.clientPhone = clientPhone;
             
             setStatus('connecting');
             showScreen('connectingScreen');
