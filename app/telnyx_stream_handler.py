@@ -886,8 +886,8 @@ class AgentStreamHandler:
         self._deepgram_initialized = False
         return True
     
-    async def _init_deepgram(self):
-        """Connect to Deepgram - called when Telnyx stream actually starts"""
+    async def connect_deepgram(self):
+        """Connect to Deepgram - called by ClientStreamHandler after client connects"""
         if self._deepgram_initialized or not settings.deepgram_api_key:
             return
         
@@ -941,9 +941,8 @@ class AgentStreamHandler:
         if event == "connected":
             print(f"[AgentStream] Telnyx connected", flush=True)
         elif event == "start":
-            print(f"[AgentStream] Stream started", flush=True)
-            # Initialize Deepgram NOW that stream is truly ready
-            await self._init_deepgram()
+            print(f"[AgentStream] Stream started - awaiting client trigger", flush=True)
+            # NOTE: Deepgram connects AFTER client connects (see ClientStreamHandler._trigger_agent_deepgram)
         elif event == "media":
             media = message.get("media", {})
             payload = media.get("payload")
@@ -1130,6 +1129,9 @@ class ClientStreamHandler:
                 
                 print(f"[ClientStream] Deepgram connected (attempt {attempt + 1})", flush=True)
                 
+                # NOW trigger agent's Deepgram connection (sequenced to avoid HTTP 400)
+                await self._trigger_agent_deepgram()
+                
                 await self._broadcast({
                     "type": "ready",
                     "message": "Coaching active"
@@ -1151,6 +1153,21 @@ class ClientStreamHandler:
         self.is_running = True
         await self._broadcast({"type": "ready"})
         return True
+    
+    async def _trigger_agent_deepgram(self):
+        """Trigger agent's Deepgram connection after client is connected.
+        
+        This solves the HTTP 400 issue - agent must connect AFTER client.
+        """
+        try:
+            agent_handler = _agent_handlers.get(self.session_id)
+            if agent_handler:
+                print(f"[ClientStream] Triggering Agent Deepgram...", flush=True)
+                await agent_handler.connect_deepgram()
+            else:
+                print(f"[ClientStream] No agent handler found for {self.session_id}", flush=True)
+        except Exception as e:
+            print(f"[ClientStream] Failed to trigger agent Deepgram: {e}", flush=True)
     
     async def handle_telnyx_message(self, message: dict):
         """Process Telnyx message with client audio"""
