@@ -143,20 +143,28 @@ def generate_agent_dtmf_texml(session_id: str) -> str:
     Generate TeXML for agent DTMF gate.
     Called when agent answers the call.
     
-    Waits for agent to press 1 before dialing client.
-    This prevents voicemail/declined calls from triggering client dial.
+    CRITICAL: Stream MUST start here (on call answer) - Telnyx only starts
+    streams from direct answer webhook responses, not from Gather action responses.
     
+    - Start streaming agent audio immediately (before DTMF)
+    - Wait for agent to press 1 before dialing client
     - 10 second timeout for DTMF input
     - On success (press 1): redirect to /agent-ready endpoint
     - On timeout/no input: hang up with message
     """
+    stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
+    agent_stream_url = f"{stream_url}/ws/telnyx/stream/agent/{session_id}"
     dtmf_action_url = f"{settings.base_url}/api/telnyx/agent-ready?session_id={session_id}"
     
     print(f"[TeXML] Generating AGENT DTMF TeXML for session {session_id}", flush=True)
+    print(f"[TeXML] Agent stream: {agent_stream_url}", flush=True)
     print(f"[TeXML] DTMF action URL: {dtmf_action_url}", flush=True)
     
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
+    <Start>
+        <Stream url="{agent_stream_url}" track="inbound_track" />
+    </Start>
     <Gather action="{dtmf_action_url}" method="POST" numDigits="1" timeout="10">
         <Say voice="Polly.Matthew" language="en-US">Press 1 when ready.</Say>
     </Gather>
@@ -170,11 +178,13 @@ def generate_agent_dtmf_texml(session_id: str) -> str:
 
 def generate_agent_conference_texml(session_id: str) -> str:
     """
-    Generate TeXML to put the agent into a conference with audio streaming.
+    Generate TeXML to put the agent into a conference.
     Called AFTER agent presses 1 (DTMF gate passed).
     
+    NOTE: Agent audio stream was already started in agent-answered TeXML.
+    This TeXML only handles the conference join and client dial.
+    
     CRITICAL: Agent MUST join the conference so client can hear them!
-    - Start streaming agent's audio (inbound_track = agent speaking)
     - Join conference so they can hear/talk to client
     - startConferenceOnEnter="true" - conference starts when agent joins
     - endConferenceOnExit="true" - conference ends if agent hangs up
@@ -182,23 +192,17 @@ def generate_agent_conference_texml(session_id: str) -> str:
     The waitUrl plays ringback while waiting. It's session-aware and will
     return silence once the client connects, stopping the ringback naturally.
     """
-    stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
     conference_name = f"coachd_{session_id}"
-    # Use separate stream endpoint for agent audio
-    agent_stream_url = f"{stream_url}/ws/telnyx/stream/agent/{session_id}"
     
     print(f"[TeXML] Generating AGENT CONFERENCE TeXML for session {session_id}", flush=True)
     print(f"[TeXML] Conference: {conference_name}", flush=True)
-    print(f"[TeXML] Agent stream: {agent_stream_url}", flush=True)
+    print(f"[TeXML] Note: Agent stream already started in DTMF phase", flush=True)
     
     # Session-aware ringback - stops automatically when client connects
     ringback_url = f"{settings.base_url}/api/telnyx/ringback?session_id={session_id}"
     
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Start>
-        <Stream url="{agent_stream_url}" track="inbound_track" />
-    </Start>
     <Say voice="Polly.Matthew" language="en-US">Calling.</Say>
     <Dial>
         <Conference
