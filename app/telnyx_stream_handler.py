@@ -878,7 +878,7 @@ class AgentStreamHandler:
         logger.info(f"[AgentStream] Created for session {session_id}")
     
     async def start(self) -> bool:
-        """Initialize Deepgram for agent audio"""
+        """Initialize Deepgram for agent audio with retry logic"""
         print(f"[AgentStream] Starting for {self.session_id}", flush=True)
         self._session_start_time = time.time()
         
@@ -887,37 +887,54 @@ class AgentStreamHandler:
             self.is_running = True
             return True
         
-        try:
-            self.deepgram = DeepgramClient(settings.deepgram_api_key)
-            self.connection = self.deepgram.listen.asynclive.v("1")
-            
-            self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
-            self.connection.on(LiveTranscriptionEvents.Transcript, self._on_transcript)
-            self.connection.on(LiveTranscriptionEvents.Error, self._on_error)
-            self.connection.on(LiveTranscriptionEvents.Close, self._on_close)
-            
-            options = LiveOptions(
-                model="nova-2",
-                language="en-US",
-                smart_format=True,
-                punctuate=True,
-                interim_results=False,  # Only final for agent (context extraction)
-                utterance_end_ms=1500,
-                encoding="linear16",
-                sample_rate=self.SAMPLE_RATE,
-                channels=1
-            )
-            
-            await self.connection.start(options)
-            self.is_running = True
-            
-            print(f"[AgentStream] Deepgram connected", flush=True)
-            return True
-            
-        except Exception as e:
-            logger.error(f"[AgentStream] Deepgram error: {e}")
-            self.is_running = True
-            return True
+        # Delay to let Telnyx stream fully establish before connecting to Deepgram
+        await asyncio.sleep(0.5)
+        
+        # Retry logic - Deepgram sometimes rejects first connection
+        max_retries = 3
+        retry_delay = 1.0  # seconds (increased from 0.5)
+        
+        for attempt in range(max_retries):
+            try:
+                self.deepgram = DeepgramClient(settings.deepgram_api_key)
+                self.connection = self.deepgram.listen.asynclive.v("1")
+                
+                self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
+                self.connection.on(LiveTranscriptionEvents.Transcript, self._on_transcript)
+                self.connection.on(LiveTranscriptionEvents.Error, self._on_error)
+                self.connection.on(LiveTranscriptionEvents.Close, self._on_close)
+                
+                options = LiveOptions(
+                    model="nova-2",
+                    language="en-US",
+                    smart_format=True,
+                    punctuate=True,
+                    interim_results=False,  # Only final for agent (context extraction)
+                    utterance_end_ms=1500,
+                    encoding="linear16",
+                    sample_rate=self.SAMPLE_RATE,
+                    channels=1
+                )
+                
+                await self.connection.start(options)
+                self.is_running = True
+                
+                print(f"[AgentStream] Deepgram connected (attempt {attempt + 1})", flush=True)
+                return True
+                
+            except Exception as e:
+                print(f"[AgentStream] Deepgram attempt {attempt + 1} failed: {e}", flush=True)
+                self.connection = None
+                self.deepgram = None
+                
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+        
+        # All retries failed - continue without agent transcription
+        print(f"[AgentStream] Deepgram failed after {max_retries} attempts - continuing without agent transcription", flush=True)
+        self.is_running = True
+        return True
     
     async def handle_telnyx_message(self, message: dict):
         """Process Telnyx message with agent audio"""
@@ -1052,7 +1069,7 @@ class ClientStreamHandler:
         logger.info(f"[ClientStream] Created for session {session_id}")
     
     async def start(self) -> bool:
-        """Initialize Deepgram for client audio"""
+        """Initialize Deepgram for client audio with retry logic"""
         print(f"[ClientStream] Starting for {self.session_id}", flush=True)
         self._session_start_time = time.time()
         
@@ -1082,43 +1099,58 @@ class ClientStreamHandler:
             await self._broadcast({"type": "ready"})
             return True
         
-        try:
-            self.deepgram = DeepgramClient(settings.deepgram_api_key)
-            self.connection = self.deepgram.listen.asynclive.v("1")
-            
-            self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
-            self.connection.on(LiveTranscriptionEvents.Transcript, self._on_transcript)
-            self.connection.on(LiveTranscriptionEvents.Error, self._on_error)
-            self.connection.on(LiveTranscriptionEvents.Close, self._on_close)
-            
-            options = LiveOptions(
-                model="nova-2",
-                language="en-US",
-                smart_format=True,
-                punctuate=True,
-                interim_results=True,  # Show live typing for client
-                utterance_end_ms=1000,
-                encoding="linear16",
-                sample_rate=self.SAMPLE_RATE,
-                channels=1
-            )
-            
-            await self.connection.start(options)
-            self.is_running = True
-            
-            print(f"[ClientStream] Deepgram connected", flush=True)
-            
-            await self._broadcast({
-                "type": "ready",
-                "message": "Coaching active"
-            })
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"[ClientStream] Deepgram error: {e}")
-            self.is_running = True
-            return True
+        # Retry logic - Deepgram sometimes rejects connections
+        max_retries = 3
+        retry_delay = 0.5  # seconds
+        
+        for attempt in range(max_retries):
+            try:
+                self.deepgram = DeepgramClient(settings.deepgram_api_key)
+                self.connection = self.deepgram.listen.asynclive.v("1")
+                
+                self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
+                self.connection.on(LiveTranscriptionEvents.Transcript, self._on_transcript)
+                self.connection.on(LiveTranscriptionEvents.Error, self._on_error)
+                self.connection.on(LiveTranscriptionEvents.Close, self._on_close)
+                
+                options = LiveOptions(
+                    model="nova-2",
+                    language="en-US",
+                    smart_format=True,
+                    punctuate=True,
+                    interim_results=True,  # Show live typing for client
+                    utterance_end_ms=1000,
+                    encoding="linear16",
+                    sample_rate=self.SAMPLE_RATE,
+                    channels=1
+                )
+                
+                await self.connection.start(options)
+                self.is_running = True
+                
+                print(f"[ClientStream] Deepgram connected (attempt {attempt + 1})", flush=True)
+                
+                await self._broadcast({
+                    "type": "ready",
+                    "message": "Coaching active"
+                })
+                
+                return True
+                
+            except Exception as e:
+                print(f"[ClientStream] Deepgram attempt {attempt + 1} failed: {e}", flush=True)
+                self.connection = None
+                self.deepgram = None
+                
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2  # Exponential backoff
+        
+        # All retries failed - continue without client transcription
+        print(f"[ClientStream] Deepgram failed after {max_retries} attempts - continuing without transcription", flush=True)
+        self.is_running = True
+        await self._broadcast({"type": "ready"})
+        return True
     
     async def handle_telnyx_message(self, message: dict):
         """Process Telnyx message with client audio"""
