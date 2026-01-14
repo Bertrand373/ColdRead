@@ -1,7 +1,7 @@
 {
-  "name": "Coachd.ai",
+  "name": "Coachd",
   "short_name": "Coachd",
-  "description": "AI-powered sales coaching for life insurance agents",
+  "description": "Coaching on call. Sales coaching for life insurance agents.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

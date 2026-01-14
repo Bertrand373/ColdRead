@@ -13,7 +13,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 
 from fastapi import FastAPI, Request, File, UploadFile, Form, HTTPException, WebSocket
-from fastapi.responses import HTMLResponse, StreamingResponse, Response, RedirectResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, Response, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -160,6 +160,15 @@ templates = Jinja2Templates(directory=str(templates_path))
 app.include_router(outcome_router)
 app.include_router(status_router)
 app.include_router(telnyx_router)
+
+
+# Service worker must be served from root for proper scope
+@app.get("/sw.js")
+async def service_worker():
+    return FileResponse(
+        static_path / "sw.js",
+        media_type="application/javascript"
+    )
 
 
 # ============ WEBSOCKET ROUTES ============
