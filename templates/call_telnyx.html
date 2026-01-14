@@ -208,6 +208,10 @@
             border-radius: 12px;
             cursor: pointer;
             transition: all 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
         }
         
         .back-btn:hover { background: var(--border); }
@@ -1539,6 +1543,13 @@
             padding: 40px 24px;
         }
         
+        .complete-screen.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
         .complete-icon {
             width: 72px;
             height: 72px;
@@ -1605,6 +1616,14 @@
             border-radius: 14px;
             cursor: pointer;
             transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .complete-btn:active {
+            transform: scale(0.97);
         }
         
         .complete-btn.primary {
@@ -2974,10 +2993,15 @@
                     if (index === 0) el.classList.add('active');
                 }
             });
-            document.getElementById('stepAgentText').textContent = 'Calling your phone...';
-            document.getElementById('stepClientText').textContent = 'Calling client...';
-            document.getElementById('connectingTitle').textContent = 'Setting Up Call...';
-            document.getElementById('connectingSubtitle').textContent = 'This will just take a moment';
+            // Use optional chaining to prevent errors if elements don't exist
+            const stepAgentText = document.getElementById('stepAgentText');
+            const stepClientText = document.getElementById('stepClientText');
+            const connectingTitle = document.getElementById('connectingTitle');
+            const connectingSubtitle = document.getElementById('connectingSubtitle');
+            if (stepAgentText) stepAgentText.textContent = 'Calling your phone...';
+            if (stepClientText) stepClientText.textContent = 'Calling client...';
+            if (connectingTitle) connectingTitle.textContent = 'Setting Up Call...';
+            if (connectingSubtitle) connectingSubtitle.textContent = 'This will just take a moment';
         }
         
         function onCallConnected() {
@@ -3662,26 +3686,32 @@
         // ==================== SESSION COMPLETE ====================
         function startNewCall() {
             console.log('[StartNewCall] Resetting for new call');
-            dom.timer.textContent = '0:00';
-            state.guidanceHistory = [];
-            state.selectedTipIndex = null;
-            state.sessionId = null;
-            state.clientPhone = null;
-            state.seconds = 0;
-            state.isInCall = false;
-            if (state.ws) {
-                state.ws.close();
-                state.ws = null;
+            try {
+                dom.timer.textContent = '0:00';
+                state.guidanceHistory = [];
+                state.selectedTipIndex = null;
+                state.sessionId = null;
+                state.clientPhone = null;
+                state.seconds = 0;
+                state.isInCall = false;
+                if (state.ws) {
+                    state.ws.close();
+                    state.ws = null;
+                }
+                if (dom.clientPhoneInput) dom.clientPhoneInput.value = '';
+                dismissGuidance();
+                resetCaptions();
+                resetSentiment();
+                resetConnectionSteps();
+                // Remove connected class from icon
+                document.getElementById('connectingIcon')?.classList.remove('connected');
+                console.log('[StartNewCall] Showing start screen');
+                showScreen('startScreen');
+            } catch (err) {
+                console.error('[StartNewCall] Error:', err);
+                // Force show start screen even if something failed
+                showScreen('startScreen');
             }
-            if (dom.clientPhoneInput) dom.clientPhoneInput.value = '';
-            dismissGuidance();
-            resetCaptions();
-            resetSentiment();
-            resetConnectionSteps();
-            // Remove connected class from icon
-            document.getElementById('connectingIcon')?.classList.remove('connected');
-            console.log('[StartNewCall] Showing start screen');
-            showScreen('startScreen');
         }
         
         function goHome() {
@@ -3692,19 +3722,35 @@
         }
         
         function handleBack() {
-            if (state.isInCall) {
-                if (confirm('End this session?')) endCall();
-            } else if (dom.connectingScreen.classList.contains('active')) {
-                cancelCall();
-            } else if (dom.completeScreen.classList.contains('active')) {
-                startNewCall();
-            } else if (dom.startScreen.classList.contains('active')) {
+            console.log('[HandleBack] Current state:', {
+                isInCall: state.isInCall,
+                connectingActive: dom.connectingScreen?.classList.contains('active'),
+                completeActive: dom.completeScreen?.classList.contains('active'),
+                startActive: dom.startScreen?.classList.contains('active'),
+                identifyActive: dom.identifyScreen?.classList.contains('active')
+            });
+            try {
+                if (state.isInCall) {
+                    if (confirm('End this session?')) endCall();
+                } else if (dom.connectingScreen?.classList.contains('active')) {
+                    cancelCall();
+                } else if (dom.completeScreen?.classList.contains('active')) {
+                    startNewCall();
+                } else if (dom.startScreen?.classList.contains('active')) {
+                    goHome();
+                } else if (dom.identifyScreen?.classList.contains('active')) {
+                    showPageLoader();
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 150);
+                } else {
+                    // Fallback: go home if no known state
+                    console.log('[HandleBack] Unknown state, going home');
+                    goHome();
+                }
+            } catch (err) {
+                console.error('[HandleBack] Error:', err);
                 goHome();
-            } else if (dom.identifyScreen.classList.contains('active')) {
-                showPageLoader();
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 150);
             }
         }
         

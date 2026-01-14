@@ -1297,16 +1297,20 @@ _agent_handlers: Dict[str, AgentStreamHandler] = {}
 
 
 async def get_or_create_client_handler(session_id: str) -> ClientStreamHandler:
-    """Get or create client stream handler"""
+    """Get or create client stream handler - automatically initializes Deepgram"""
     if session_id not in _client_handlers:
-        _client_handlers[session_id] = ClientStreamHandler(session_id)
+        handler = ClientStreamHandler(session_id)
+        await handler.start()  # Always initialize Deepgram connection
+        _client_handlers[session_id] = handler
     return _client_handlers[session_id]
 
 
 async def get_or_create_agent_handler(session_id: str) -> AgentStreamHandler:
-    """Get or create agent stream handler"""
+    """Get or create agent stream handler - automatically initializes Deepgram"""
     if session_id not in _agent_handlers:
-        _agent_handlers[session_id] = AgentStreamHandler(session_id)
+        handler = AgentStreamHandler(session_id)
+        await handler.start()  # Always initialize Deepgram connection
+        _agent_handlers[session_id] = handler
     return _agent_handlers[session_id]
 
 
