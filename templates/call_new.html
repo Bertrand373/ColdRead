@@ -184,12 +184,13 @@
         .header {
             flex-shrink: 0;
             z-index: 100;
-            background: var(--bg);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 12px 20px;
-            border-bottom: 1px solid var(--border);
         }
         
         .header-left {

@@ -185,8 +185,9 @@
             align-items: center;
             padding: 0 32px;
             height: 64px;
-            background: var(--color-bg);
-            border-bottom: 1px solid var(--color-border);
+            background: rgba(255, 253, 250, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -867,9 +868,10 @@
         .modal-error {
             display: none;
             color: var(--color-error);
-            font-size: 0.875rem;
-            margin-top: -12px;
-            margin-bottom: 16px;
+            font-size: 0.75rem;
+            margin-top: 8px;
+            margin-bottom: 8px;
+            text-align: center;
         }
         
         .modal-error.visible { display: block; }

@@ -521,8 +521,9 @@
         
         .form-error {
             color: var(--danger);
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             margin-top: 8px;
+            text-align: center;
             display: none;
         }
         
@@ -1878,6 +1879,7 @@
                 <div class="form-group">
                     <label class="form-label">Your Phone Number</label>
                     <input type="tel" class="form-input" id="agentPhone" placeholder="(404) 555-1234" autocomplete="tel">
+                    <div class="form-error" id="identifyError">Please enter a valid phone number</div>
                 </div>
                 
                 <div class="form-group">
@@ -1886,8 +1888,6 @@
                         <option value="">Select your agency...</option>
                     </select>
                 </div>
-                
-                <div class="form-error" id="identifyError">Please fill in all required fields</div>
                 
                 <button class="identify-btn" onclick="Coachd.saveIdentity()">Continue</button>
             </div>
