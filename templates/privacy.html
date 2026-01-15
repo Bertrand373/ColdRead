@@ -47,117 +47,100 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: linear-gradient(145deg, #FAFAFA 0%, #F0F4F8 100%);
+            background: linear-gradient(180deg, #FAFAFA 0%, #F5F5F5 100%);
             z-index: 99999;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
             padding: 24px;
-            overflow: hidden;
+            gap: 28px;
         }
         
         .landscape-blocker::before {
             content: '';
             position: absolute;
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, rgba(96, 165, 250, 0.08) 0%, transparent 70%);
-            border-radius: 50%;
-            top: -60px;
-            right: -60px;
-            animation: floatOrb 8s ease-in-out infinite;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.025;
+            pointer-events: none;
         }
-        
-        .landscape-blocker::after {
-            content: '';
-            position: absolute;
+
+        .landscape-logo {
+            height: 22px;
+            opacity: 0.9;
+        }
+
+        .phone-wrapper {
             width: 160px;
             height: 160px;
-            background: radial-gradient(circle, rgba(96, 165, 250, 0.06) 0%, transparent 70%);
-            border-radius: 50%;
-            bottom: -40px;
-            left: -40px;
-            animation: floatOrb 8s ease-in-out infinite reverse;
-        }
-        
-        @keyframes floatOrb {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            50% { transform: translate(10px, -10px) scale(1.05); }
-        }
-        
-        .phone-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
             position: relative;
-            margin-bottom: 28px;
-            z-index: 1;
         }
-        
-        .phone-glow {
+
+        .phone-shadow {
             position: absolute;
-            inset: -20px;
-            background: radial-gradient(circle, rgba(96, 165, 250, 0.15) 0%, transparent 70%);
+            width: 40px;
+            height: 10px;
+            background: radial-gradient(ellipse, rgba(0,0,0,0.18) 0%, transparent 70%);
+            bottom: 4px;
             border-radius: 50%;
-            filter: blur(10px);
-            animation: pulseGlow 3s ease-in-out infinite;
+            animation: shadowPulse 7s ease-in-out infinite;
         }
         
-        @keyframes pulseGlow {
-            0%, 100% { opacity: 0.5; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.1); }
+        @keyframes shadowPulse {
+            0%, 7%, 43%, 50%, 57%, 93%, 100% {
+                transform: scaleX(2);
+                opacity: 0.2;
+            }
+            25%, 75% {
+                transform: scaleX(1);
+                opacity: 0.6;
+            }
         }
-        
-        .phone-icon {
-            position: relative;
-            animation: rotatePhone 3s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
-        }
-        
-        .phone-icon svg {
-            width: 56px;
-            height: 56px;
-            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.08));
+
+        .phone-device {
+            position: absolute;
+            width: 48px;
+            height: 100px;
+            animation: rotatePhone 7s cubic-bezier(0.33, 1, 0.68, 1) infinite;
+            filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.2)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
         }
         
         @keyframes rotatePhone {
-            0%, 10% { transform: rotate(90deg); }
-            30%, 100% { transform: rotate(0deg); }
+            0%, 7% { transform: rotate(90deg); }
+            25%, 43% { transform: rotate(0deg); }
+            50%, 57% { transform: rotate(-90deg); }
+            75%, 93% { transform: rotate(0deg); }
+            100% { transform: rotate(90deg); }
         }
-        
-        .rotate-arrow {
-            position: absolute;
-            top: 50%;
-            left: -24px;
-            transform: translateY(-50%);
-            opacity: 0;
-            animation: arrowHint 3s ease-in-out infinite;
+
+        .phone-device svg {
+            width: 100%;
+            height: 100%;
         }
-        
-        .rotate-arrow svg {
-            width: 18px;
-            height: 18px;
-            color: #60A5FA;
+
+        .landscape-text {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
-        
-        @keyframes arrowHint {
-            0%, 10% { opacity: 0.8; transform: translateY(-50%) rotate(-45deg); }
-            25%, 100% { opacity: 0; transform: translateY(-50%) rotate(0deg); }
-        }
-        
-        .landscape-blocker-text {
+
+        .landscape-title {
             font-family: var(--font-display);
-            font-size: 1.15rem;
+            font-size: 1.5rem;
             font-weight: 600;
             color: #1A1A1A;
-            margin-bottom: 6px;
-            letter-spacing: -0.01em;
-            z-index: 1;
+            letter-spacing: -0.02em;
         }
         
-        .landscape-blocker-subtext {
-            font-size: 0.8rem;
+        .landscape-subtitle {
+            font-size: 0.85rem;
             color: #9CA3AF;
-            z-index: 1;
         }
-        
+
         @media (orientation: landscape) and (max-height: 500px) {
             .landscape-blocker { display: flex; }
             .container { display: none !important; }
@@ -241,24 +224,111 @@
 </head>
 <body>
     <div class="landscape-blocker">
-        <div class="phone-container">
-            <div class="phone-glow"></div>
-            <div class="phone-icon">
-                <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-                    <rect x="16" y="6" width="24" height="44" rx="4" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="2"/>
-                    <rect x="20" y="12" width="16" height="28" rx="2" fill="#60A5FA" opacity="0.15"/>
-                    <circle cx="28" cy="46" r="2.5" stroke="#1A1A1A" stroke-width="1.5"/>
-                    <rect x="24" y="8" width="8" height="2" rx="1" fill="#E5E7EB"/>
-                </svg>
-            </div>
-            <div class="rotate-arrow">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                    <path d="M2 12c0-4.4 3.6-8 8-8h4m0 0l-3-3m3 3l-3 3"/>
+        <img src="/static/logo.png" alt="Coachd" class="landscape-logo">
+        
+        <div class="phone-wrapper">
+            <div class="phone-shadow"></div>
+            <div class="phone-device">
+                <svg viewBox="0 0 48 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="titaniumFrame" x1="0" y1="0" x2="48" y2="0" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#4A4A4C"/>
+                            <stop offset="15%" stop-color="#2C2C2E"/>
+                            <stop offset="50%" stop-color="#1F1F21"/>
+                            <stop offset="85%" stop-color="#2C2C2E"/>
+                            <stop offset="100%" stop-color="#4A4A4C"/>
+                        </linearGradient>
+                        <linearGradient id="frameDepth" x1="24" y1="0" x2="24" y2="100" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.08"/>
+                            <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0"/>
+                            <stop offset="100%" stop-color="#000000" stop-opacity="0.1"/>
+                        </linearGradient>
+                        <linearGradient id="edgeHighlight" x1="0" y1="50" x2="48" y2="50" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#5A5A5C"/>
+                            <stop offset="3%" stop-color="#3A3A3C"/>
+                            <stop offset="97%" stop-color="#3A3A3C"/>
+                            <stop offset="100%" stop-color="#5A5A5C"/>
+                        </linearGradient>
+                        <linearGradient id="screenOLED" x1="24" y1="3" x2="24" y2="97" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#0A0A0A"/>
+                            <stop offset="100%" stop-color="#000000"/>
+                        </linearGradient>
+                        <linearGradient id="glassReflectTop" x1="24" y1="3" x2="24" y2="20" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.06"/>
+                            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+                        </linearGradient>
+                        <linearGradient id="glassReflectDiag" x1="5" y1="10" x2="40" y2="45" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.04"/>
+                            <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.01"/>
+                            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+                        </linearGradient>
+                        <linearGradient id="buttonMetal" x1="0" y1="0" x2="2" y2="0" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#5A5A5C"/>
+                            <stop offset="30%" stop-color="#3A3A3C"/>
+                            <stop offset="70%" stop-color="#2A2A2C"/>
+                            <stop offset="100%" stop-color="#1A1A1C"/>
+                        </linearGradient>
+                        <linearGradient id="islandDepth" x1="24" y1="6" x2="24" y2="13" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#000000"/>
+                            <stop offset="100%" stop-color="#0A0A0A"/>
+                        </linearGradient>
+                        <linearGradient id="homeIndicator" x1="14" y1="93" x2="34" y2="93" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#3A3A3C"/>
+                            <stop offset="50%" stop-color="#4A4A4C"/>
+                            <stop offset="100%" stop-color="#3A3A3C"/>
+                        </linearGradient>
+                        <linearGradient id="antennaBand" x1="0" y1="0" x2="0" y2="4" gradientUnits="userSpaceOnUse">
+                            <stop offset="0%" stop-color="#1A1A1C"/>
+                            <stop offset="50%" stop-color="#252527"/>
+                            <stop offset="100%" stop-color="#1A1A1C"/>
+                        </linearGradient>
+                    </defs>
+                    <rect x="0.5" y="0.5" width="47" height="99" rx="10.5" fill="url(#titaniumFrame)"/>
+                    <rect x="0.5" y="0.5" width="47" height="99" rx="10.5" fill="url(#frameDepth)"/>
+                    <rect x="0.5" y="0.5" width="47" height="99" rx="10.5" fill="none" stroke="url(#edgeHighlight)" stroke-width="0.5"/>
+                    <rect x="0" y="18" width="1" height="3" fill="url(#antennaBand)"/>
+                    <rect x="47" y="18" width="1" height="3" fill="url(#antennaBand)"/>
+                    <rect x="0" y="79" width="1" height="3" fill="url(#antennaBand)"/>
+                    <rect x="47" y="79" width="1" height="3" fill="url(#antennaBand)"/>
+                    <rect x="1.5" y="1.5" width="45" height="97" rx="9.5" fill="#050505"/>
+                    <rect x="2.5" y="2.5" width="43" height="95" rx="8.5" fill="url(#screenOLED)"/>
+                    <rect x="2.5" y="2.5" width="43" height="20" rx="8.5" fill="url(#glassReflectTop)"/>
+                    <rect x="2.5" y="2.5" width="43" height="50" rx="8.5" fill="url(#glassReflectDiag)"/>
+                    <rect x="13" y="6.5" width="22" height="7" rx="3.5" fill="url(#islandDepth)"/>
+                    <rect x="13.5" y="7" width="21" height="6" rx="3" fill="none" stroke="#1A1A1A" stroke-width="0.5"/>
+                    <circle cx="29" cy="9.5" r="2" fill="#0D0D0D"/>
+                    <circle cx="29" cy="9.5" r="1.3" fill="#1A1A1A"/>
+                    <circle cx="29" cy="9.5" r="0.8" fill="#0A0A0A"/>
+                    <circle cx="28.5" cy="9" r="0.3" fill="#3A3A3A"/>
+                    <circle cx="19" cy="9.5" r="1.2" fill="#0D0D0D"/>
+                    <circle cx="22" cy="9.5" r="0.6" fill="#0D0D0D"/>
+                    <rect x="46.5" y="26" width="1.5" height="13" rx="0.75" fill="url(#buttonMetal)"/>
+                    <rect x="47.3" y="26.5" width="0.3" height="12" rx="0.15" fill="#5A5A5C" opacity="0.5"/>
+                    <rect x="0" y="14" width="1.5" height="5" rx="0.75" fill="url(#buttonMetal)"/>
+                    <rect x="0.3" y="14.5" width="0.3" height="4" rx="0.15" fill="#5A5A5C" opacity="0.5"/>
+                    <rect x="0" y="23" width="1.5" height="9" rx="0.75" fill="url(#buttonMetal)"/>
+                    <rect x="0.3" y="23.5" width="0.3" height="8" rx="0.15" fill="#5A5A5C" opacity="0.5"/>
+                    <rect x="0" y="35" width="1.5" height="9" rx="0.75" fill="url(#buttonMetal)"/>
+                    <rect x="0.3" y="35.5" width="0.3" height="8" rx="0.15" fill="#5A5A5C" opacity="0.5"/>
+                    <rect x="14" y="92" width="20" height="4" rx="2" fill="url(#homeIndicator)"/>
+                    <circle cx="14" cy="96.5" r="0.6" fill="#2A2A2C"/>
+                    <circle cx="16" cy="96.5" r="0.6" fill="#2A2A2C"/>
+                    <circle cx="18" cy="96.5" r="0.6" fill="#2A2A2C"/>
+                    <rect x="21" y="95.5" width="6" height="2" rx="1" fill="#1A1A1C"/>
+                    <circle cx="30" cy="96.5" r="0.6" fill="#2A2A2C"/>
+                    <circle cx="32" cy="96.5" r="0.6" fill="#2A2A2C"/>
+                    <circle cx="34" cy="96.5" r="0.6" fill="#2A2A2C"/>
+                    <rect x="10" y="0.25" width="28" height="0.5" rx="0.25" fill="#5A5A5C" opacity="0.3"/>
+                    <circle cx="10.5" cy="10.5" r="0.3" fill="#6A6A6C" opacity="0.2"/>
+                    <circle cx="37.5" cy="10.5" r="0.3" fill="#6A6A6C" opacity="0.2"/>
                 </svg>
             </div>
         </div>
-        <p class="landscape-blocker-text">Please rotate your device</p>
-        <p class="landscape-blocker-subtext">Coachd works best in portrait mode</p>
+        
+        <div class="landscape-text">
+            <h2 class="landscape-title">Rotate to portrait</h2>
+            <p class="landscape-subtitle">For the best experience</p>
+        </div>
     </div>
 
     <div class="container">
