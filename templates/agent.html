@@ -220,6 +220,12 @@
         
         .logo {
             text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo img {
+            display: block;
         }
         
         .logo-wordmark {
@@ -611,17 +617,30 @@
             visibility: hidden;
         }
         
-        .page-loader-spinner {
-            width: 48px;
-            height: 48px;
-            border: 3px solid rgba(0, 0, 0, 0.08);
-            border-top-color: var(--color-accent);
-            border-radius: 50%;
-            animation: pageLoaderSpin 0.8s linear infinite;
+        .page-loader-waveform {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 32px;
         }
         
-        @keyframes pageLoaderSpin {
-            to { transform: rotate(360deg); }
+        .page-loader-waveform .bar {
+            width: 5px;
+            border-radius: 2.5px;
+            background: var(--color-accent);
+            animation: waveformPulse 1s ease-in-out infinite;
+        }
+        
+        .page-loader-waveform .bar:nth-child(1) { height: 12px; animation-delay: 0s; }
+        .page-loader-waveform .bar:nth-child(2) { height: 24px; animation-delay: 0.1s; }
+        .page-loader-waveform .bar:nth-child(3) { height: 16px; animation-delay: 0.2s; }
+        .page-loader-waveform .bar:nth-child(4) { height: 28px; animation-delay: 0.3s; }
+        .page-loader-waveform .bar:nth-child(5) { height: 14px; animation-delay: 0.4s; }
+        
+        @keyframes waveformPulse {
+            0%, 100% { transform: scaleY(1); opacity: 0.7; }
+            50% { transform: scaleY(0.5); opacity: 0.4; }
+        }
         }
         
         /* ========== RESPONSIVE ========== */
@@ -656,7 +675,7 @@
     <div class="app">
         <header class="header">
             <a href="/" class="logo">
-                <img src="/static/logo.png" alt="Coachd" height="32">
+                <img src="/static/logo.png" alt="Coachd" height="24">
             </a>
             <div class="agency-badge" id="agencyBadge">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -742,7 +761,13 @@
     
     <!-- Page Loader -->
     <div class="page-loader" id="pageLoader">
-        <div class="page-loader-spinner"></div>
+        <div class="page-loader-waveform">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
     </div>
     
     <script>

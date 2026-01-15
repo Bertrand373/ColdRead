@@ -219,14 +219,8 @@
         .back-btn svg { width: 20px; height: 20px; color: var(--text); }
         
         .logo {
-            font-family: 'Outfit', sans-serif;
-            font-weight: 600;
-            font-size: 1.1rem;
-            letter-spacing: -0.02em;
-            color: var(--text);
+            display: block;
         }
-        
-        .logo .ai { color: var(--accent-dark); }
         
         .header-right {
             display: flex;
@@ -360,7 +354,7 @@
         
         .identify-card {
             width: 100%;
-            max-width: 340px;
+            max-width: 300px;
         }
         
         .identify-header {
@@ -600,7 +594,7 @@
             align-items: center;
             justify-content: center;
             gap: 12px;
-            padding: 16px 40px;
+            padding: 16px 24px;
             background: var(--text);
             color: white;
             font-family: 'Outfit', sans-serif;
@@ -611,7 +605,8 @@
             cursor: pointer;
             transition: all 0.2s ease;
             width: 100%;
-            max-width: 280px;
+            max-width: 300px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
         }
         
         .start-btn:hover:not(:disabled) { transform: translateY(-2px); }
@@ -687,9 +682,8 @@
         /* ========== CLIENT PHONE INPUT ========== */
         .client-phone-section {
             width: 100%;
-            max-width: 280px;
+            max-width: 300px;
             margin-bottom: 24px;
-            text-align: left;
         }
         
         .client-phone-section .form-label {
@@ -700,6 +694,7 @@
             text-transform: uppercase;
             letter-spacing: 0.08em;
             margin-bottom: 8px;
+            text-align: center;
         }
         
         .client-phone-section .form-input {
@@ -1792,17 +1787,29 @@
             pointer-events: none;
         }
         
-        .page-loader-spinner {
-            width: 48px;
-            height: 48px;
-            border: 3px solid rgba(0, 0, 0, 0.08);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: pageLoaderSpin 0.8s linear infinite;
+        .page-loader-waveform {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 32px;
         }
         
-        @keyframes pageLoaderSpin {
-            to { transform: rotate(360deg); }
+        .page-loader-waveform .bar {
+            width: 5px;
+            border-radius: 2.5px;
+            background: var(--accent);
+            animation: waveformPulse 1s ease-in-out infinite;
+        }
+        
+        .page-loader-waveform .bar:nth-child(1) { height: 12px; animation-delay: 0s; }
+        .page-loader-waveform .bar:nth-child(2) { height: 24px; animation-delay: 0.1s; }
+        .page-loader-waveform .bar:nth-child(3) { height: 16px; animation-delay: 0.2s; }
+        .page-loader-waveform .bar:nth-child(4) { height: 28px; animation-delay: 0.3s; }
+        .page-loader-waveform .bar:nth-child(5) { height: 14px; animation-delay: 0.4s; }
+        
+        @keyframes waveformPulse {
+            0%, 100% { transform: scaleY(1); opacity: 0.7; }
+            50% { transform: scaleY(0.5); opacity: 0.4; }
         }
     </style>
 </head>
@@ -1838,16 +1845,9 @@
                         <path d="M15 18l-6-6 6-6"/>
                     </svg>
                 </button>
-                <img src="/static/logo.png" alt="Coachd" height="32" class="logo">
+                <img src="/static/logo.png" alt="Coachd" height="24" class="logo">
             </div>
             <div class="header-right">
-                <div class="agent-badge" id="agentBadge">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                    <span id="agentBadgeName"></span>
-                </div>
                 <span class="timer" id="timer">0:00</span>
                 <div class="status-indicator" id="statusIndicator">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -1861,19 +1861,8 @@
         <div class="screen identify-screen active" id="identifyScreen">
             <div class="identify-card">
                 <div class="identify-header">
-                    <div class="identify-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                    </div>
                     <h1 class="identify-title">Agent Setup</h1>
                     <p class="identify-subtitle">One-time setup to get started</p>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Your Full Name</label>
-                    <input type="text" class="form-input" id="agentName" placeholder="e.g. Marcus Johnson" autocomplete="name">
                 </div>
                 
                 <div class="form-group">
@@ -1896,11 +1885,6 @@
         
         <!-- Start Screen -->
         <div class="screen start-screen" id="startScreen">
-            <div class="start-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                </svg>
-            </div>
             <h1 class="start-title">Ready to Coach</h1>
             <p class="start-subtitle">Live coaching enabled</p>
             
@@ -2070,7 +2054,13 @@
     
     <!-- Page Loader -->
     <div class="page-loader hidden" id="pageLoader">
-        <div class="page-loader-spinner"></div>
+        <div class="page-loader-waveform">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
     </div>
     
     <script>
@@ -2091,7 +2081,6 @@
         // ==================== STATE ====================
         const state = {
             sessionId: null,
-            agentName: null,
             agentPhone: null,
             clientPhone: null,  // Client phone for click-to-call
             agency: null,
@@ -2155,12 +2144,9 @@
             get guidanceState() { return document.getElementById('guidanceState'); },
             get guidanceText() { return document.getElementById('guidanceText'); },
             get completeDuration() { return document.getElementById('completeDuration'); },
-            get agentName() { return document.getElementById('agentName'); },
             get agentPhone() { return document.getElementById('agentPhone'); },
             get agencySelect() { return document.getElementById('agencySelect'); },
             get identifyError() { return document.getElementById('identifyError'); },
-            get agentBadge() { return document.getElementById('agentBadge'); },
-            get agentBadgeName() { return document.getElementById('agentBadgeName'); },
             get phoneDisplay() { return document.getElementById('phoneDisplay'); },
             get phoneDisplayNumber() { return document.getElementById('phoneDisplayNumber'); },
             get clientPhoneInput() { return document.getElementById('clientPhoneInput'); },
@@ -2300,10 +2286,8 @@
                         return;
                     }
                     
-                    state.agentName = data.name;
                     state.agentPhone = data.phone;
                     state.agency = data.agency;
-                    showAgentBadge();
                     updatePhoneDisplay();
                     showScreen('startScreen');
                 } catch (e) {
@@ -2357,49 +2341,36 @@
         }
         
         function saveIdentity() {
-            const name = dom.agentName.value.trim();
             const phone = dom.agentPhone.value.trim();
             // SECURITY: Use validated agency code, not dropdown value
             const agency = state.validatedAgencyCode;
             
             // Validate phone number (at least 10 digits)
             const phoneDigits = phone.replace(/\D/g, '');
-            if (!name || !agency || phoneDigits.length < 10) {
-                dom.identifyError.textContent = 'Please enter your name and phone number';
+            if (!agency || phoneDigits.length < 10) {
+                dom.identifyError.textContent = 'Please enter a valid phone number';
                 dom.identifyError.classList.add('show');
                 return;
             }
             
             dom.identifyError.classList.remove('show');
             
-            state.agentName = name;
             state.agentPhone = phone;
             state.agency = agency;
             
             localStorage.setItem('coachd_agent', JSON.stringify({
-                name: state.agentName,
                 phone: state.agentPhone,
                 agency: state.agency
             }));
             
-            showAgentBadge();
             updatePhoneDisplay();
             showScreen('startScreen');
         }
         
-        function showAgentBadge() {
-            const firstName = state.agentName.split(' ')[0];
-            dom.agentBadgeName.textContent = firstName;
-            dom.agentBadge.classList.add('show');
-        }
-        
         function changeAgent() {
             localStorage.removeItem('coachd_agent');
-            state.agentName = null;
             state.agentPhone = null;
             state.agency = null;
-            dom.agentBadge.classList.remove('show');
-            dom.agentName.value = '';
             dom.agentPhone.value = '';
             // Agency stays locked to validated agency
             prefillAgencyDropdown();

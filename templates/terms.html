@@ -169,6 +169,13 @@
             padding: 48px 24px 80px;
         }
         
+        .page-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
         .back-btn {
             display: inline-flex;
             align-items: center;
@@ -181,7 +188,7 @@
             cursor: pointer;
             transition: all 0.15s ease;
             text-decoration: none;
-            margin-bottom: 24px;
+            flex-shrink: 0;
         }
         
         .back-btn:hover { background: #E5E5E5; }
@@ -189,14 +196,9 @@
         .back-btn svg { width: 20px; height: 20px; color: var(--color-text); }
         
         .logo {
-            font-family: var(--font-display);
-            font-weight: 600;
-            font-size: 1.25rem;
-            margin-bottom: 8px;
+            display: block;
+            height: 32px;
         }
-        
-        .logo .name { color: var(--color-text); }
-        .logo .suffix { color: var(--color-accent); }
         
         h1 {
             font-family: var(--font-display);
@@ -255,13 +257,14 @@
     </div>
 
     <div class="container">
-        <a href="/" class="back-btn" aria-label="Go back">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M15 18l-6-6 6-6"/>
-            </svg>
-        </a>
-        
-        <img src="/static/logo.png" alt="Coachd" height="32" class="logo">
+        <div class="page-header">
+            <a href="/" class="back-btn" aria-label="Go back">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M15 18l-6-6 6-6"/>
+                </svg>
+            </a>
+            <img src="/static/logo.png" alt="Coachd" height="24" class="logo">
+        </div>
         
         <h1>Terms of Service</h1>
         <p class="updated">Last updated: December 2025</p>
