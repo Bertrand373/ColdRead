@@ -18,7 +18,7 @@
     <!-- SEO -->
     <meta name="description" content="AI-powered sales coaching for life insurance agents.">
     
-    <!-- VERSION: 2025-01-15-v10-verification-flow -->
+    <!-- VERSION: 2025-01-15-v13-temperature-meter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -1089,6 +1089,78 @@
             color: var(--danger);
         }
         
+        /* Hard Exit State - subtle but clear */
+        .sentiment-indicator[data-hard-exit="true"] {
+            background: rgba(239, 68, 68, 0.08) !important;
+            border: 1px solid rgba(239, 68, 68, 0.3) !important;
+        }
+        
+        .sentiment-indicator[data-hard-exit="true"] .sentiment-emoji {
+            color: var(--danger);
+            animation: subtlePulse 1.5s ease-in-out infinite;
+        }
+        
+        .sentiment-indicator[data-hard-exit="true"] .sentiment-label {
+            color: var(--danger) !important;
+            font-weight: 600;
+        }
+        
+        @keyframes subtlePulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Strike (Buying Signal) State - professional urgency */
+        .sentiment-indicator[data-action="strike"] {
+            background: rgba(16, 185, 129, 0.08) !important;
+            border: 1px solid rgba(16, 185, 129, 0.3) !important;
+        }
+        
+        .sentiment-indicator[data-action="strike"] .sentiment-emoji {
+            color: var(--success);
+            animation: subtlePulse 1.2s ease-in-out infinite;
+        }
+        
+        .sentiment-indicator[data-action="strike"] .sentiment-label {
+            color: var(--success) !important;
+            font-weight: 600;
+        }
+        
+        /* Exit action styling */
+        .sentiment-indicator[data-action="exit"] {
+            background: rgba(239, 68, 68, 0.06) !important;
+            border: 1px solid rgba(239, 68, 68, 0.25) !important;
+        }
+        
+        .sentiment-indicator[data-action="exit"] .sentiment-emoji {
+            color: var(--danger);
+        }
+        
+        .sentiment-indicator[data-action="exit"] .sentiment-label {
+            color: var(--danger) !important;
+        }
+        
+        /* Dot indicator colors based on temperature */
+        .sentiment-indicator[data-level="hot"] .sentiment-emoji {
+            color: var(--success);
+        }
+        
+        .sentiment-indicator[data-level="warming"] .sentiment-emoji {
+            color: var(--accent-dark);
+        }
+        
+        .sentiment-indicator[data-level="neutral"] .sentiment-emoji {
+            color: var(--text-muted);
+        }
+        
+        .sentiment-indicator[data-level="cooling"] .sentiment-emoji {
+            color: #D97706;
+        }
+        
+        .sentiment-indicator[data-level="cold"] .sentiment-emoji {
+            color: var(--danger);
+        }
+        
         /* Mobile adjustments */
         @media (max-width: 768px) {
             .sentiment-indicator {
@@ -1152,8 +1224,23 @@
         
         @keyframes glowPulse {
             0% { opacity: 0; }
-            15% { opacity: 0.8; }
+            15% { opacity: 0.6; }
             100% { opacity: 0; }
+        }
+        
+        /* STRIKE action - buying signal, close now */
+        .guidance-state.strike::before {
+            background: linear-gradient(90deg, transparent, var(--success), transparent) !important;
+        }
+        
+        /* EXIT action - preserve relationship */
+        .guidance-state.exit::before {
+            background: linear-gradient(90deg, transparent, var(--danger), transparent) !important;
+        }
+        
+        /* WARN action - reminder/missed stage */
+        .guidance-state.warn::before {
+            background: linear-gradient(90deg, transparent, #D97706, transparent) !important;
         }
         
         .guidance-text {
@@ -1410,6 +1497,173 @@
             min-height: 0;  /* Critical for flex shrinking */
             overflow: hidden;
             background: var(--bg);
+        }
+        
+        /* Guidance area: teleprompter + temp meter side by side */
+        .guidance-area {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            min-height: 0;
+            overflow: hidden;
+        }
+        
+        .guidance-area .teleprompter {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        /* ========== TEMPERATURE METER ========== */
+        .temp-meter {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        
+        .temp-meter.visible {
+            opacity: 1;
+        }
+        
+        .temp-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            transition: color 0.3s ease;
+        }
+        
+        .temp-label.temp-top {
+            color: rgba(16, 185, 129, 0.6);
+        }
+        
+        .temp-label.temp-bottom {
+            color: rgba(96, 165, 250, 0.6);
+        }
+        
+        /* Active state labels */
+        .temp-meter[data-zone="close"] .temp-label.temp-top {
+            color: var(--success);
+        }
+        
+        .temp-meter[data-zone="exit"] .temp-label.temp-bottom {
+            color: var(--accent-dark);
+        }
+        
+        .temp-track {
+            position: relative;
+            width: 6px;
+            flex: 1;
+            min-height: 120px;
+            border-radius: 3px;
+            /* Premium gradient: green (top) to blue (bottom) */
+            background: linear-gradient(
+                to bottom,
+                #10B981 0%,      /* Emerald - Close */
+                #34D399 20%,     /* Light green */
+                #5EEAD4 40%,     /* Teal */
+                #7DD3FC 60%,     /* Light blue */
+                #60A5FA 80%,     /* Blue */
+                #3B82F6 100%    /* Deep blue - Exit */
+            );
+            overflow: visible;
+        }
+        
+        .temp-fill {
+            /* Not using fill approach - using indicator instead */
+            display: none;
+        }
+        
+        .temp-indicator {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--bg);
+            border: 3px solid var(--text);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: top 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+                        border-color 0.3s ease,
+                        box-shadow 0.3s ease;
+            top: 50%; /* Default: neutral */
+            margin-top: -7px; /* Center the indicator */
+        }
+        
+        /* Indicator color based on position */
+        .temp-meter[data-level="hot"] .temp-indicator {
+            border-color: #10B981;
+            box-shadow: 0 2px 12px rgba(16, 185, 129, 0.4);
+        }
+        
+        .temp-meter[data-level="warming"] .temp-indicator {
+            border-color: #34D399;
+            box-shadow: 0 2px 10px rgba(52, 211, 153, 0.3);
+        }
+        
+        .temp-meter[data-level="neutral"] .temp-indicator {
+            border-color: #5EEAD4;
+            box-shadow: 0 2px 8px rgba(94, 234, 212, 0.3);
+        }
+        
+        .temp-meter[data-level="cooling"] .temp-indicator {
+            border-color: #60A5FA;
+            box-shadow: 0 2px 10px rgba(96, 165, 250, 0.3);
+        }
+        
+        .temp-meter[data-level="cold"] .temp-indicator {
+            border-color: #3B82F6;
+            box-shadow: 0 2px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        /* Critical states: subtle pulse */
+        .temp-meter[data-action="strike"] .temp-indicator {
+            animation: meterPulse 1.5s ease-in-out infinite;
+            border-color: #10B981;
+        }
+        
+        .temp-meter[data-action="exit"] .temp-indicator {
+            animation: meterPulse 1.5s ease-in-out infinite;
+            border-color: #3B82F6;
+        }
+        
+        @keyframes meterPulse {
+            0%, 100% { 
+                transform: translateX(-50%) scale(1);
+                opacity: 1;
+            }
+            50% { 
+                transform: translateX(-50%) scale(1.15);
+                opacity: 0.85;
+            }
+        }
+        
+        /* Mobile: meter on right edge, more compact */
+        @media (max-width: 768px) {
+            .temp-meter {
+                padding: 16px 10px;
+            }
+            
+            .temp-track {
+                width: 5px;
+                min-height: 100px;
+            }
+            
+            .temp-indicator {
+                width: 12px;
+                height: 12px;
+                border-width: 2px;
+                margin-top: -6px;
+            }
+            
+            .temp-label {
+                font-size: 0.6rem;
+            }
         }
         
         /* Footer now inside call-main */
@@ -2208,25 +2462,27 @@
                 
                 <!-- Main Guidance Area -->
                 <div class="call-main">
-                    <div class="teleprompter" id="teleprompter" onclick="Coachd.dismissGuidance()">
-                        <div class="listening-state" id="listeningState">
-                            <div class="listening-ring"></div>
-                            <div class="listening-text">Ready</div>
-                            <div class="listening-hint">Connected — coaching active</div>
+                    <div class="guidance-area">
+                        <div class="teleprompter" id="teleprompter" onclick="Coachd.dismissGuidance()">
+                            <div class="listening-state" id="listeningState">
+                                <div class="listening-ring"></div>
+                                <div class="listening-text">Ready</div>
+                                <div class="listening-hint">Connected — coaching active</div>
+                            </div>
                             
-                            <!-- Sentiment Indicator -->
-                            <div class="sentiment-indicator hidden" id="sentimentIndicator" data-level="neutral">
-                                <div class="sentiment-main">
-                                    <span class="sentiment-emoji" id="sentimentEmoji">😐</span>
-                                    <span class="sentiment-label" id="sentimentLabel">Listening</span>
-                                    <span class="sentiment-trajectory" id="sentimentTrajectory"></span>
-                                </div>
-                                <div class="sentiment-tip" id="sentimentTip"></div>
+                            <div class="guidance-state" id="guidanceState">
+                                <div class="guidance-text" id="guidanceText"></div>
                             </div>
                         </div>
                         
-                        <div class="guidance-state" id="guidanceState">
-                            <div class="guidance-text" id="guidanceText"></div>
+                        <!-- Temperature Meter -->
+                        <div class="temp-meter" id="tempMeter">
+                            <span class="temp-label temp-top">Close</span>
+                            <div class="temp-track">
+                                <div class="temp-fill" id="tempFill"></div>
+                                <div class="temp-indicator" id="tempIndicator"></div>
+                            </div>
+                            <span class="temp-label temp-bottom">Exit</span>
                         </div>
                     </div>
                     
@@ -3348,6 +3604,9 @@
                 case 'sentiment_update':
                     handleSentimentUpdate(msg);
                     break;
+                case 'veteran_update':
+                    handleVeteranUpdate(msg);
+                    break;
                 case 'bridge':
                     handleBridge(msg);
                     break;
@@ -3897,20 +4156,40 @@
             const text = msg.guidance || msg.text || '';
             if (!text) return;
             
-            const sayThis = extractSayThis(text);
+            const action = msg.action || 'guide';
+            
+            // Extract the guidance text - Veteran Brain sends clean text now
+            let displayText = text;
+            
+            // Clean up any SAY: prefix if present (legacy compatibility)
+            if (displayText.toUpperCase().startsWith('SAY:')) {
+                displayText = displayText.substring(4).trim();
+            }
+            // Clean up reminder prefix if present
+            if (displayText.startsWith('📋')) {
+                displayText = displayText.substring(2).trim();
+            }
+            // Clean up leading/trailing quotes
+            displayText = displayText.replace(/^["']|["']$/g, '').trim();
             
             state.guidanceHistory.push({
-                text: sayThis,
+                text: displayText,
                 raw: text,
+                action: action,
                 timestamp: Date.now()
             });
             
-            showGuidance(sayThis);
+            showGuidance(displayText, action);
             
             // Only notify if we haven't already (e.g., from bridge)
             if (!state.hasVibratedForCurrentGuidance) {
                 playNotificationSound();
-                if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+                // Stronger vibration for strike/exit
+                if (action === 'strike' || action === 'exit') {
+                    if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100]);
+                } else {
+                    if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
+                }
             }
             state.hasVibratedForCurrentGuidance = false;
         }
@@ -4082,10 +4361,19 @@
                 .trim() || text;
         }
         
-        function showGuidance(text) {
+        function showGuidance(text, action = 'guide') {
             dom.listeningState.style.display = 'none';
-            dom.guidanceState.classList.remove('active');
+            dom.guidanceState.classList.remove('active', 'strike', 'exit', 'warn');
             dom.teleprompter.classList.add('has-guidance');
+            
+            // Add action-specific class for styling
+            if (action === 'strike') {
+                dom.guidanceState.classList.add('strike');
+            } else if (action === 'exit') {
+                dom.guidanceState.classList.add('exit');
+            } else if (action === 'warn') {
+                dom.guidanceState.classList.add('warn');
+            }
             
             let formattedText = text.replace(/(\$[\d,]+|\d+%|\d+,\d+)/g, '<strong>$1</strong>');
             
@@ -4109,7 +4397,7 @@
             clearTimeout(state.guidanceDismissTimer);
             state.guidanceDismissTimer = null;
             
-            dom.guidanceState.classList.remove('active');
+            dom.guidanceState.classList.remove('active', 'strike', 'exit', 'warn');
             dom.listeningState.style.display = 'flex';
             dom.teleprompter.classList.remove('has-guidance');
             dom.guidanceText.innerHTML = '';
@@ -4119,11 +4407,11 @@
         
         // ==================== SENTIMENT ====================
         const SENTIMENT_CONFIG = {
-            cold: { emoji: '❄️', label: 'Cold', color: 'danger' },
-            cooling: { emoji: '⚠️', label: 'Cooling', color: 'warning' },
-            neutral: { emoji: '😐', label: 'Listening', color: 'neutral' },
-            warming: { emoji: '⚡', label: 'Warming', color: 'accent' },
-            hot: { emoji: '🔥', label: 'Hot', color: 'success' }
+            cold: { label: 'Cold', color: 'danger' },
+            cooling: { label: 'Cooling', color: 'warning' },
+            neutral: { label: 'Listening', color: 'neutral' },
+            warming: { label: 'Engaged', color: 'accent' },
+            hot: { label: 'Ready', color: 'success' }
         };
         
         const TRAJECTORY_SYMBOLS = {
@@ -4135,54 +4423,41 @@
         function handleSentimentUpdate(msg) {
             const level = msg.level || 'neutral';
             const trajectory = msg.trajectory || 'stable';
-            const tip = msg.tip || '';
-            const confidence = msg.confidence || 0.5;
             
-            console.log('[SENTIMENT]', level, trajectory, tip ? `"${tip}"` : '');
+            console.log('[SENTIMENT]', level, trajectory);
             
             // Update state
-            state.currentSentiment = { level, trajectory, tip };
+            state.currentSentiment = { level, trajectory };
             
-            // Get config for this level
-            const config = SENTIMENT_CONFIG[level] || SENTIMENT_CONFIG.neutral;
+            // Use the same meter update logic
+            const meter = document.getElementById('tempMeter');
+            const indicator = document.getElementById('tempIndicator');
             
-            // Update UI elements
-            if (dom.sentimentIndicator) {
-                // Set data attribute for CSS styling
-                dom.sentimentIndicator.setAttribute('data-level', level);
-                
-                // Remove old trajectory classes, add new one
-                dom.sentimentIndicator.classList.remove('warming', 'cooling', 'stable');
-                dom.sentimentIndicator.classList.add(trajectory);
-                
-                // Show indicator (fade in)
-                dom.sentimentIndicator.classList.remove('hidden');
-                state.sentimentVisible = true;
-            }
+            if (!meter || !indicator) return;
             
-            if (dom.sentimentEmoji) {
-                dom.sentimentEmoji.textContent = config.emoji;
-            }
+            // Show the meter
+            meter.classList.add('visible');
             
-            if (dom.sentimentLabel) {
-                dom.sentimentLabel.textContent = config.label;
-            }
+            // Map level to position
+            const positions = {
+                hot: 5,
+                warming: 25,
+                neutral: 50,
+                cooling: 75,
+                cold: 95
+            };
             
-            if (dom.sentimentTrajectory) {
-                dom.sentimentTrajectory.textContent = TRAJECTORY_SYMBOLS[trajectory] || '';
-                dom.sentimentTrajectory.className = 'sentiment-trajectory';
-                if (trajectory !== 'stable') {
-                    dom.sentimentTrajectory.classList.add(trajectory);
-                }
-            }
+            const position = positions[level] ?? 50;
+            indicator.style.top = `${position}%`;
+            meter.setAttribute('data-level', level);
             
-            if (dom.sentimentTip) {
-                if (tip && confidence >= 0.6) {
-                    dom.sentimentTip.textContent = tip;
-                    dom.sentimentTip.classList.add('visible');
-                } else {
-                    dom.sentimentTip.classList.remove('visible');
-                }
+            // Zone labels
+            if (level === 'hot') {
+                meter.setAttribute('data-zone', 'close');
+            } else if (level === 'cold') {
+                meter.setAttribute('data-zone', 'exit');
+            } else {
+                meter.removeAttribute('data-zone');
             }
         }
         
@@ -4190,13 +4465,77 @@
             state.currentSentiment = { level: 'neutral', trajectory: 'stable', tip: '' };
             state.sentimentVisible = false;
             
-            if (dom.sentimentIndicator) {
-                dom.sentimentIndicator.classList.add('hidden');
-                dom.sentimentIndicator.setAttribute('data-level', 'neutral');
-                dom.sentimentIndicator.classList.remove('warming', 'cooling');
+            // Reset temperature meter
+            resetTemperatureMeter();
+        }
+        
+        // ==================== VETERAN BRAIN HANDLER ====================
+        function handleVeteranUpdate(msg) {
+            const temperature = msg.temperature || 'neutral';
+            const trajectory = msg.trajectory || 'stable';
+            const action = msg.action || 'breathe';
+            const hardExit = msg.hard_exit || false;
+            const buyingSignal = msg.buying_signal || false;
+            const objectionCount = msg.objection_count || 0;
+            
+            console.log('[VETERAN]', temperature, trajectory, action, hardExit ? 'HARD_EXIT!' : '', buyingSignal ? 'BUYING_SIGNAL!' : '');
+            
+            // Update state
+            state.currentSentiment = { level: temperature, trajectory, action };
+            
+            // Get the meter elements
+            const meter = document.getElementById('tempMeter');
+            const indicator = document.getElementById('tempIndicator');
+            
+            if (!meter || !indicator) return;
+            
+            // Show the meter
+            meter.classList.add('visible');
+            
+            // Map temperature to position (0% = top/close, 100% = bottom/exit)
+            const positions = {
+                hot: 5,       // Near top
+                warming: 25,
+                neutral: 50,  // Middle
+                cooling: 75,
+                cold: 95      // Near bottom
+            };
+            
+            const position = positions[temperature] ?? 50;
+            indicator.style.top = `${position}%`;
+            
+            // Set data attributes for styling
+            meter.setAttribute('data-level', temperature);
+            meter.removeAttribute('data-action');
+            meter.removeAttribute('data-zone');
+            
+            // Zone labels (which end is active)
+            if (temperature === 'hot' || buyingSignal) {
+                meter.setAttribute('data-zone', 'close');
+            } else if (temperature === 'cold' || hardExit) {
+                meter.setAttribute('data-zone', 'exit');
             }
-            if (dom.sentimentTip) {
-                dom.sentimentTip.classList.remove('visible');
+            
+            // Action state for pulse animation
+            if (action === 'strike' || buyingSignal) {
+                meter.setAttribute('data-action', 'strike');
+            } else if (action === 'exit' || hardExit) {
+                meter.setAttribute('data-action', 'exit');
+            }
+        }
+        
+        function resetTemperatureMeter() {
+            const meter = document.getElementById('tempMeter');
+            const indicator = document.getElementById('tempIndicator');
+            
+            if (meter) {
+                meter.classList.remove('visible');
+                meter.removeAttribute('data-level');
+                meter.removeAttribute('data-action');
+                meter.removeAttribute('data-zone');
+            }
+            if (indicator) {
+                indicator.style.top = '50%';
             }
         }
         
