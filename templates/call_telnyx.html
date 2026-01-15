@@ -956,153 +956,194 @@
             margin-top: 8px;
         }
         
-        /* ========== SENTIMENT INDICATOR ========== */
-        .sentiment-indicator {
+        /* ========== TEMPERATURE METER ========== */
+        .temp-meter {
+            position: fixed;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
-            margin-top: 24px;
-            padding: 12px 20px;
-            background: var(--surface);
-            border-radius: 12px;
-            min-width: 180px;
-            transition: all 0.4s ease;
-            opacity: 0.9;
-        }
-        
-        .sentiment-indicator.hidden {
-            opacity: 0;
-            transform: translateY(-10px);
+            gap: 8px;
+            z-index: 100;
+            transition: opacity 0.3s ease;
             pointer-events: none;
         }
         
-        .sentiment-main {
+        .temp-meter.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* Fade when guidance is showing */
+        .teleprompter.has-guidance ~ .temp-meter,
+        .call-screen.has-guidance .temp-meter {
+            opacity: 0.35;
+        }
+        
+        /* Trajectory Arrow - ABOVE meter */
+        .temp-arrow {
+            height: 20px;
             display: flex;
             align-items: center;
-            gap: 10px;
-        }
-        
-        .sentiment-emoji {
-            font-size: 1.4rem;
-            transition: transform 0.3s ease;
-        }
-        
-        .sentiment-indicator.warming .sentiment-emoji {
-            animation: bounceUp 0.5s ease;
-        }
-        
-        .sentiment-indicator.cooling .sentiment-emoji {
-            animation: bounceDown 0.5s ease;
-        }
-        
-        @keyframes bounceUp {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-4px); }
-        }
-        
-        @keyframes bounceDown {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(4px); }
-        }
-        
-        .sentiment-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-secondary);
-            transition: color 0.3s ease;
-        }
-        
-        .sentiment-trajectory {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-left: 4px;
-        }
-        
-        .sentiment-trajectory.warming {
-            color: var(--success);
-        }
-        
-        .sentiment-trajectory.cooling {
-            color: var(--danger);
-        }
-        
-        .sentiment-tip {
-            font-size: 0.75rem;
-            color: var(--accent-dark);
-            text-align: center;
-            max-width: 200px;
-            line-height: 1.4;
-            opacity: 0;
-            max-height: 0;
-            overflow: hidden;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: 700;
             transition: all 0.3s ease;
+            color: transparent;
         }
         
-        .sentiment-tip.visible {
-            opacity: 1;
-            max-height: 50px;
-            margin-top: 4px;
-        }
-        
-        /* Sentiment level colors */
-        .sentiment-indicator[data-level="hot"] {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-        
-        .sentiment-indicator[data-level="hot"] .sentiment-label {
+        .temp-meter[data-trajectory="warming"] .temp-arrow {
             color: var(--success);
+            animation: arrowBounce 1s ease-in-out infinite;
         }
         
-        .sentiment-indicator[data-level="warming"] {
-            background: rgba(96, 165, 250, 0.1);
-            border: 1px solid rgba(96, 165, 250, 0.2);
+        .temp-meter[data-trajectory="cooling"] .temp-arrow {
+            color: #F59E0B; /* Orange for cooling - warning color */
+            animation: arrowBounce 1s ease-in-out infinite;
         }
         
-        .sentiment-indicator[data-level="warming"] .sentiment-label {
-            color: var(--accent-dark);
+        @keyframes arrowBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
         }
         
-        .sentiment-indicator[data-level="neutral"] {
-            background: var(--surface);
-            border: 1px solid var(--border);
+        /* The Meter Track */
+        .temp-track {
+            width: 8px;
+            height: 180px;
+            background: rgba(0, 0, 0, 0.06);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.08);
         }
         
-        .sentiment-indicator[data-level="cooling"] {
-            background: rgba(251, 191, 36, 0.1);
-            border: 1px solid rgba(251, 191, 36, 0.2);
+        /* The Fill - rises from bottom */
+        .temp-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            border-radius: 3px;
+            transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        .sentiment-indicator[data-level="cooling"] .sentiment-label {
-            color: #D97706;
+        /* Fill levels and colors */
+        .temp-meter[data-level="cold"] .temp-fill {
+            height: 15%;
+            background: linear-gradient(to top, #3B82F6, #60A5FA);
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
         }
         
-        .sentiment-indicator[data-level="cold"] {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.2);
+        .temp-meter[data-level="cooling"] .temp-fill {
+            height: 35%;
+            background: linear-gradient(to top, #F59E0B, #FBBF24);
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
         }
         
-        .sentiment-indicator[data-level="cold"] .sentiment-label {
-            color: var(--danger);
+        .temp-meter[data-level="neutral"] .temp-fill {
+            height: 50%;
+            background: linear-gradient(to top, #9CA3AF, #D1D5DB);
+            box-shadow: 0 0 8px rgba(156, 163, 175, 0.2);
+        }
+        
+        .temp-meter[data-level="warming"] .temp-fill {
+            height: 70%;
+            background: linear-gradient(to top, #10B981, #34D399);
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+        }
+        
+        .temp-meter[data-level="hot"] .temp-fill {
+            height: 90%;
+            background: linear-gradient(to top, #10B981, #34D399, #6EE7B7);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+        }
+        
+        /* Label - BELOW meter in separate container */
+        .temp-label-wrap {
+            height: 70px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 4px;
+        }
+        
+        .temp-label {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            transition: all 0.5s ease;
+        }
+        
+        /* Label colors by level */
+        .temp-meter[data-level="cold"] .temp-label {
+            color: #3B82F6;
+            text-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+        }
+        
+        .temp-meter[data-level="cooling"] .temp-label {
+            color: #F59E0B;
+            text-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+        }
+        
+        .temp-meter[data-level="neutral"] .temp-label {
+            color: #9CA3AF;
+            text-shadow: none;
+        }
+        
+        .temp-meter[data-level="warming"] .temp-label {
+            color: #10B981;
+            text-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+        }
+        
+        .temp-meter[data-level="hot"] .temp-label {
+            color: #10B981;
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
         }
         
         /* Mobile adjustments */
         @media (max-width: 768px) {
-            .sentiment-indicator {
-                margin-top: 20px;
-                padding: 10px 16px;
-                min-width: 160px;
+            .temp-meter {
+                right: 12px;
             }
             
-            .sentiment-emoji {
-                font-size: 1.2rem;
+            .temp-track {
+                width: 6px;
+                height: 140px;
             }
             
-            .sentiment-label {
-                font-size: 0.7rem;
+            .temp-arrow {
+                font-size: 0.85rem;
+                height: 16px;
+            }
+            
+            .temp-label-wrap {
+                height: 55px;
+            }
+            
+            .temp-label {
+                font-size: 0.55rem;
+            }
+        }
+        
+        /* Very small screens */
+        @media (max-width: 380px) {
+            .temp-meter {
+                right: 8px;
+            }
+            
+            .temp-track {
+                height: 120px;
+            }
+            
+            .temp-label-wrap {
+                height: 50px;
             }
         }
         
@@ -2213,20 +2254,21 @@
                             <div class="listening-ring"></div>
                             <div class="listening-text">Ready</div>
                             <div class="listening-hint">Connected — coaching active</div>
-                            
-                            <!-- Sentiment Indicator -->
-                            <div class="sentiment-indicator hidden" id="sentimentIndicator" data-level="neutral">
-                                <div class="sentiment-main">
-                                    <span class="sentiment-emoji" id="sentimentEmoji">😐</span>
-                                    <span class="sentiment-label" id="sentimentLabel">Listening</span>
-                                    <span class="sentiment-trajectory" id="sentimentTrajectory"></span>
-                                </div>
-                                <div class="sentiment-tip" id="sentimentTip"></div>
-                            </div>
                         </div>
                         
                         <div class="guidance-state" id="guidanceState">
                             <div class="guidance-text" id="guidanceText"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Temperature Meter - Fixed right edge -->
+                    <div class="temp-meter hidden" id="tempMeter" data-level="neutral" data-trajectory="stable">
+                        <div class="temp-arrow" id="tempArrow"></div>
+                        <div class="temp-track">
+                            <div class="temp-fill" id="tempFill"></div>
+                        </div>
+                        <div class="temp-label-wrap">
+                            <span class="temp-label" id="tempLabel">Ready</span>
                         </div>
                     </div>
                     
@@ -2488,12 +2530,10 @@
             get transcriptSidebar() { return document.getElementById('transcriptSidebar'); },
             get transcriptFeed() { return document.getElementById('transcriptFeed'); },
             get transcriptEmpty() { return document.getElementById('transcriptEmpty'); },
-            // Sentiment indicator
-            get sentimentIndicator() { return document.getElementById('sentimentIndicator'); },
-            get sentimentEmoji() { return document.getElementById('sentimentEmoji'); },
-            get sentimentLabel() { return document.getElementById('sentimentLabel'); },
-            get sentimentTrajectory() { return document.getElementById('sentimentTrajectory'); },
-            get sentimentTip() { return document.getElementById('sentimentTip'); },
+            // Temperature meter
+            get tempMeter() { return document.getElementById('tempMeter'); },
+            get tempArrow() { return document.getElementById('tempArrow'); },
+            get tempLabel() { return document.getElementById('tempLabel'); },
             // Verification modal
             get verifyModal() { return document.getElementById('verifyModal'); },
             get verifyCodeInput() { return document.getElementById('verifyCodeInput'); },
@@ -4118,15 +4158,15 @@
         }
         
         // ==================== SENTIMENT ====================
-        const SENTIMENT_CONFIG = {
-            cold: { emoji: '❄️', label: 'Cold', color: 'danger' },
-            cooling: { emoji: '⚠️', label: 'Cooling', color: 'warning' },
-            neutral: { emoji: '😐', label: 'Listening', color: 'neutral' },
-            warming: { emoji: '⚡', label: 'Warming', color: 'accent' },
-            hot: { emoji: '🔥', label: 'Hot', color: 'success' }
+        const TEMP_LABELS = {
+            cold: 'Cold',
+            cooling: 'Cooling',
+            neutral: 'Ready',
+            warming: 'Warming',
+            hot: 'Hot'
         };
         
-        const TRAJECTORY_SYMBOLS = {
+        const TRAJECTORY_ARROWS = {
             warming: '↑',
             cooling: '↓',
             stable: ''
@@ -4143,46 +4183,25 @@
             // Update state
             state.currentSentiment = { level, trajectory, tip };
             
-            // Get config for this level
-            const config = SENTIMENT_CONFIG[level] || SENTIMENT_CONFIG.neutral;
-            
-            // Update UI elements
-            if (dom.sentimentIndicator) {
-                // Set data attribute for CSS styling
-                dom.sentimentIndicator.setAttribute('data-level', level);
+            // Update temperature meter
+            if (dom.tempMeter) {
+                // Set data attributes for CSS styling
+                dom.tempMeter.setAttribute('data-level', level);
+                dom.tempMeter.setAttribute('data-trajectory', trajectory);
                 
-                // Remove old trajectory classes, add new one
-                dom.sentimentIndicator.classList.remove('warming', 'cooling', 'stable');
-                dom.sentimentIndicator.classList.add(trajectory);
-                
-                // Show indicator (fade in)
-                dom.sentimentIndicator.classList.remove('hidden');
+                // Show meter
+                dom.tempMeter.classList.remove('hidden');
                 state.sentimentVisible = true;
             }
             
-            if (dom.sentimentEmoji) {
-                dom.sentimentEmoji.textContent = config.emoji;
+            // Update arrow
+            if (dom.tempArrow) {
+                dom.tempArrow.textContent = TRAJECTORY_ARROWS[trajectory] || '';
             }
             
-            if (dom.sentimentLabel) {
-                dom.sentimentLabel.textContent = config.label;
-            }
-            
-            if (dom.sentimentTrajectory) {
-                dom.sentimentTrajectory.textContent = TRAJECTORY_SYMBOLS[trajectory] || '';
-                dom.sentimentTrajectory.className = 'sentiment-trajectory';
-                if (trajectory !== 'stable') {
-                    dom.sentimentTrajectory.classList.add(trajectory);
-                }
-            }
-            
-            if (dom.sentimentTip) {
-                if (tip && confidence >= 0.6) {
-                    dom.sentimentTip.textContent = tip;
-                    dom.sentimentTip.classList.add('visible');
-                } else {
-                    dom.sentimentTip.classList.remove('visible');
-                }
+            // Update label
+            if (dom.tempLabel) {
+                dom.tempLabel.textContent = TEMP_LABELS[level] || 'Ready';
             }
         }
         
@@ -4190,13 +4209,16 @@
             state.currentSentiment = { level: 'neutral', trajectory: 'stable', tip: '' };
             state.sentimentVisible = false;
             
-            if (dom.sentimentIndicator) {
-                dom.sentimentIndicator.classList.add('hidden');
-                dom.sentimentIndicator.setAttribute('data-level', 'neutral');
-                dom.sentimentIndicator.classList.remove('warming', 'cooling');
+            if (dom.tempMeter) {
+                dom.tempMeter.classList.add('hidden');
+                dom.tempMeter.setAttribute('data-level', 'neutral');
+                dom.tempMeter.setAttribute('data-trajectory', 'stable');
             }
-            if (dom.sentimentTip) {
-                dom.sentimentTip.classList.remove('visible');
+            if (dom.tempArrow) {
+                dom.tempArrow.textContent = '';
+            }
+            if (dom.tempLabel) {
+                dom.tempLabel.textContent = 'Ready';
             }
         }
         

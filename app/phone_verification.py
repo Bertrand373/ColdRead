@@ -53,6 +53,7 @@ async def check_verification(phone_number: str):
         raise HTTPException(status_code=503, detail="Telnyx not configured")
     
     normalized = normalize_phone(phone_number)
+    print(f"[Verify] Checking phone: {phone_number} -> normalized: {normalized}", flush=True)
     
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -62,24 +63,33 @@ async def check_verification(phone_number: str):
                 headers=get_telnyx_headers()
             )
             
+            print(f"[Verify] Telnyx response status: {response.status_code}", flush=True)
+            
             if response.status_code != 200:
-                print(f"[Verify] Telnyx API error: {response.status_code} - {response.text}")
+                print(f"[Verify] Telnyx API error: {response.status_code} - {response.text}", flush=True)
                 raise HTTPException(status_code=502, detail="Failed to check verification status")
             
             data = response.json()
             verified_numbers = data.get("data", [])
             
+            print(f"[Verify] Found {len(verified_numbers)} verified numbers in Telnyx", flush=True)
+            
             # Check if our number is in the verified list
             for entry in verified_numbers:
-                if entry.get("phone_number") == normalized:
-                    status = entry.get("status", "")
-                    if status == "verified":
+                telnyx_phone = entry.get("phone_number")
+                telnyx_status = entry.get("status", "")
+                print(f"[Verify] Comparing: '{normalized}' vs '{telnyx_phone}' (status: {telnyx_status})", flush=True)
+                
+                if telnyx_phone == normalized:
+                    if telnyx_status == "verified":
+                        print(f"[Verify] MATCH FOUND - number is verified!", flush=True)
                         return {"verified": True, "phone_number": normalized}
             
+            print(f"[Verify] No match found - returning verified: false", flush=True)
             return {"verified": False, "phone_number": normalized}
             
     except httpx.RequestError as e:
-        print(f"[Verify] Request error: {e}")
+        print(f"[Verify] Request error: {e}", flush=True)
         raise HTTPException(status_code=502, detail="Failed to connect to verification service")
 
 
@@ -93,6 +103,7 @@ async def initiate_verification(data: InitiateRequest):
         raise HTTPException(status_code=503, detail="Telnyx not configured")
     
     normalized = normalize_phone(data.phone_number)
+    print(f"[Verify] Initiating verification for: {normalized} via {data.method}", flush=True)
     
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
@@ -104,6 +115,9 @@ async def initiate_verification(data: InitiateRequest):
                     "verification_code_type": data.method
                 }
             )
+            
+            print(f"[Verify] Telnyx initiate response: {response.status_code}", flush=True)
+            print(f"[Verify] Telnyx initiate body: {response.text[:500]}", flush=True)
             
             # 200 = new verification initiated
             # 422 = number already exists (might be pending or verified)
@@ -120,9 +134,13 @@ async def initiate_verification(data: InitiateRequest):
                 error_data = response.json()
                 errors = error_data.get("errors", [])
                 
+                print(f"[Verify] 422 errors: {errors}", flush=True)
+                
                 # Check if it's already verified
                 for err in errors:
-                    if "already verified" in err.get("detail", "").lower():
+                    err_detail = err.get("detail", "").lower()
+                    if "already verified" in err_detail or "verified" in err_detail:
+                        print(f"[Verify] Number already verified - auto-proceeding", flush=True)
                         return {
                             "success": True,
                             "phone_number": normalized,
@@ -139,14 +157,14 @@ async def initiate_verification(data: InitiateRequest):
                     "message": f"Verification code sent via {data.method.upper()}"
                 }
             else:
-                print(f"[Verify] Initiate error: {response.status_code} - {response.text}")
+                print(f"[Verify] Initiate error: {response.status_code} - {response.text}", flush=True)
                 raise HTTPException(
                     status_code=502,
                     detail="Failed to send verification code"
                 )
                 
     except httpx.RequestError as e:
-        print(f"[Verify] Request error: {e}")
+        print(f"[Verify] Request error: {e}", flush=True)
         raise HTTPException(status_code=502, detail="Failed to connect to verification service")
 
 
@@ -161,6 +179,7 @@ async def confirm_verification(data: ConfirmRequest):
     
     normalized = normalize_phone(data.phone_number)
     code = data.code.strip()
+    print(f"[Verify] Confirming code for: {normalized}", flush=True)
     
     # Validate code format
     if not code.isdigit() or len(code) != 6:
@@ -174,7 +193,10 @@ async def confirm_verification(data: ConfirmRequest):
                 json={"verification_code": code}
             )
             
+            print(f"[Verify] Confirm response: {response.status_code}", flush=True)
+            
             if response.status_code == 200:
+                print(f"[Verify] SUCCESS - number verified!", flush=True)
                 return {
                     "success": True,
                     "verified": True,
@@ -190,6 +212,7 @@ async def confirm_verification(data: ConfirmRequest):
                     if err.get("detail"):
                         detail = err.get("detail")
                         break
+                print(f"[Verify] Invalid code: {detail}", flush=True)
                 raise HTTPException(status_code=400, detail=detail)
             elif response.status_code == 404:
                 raise HTTPException(
@@ -197,9 +220,9 @@ async def confirm_verification(data: ConfirmRequest):
                     detail="Verification not found. Please request a new code."
                 )
             else:
-                print(f"[Verify] Confirm error: {response.status_code} - {response.text}")
+                print(f"[Verify] Confirm error: {response.status_code} - {response.text}", flush=True)
                 raise HTTPException(status_code=502, detail="Verification failed")
                 
     except httpx.RequestError as e:
-        print(f"[Verify] Request error: {e}")
+        print(f"[Verify] Request error: {e}", flush=True)
         raise HTTPException(status_code=502, detail="Failed to connect to verification service")
