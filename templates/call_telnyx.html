@@ -433,6 +433,11 @@
             color: var(--text-muted);
         }
         
+        .form-input.error {
+            border-color: var(--danger);
+            animation: shake 0.5s ease-in-out;
+        }
+        
         /* Hide number spinners */
         input[type="number"]::-webkit-outer-spin-button,
         input[type="number"]::-webkit-inner-spin-button {
@@ -2018,12 +2023,6 @@
         
         <!-- Session Complete Screen -->
         <div class="screen complete-screen" id="completeScreen">
-            <div class="complete-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                    <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-            </div>
             <h1 class="complete-title">Session Complete</h1>
             <div class="complete-stats">
                 <div class="complete-stat">
@@ -2355,6 +2354,8 @@
             if (!agency || phoneDigits.length < 10) {
                 dom.identifyError.textContent = 'Please enter a valid phone number';
                 dom.identifyError.classList.add('show');
+                dom.agentPhone.classList.add('error');
+                setTimeout(() => dom.agentPhone.classList.remove('error'), 500);
                 return;
             }
             
