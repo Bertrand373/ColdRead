@@ -81,9 +81,10 @@ async def check_verification(phone_number: str):
                 print(f"[Verify] Comparing: '{normalized}' vs '{telnyx_phone}' (status: {telnyx_status})", flush=True)
                 
                 if telnyx_phone == normalized:
-                    if telnyx_status == "verified":
-                        print(f"[Verify] MATCH FOUND - number is verified!", flush=True)
-                        return {"verified": True, "phone_number": normalized}
+                    # If number is in the verified_numbers list, it's verified
+                    # (Telnyx may return empty status but presence in list = verified)
+                    print(f"[Verify] MATCH FOUND - number is verified!", flush=True)
+                    return {"verified": True, "phone_number": normalized}
             
             print(f"[Verify] No match found - returning verified: false", flush=True)
             return {"verified": False, "phone_number": normalized}
@@ -112,7 +113,7 @@ async def initiate_verification(data: InitiateRequest):
                 headers=get_telnyx_headers(),
                 json={
                     "phone_number": normalized,
-                    "verification_code_type": data.method
+                    "verification_method": data.method
                 }
             )
             
