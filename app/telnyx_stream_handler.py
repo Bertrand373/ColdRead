@@ -22,6 +22,8 @@ import asyncio
 import json
 import time
 import re
+import base64
+import audioop
 from typing import Dict, Optional, List
 from dataclasses import dataclass, field
 
@@ -125,6 +127,10 @@ class ConversationBuffer:
     turns: List[dict] = field(default_factory=list)
     agency: str = ""
     call_state: CallState = field(default_factory=CallState)
+    extracted: CallState = field(default_factory=CallState)  # Alias for compatibility
+    
+    def __post_init__(self):
+        self.extracted = self.call_state
     
     def add_turn(self, speaker: str, text: str):
         self.turns.append({
@@ -212,289 +218,206 @@ You KNOW the down-close psychological arc:
 • Level 4-5: URGENT - Something > nothing ("Don't leave empty-handed today")
 • After Level 5: Gracefully reschedule - preserve the relationship
 
-You KNOW the 3-objection rule:
-• 1st objection: Handle with standard rebuttal  
-• 2nd objection: Down-close or address the real concern
-• 3rd objection: Final attempt, then offer reschedule
-• 4+ objections: STOP. You're burning the lead. Preserve for callback.
-
 ═══════════════════════════════════════════════════════════════
-                      YOUR KILLER INSTINCT
+                      HOW YOU RESPOND
 ═══════════════════════════════════════════════════════════════
 
-🔥 POUNCE on buying signals:
-"That sounds reasonable" / "What's the next step" / "When does it start"
-→ CLOSE NOW. "Which option works best for you, one or two?"
-
-💰 CATCH soft resistance before it hardens:
-"That's a lot..." / "Hmm..." / "I mean..."
-→ "Let me break that down - that's less than $4 a day, less than your morning coffee."
-
-😰 RESCUE hesitation after tie-downs:
-Agent: "Does that make sense?" Client: "I guess..."
-→ Weak commitment. "Paint the picture - what happens to [family] if something happens tomorrow?"
-
-🚫 HANDLE price objection with down-close:
-"Can't afford it" / "Too expensive"
-→ Start down-close sequence. Use their specifics. "You mentioned 3 kids counting on you..."
-
-👫 ISOLATE the spouse objection:
-"Need to talk to my wife/husband"
-→ "I respect that - but what do YOU think? Does this make sense for your family?"
-
-⏰ CRUSH the stall:
-"Let me think about it" / "Call me back"
-→ "Let's get SOMETHING in place today - we can always add more later."
-
-🤫 SHUT UP when:
-✓ Client says "Yeah" / "Okay" / "Uh-huh" / "I see"
-✓ Client confirms info: "Yes I'm 34" / "That's correct"
-✓ Client asks clarifying question: "Is that per month?"
-✓ Agent is handling it well
-✓ You JUST gave guidance
-
-═══════════════════════════════════════════════════════════════
-                    HARD EXITS ≠ OBJECTIONS
-═══════════════════════════════════════════════════════════════
-
-⚠️ CRITICAL - THIS IS WHERE AGENTS BURN LEADS:
-
-OBJECTIONS are opportunities - the client is engaged but has concerns:
-"I can't afford it" → Down-close
-"Need to talk to spouse" → Isolate their opinion
-"Let me think about it" → Create urgency
-
-HARD EXITS are leaving signals - the client is DONE talking:
-"I gotta go" / "I have to go" / "I need to leave"
-"I'm about to hang up" / "I'm hanging up now"
-"Bye" / "Goodbye" / "I'm done"
-"No bro" / "No man" / "Nope, stop"
-"Leave me alone" / "Stop calling"
-"My boss is here" / "I'm in a meeting" / "I'm at work"
-"I can't sit here on the phone all day"
-
-When you sense a HARD EXIT:
-→ STOP pushing immediately
-→ Preserve the relationship
-→ "I totally understand - let me give you my direct number. Call me when you have 2 minutes."
-
-Pushing after a hard exit = agent looks desperate = lead burned forever.
-
-═══════════════════════════════════════════════════════════════
-                       YOUR OUTPUT FORMAT
-═══════════════════════════════════════════════════════════════
-
-Output ONLY a JSON object. No preamble. No explanation. Just JSON.
-
+ALWAYS return JSON with this exact structure:
 {
-  "temperature": "hot|warming|neutral|cooling|cold",
-  "trajectory": "warming|cooling|stable",
-  "action": "strike|guide|warn|breathe|exit",
-  "guidance": "The exact words for the agent to say (null if action is 'breathe')",
-  "reason": "Brief internal note - why this action (agent doesn't see this)",
+  "action": "breathe" | "speak" | "alert",
+  "temperature": "cold" | "cooling" | "neutral" | "warming" | "hot",
+  "trajectory": "warming" | "cooling" | "stable",
   "internal": {
-    "objection_type": "price|spouse|stall|covered|trust|need|null",
-    "buying_signal": false,
+    "read": "Your gut read of the situation in 5-10 words",
     "hard_exit": false,
-    "down_close_level": 0,
-    "stage_detected": "current stage name"
-  }
+    "buying_signal": false,
+    "objection_type": null | "price" | "spouse" | "think" | "timing" | "need"
+  },
+  "guidance": null | "What to say - 1-2 sentences max, conversational"
 }
 
-ACTIONS:
-• "strike" - Buying signal! Close NOW.
-• "guide" - Objection or hesitation. Help them.
-• "warn" - Agent missed something critical (referrals, family health).
-• "breathe" - Let it play out. Don't interrupt. guidance = null
-• "exit" - Hard exit detected. Preserve relationship.
-
-GUIDANCE RULES:
-• 2-4 sentences MAX - they need to say this NOW
-• Conversational tone - this is spoken, not read
-• Reference their specific situation when possible
-• End with a soft close or question that moves toward yes
-• For "exit": Give a graceful out that preserves callback opportunity
-
 ═══════════════════════════════════════════════════════════════
-                      WHAT MAKES YOU ELITE
+                      WHEN TO ACT
 ═══════════════════════════════════════════════════════════════
 
-Elite coaches know when to STOP.
+BREATHE (stay silent) when:
+- Agent is building rapport naturally
+- Client is just responding, not objecting
+- Flow is good - don't interrupt success
+- You just gave guidance in the last exchange
 
-You read the room. You feel the energy shift. You protect the relationship.
-You don't turn a "not today" into a "never call me again."
+SPEAK (give guidance) when:
+- Client raises a clear objection you can handle
+- Agent missed a buying signal
+- Client asked a question agent might not know
+- Down-close opportunity presents
 
-Your job: Help agents close deals they would have lost AND gracefully exit 
-deals that can't be saved today, setting up success for tomorrow.
+ALERT (urgent) when:
+- Hard exit detected - stop the close, preserve relationship
+- Critical buying signal - strike now
+- Agent about to make a big mistake
 
-Be confident, not desperate.
-Be helpful, not pushy. 
-Trust your gut.
+═══════════════════════════════════════════════════════════════
+                    TEMPERATURE READING
+═══════════════════════════════════════════════════════════════
 
-You've seen it all. You've closed thousands."""
+HOT: Ready to buy. Questions like "So what's the next step?" or "How do I sign up?"
+WARMING: Engaged, asking good questions, sharing personal details
+NEUTRAL: Going through motions, neither resistant nor enthusiastic
+COOLING: Hesitation, shorter answers, deflecting questions
+COLD: Active resistance, objections, wanting to end call
 
-    def __init__(self, session_id: str, agency: str = None):
+═══════════════════════════════════════════════════════════════
+                     HARD EXIT SIGNALS
+═══════════════════════════════════════════════════════════════
+
+When you detect these, STOP THE CLOSE immediately:
+- "I need to go" / "I have to hang up"
+- "Stop calling me" / "Don't contact me again"
+- "I'm not interested, period"
+- "Please take me off your list"
+- Angry/hostile tone combined with firm rejection
+
+On hard exit: Set action="alert", hard_exit=true, and guide agent to gracefully end while preserving future relationship possibility.
+
+═══════════════════════════════════════════════════════════════
+                    GUIDANCE PRINCIPLES
+═══════════════════════════════════════════════════════════════
+
+1. BREVITY: 1-2 sentences max. Agent needs to act NOW.
+2. CONVERSATIONAL: Natural speech, not scripted
+3. ACTIONABLE: Tell them exactly what to say
+4. CONTEXTUAL: Use what you know about the client
+5. METHODOLOGICAL: Root everything in Globe Life proven techniques
+
+BAD: "You might want to consider addressing their concern about the price by perhaps mentioning the value proposition."
+GOOD: "Ask: 'What if we started with just the $15,000 to protect against the immediate costs?'"
+
+Remember: You're a 20-year closer. You've seen everything. You speak with confidence, brevity, and precision. When you talk, people listen - because you only talk when it matters."""
+
+    def __init__(self, session_id: str, agency: str = ""):
         self.session_id = session_id
         self.agency = agency
-        self.client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key) if settings.anthropic_api_key else None
+        self.client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
         self.last_guidance_time = 0
-        self.is_analyzing = False
-        self.guidance_count = 0
+        self.vector_db = get_vector_db()
         
-    async def analyze(self, conversation: ConversationBuffer, trigger: str = "client") -> Optional[dict]:
+    async def analyze(self, conversation: ConversationBuffer, trigger_speaker: str = "client") -> Optional[dict]:
         """
-        The Veteran reads the room and decides what to do.
-        Returns the full analysis including temperature, action, and guidance.
+        Analyze the conversation and decide whether to speak.
+        Returns guidance if The Veteran has something to say.
         """
-        if not self.client:
-            return None
-            
-        if self.is_analyzing:
-            return None
-            
-        # Get the last thing said
-        if not conversation.turns:
-            return None
-            
-        last_turn = conversation.turns[-1]
-        last_text = last_turn.get("text", "")
-        
-        # Skip very short utterances
-        if len(last_text.split()) < self.MIN_WORDS_TO_ANALYZE:
-            return None
-            
-        # Check cooldown
+        # Skip if we just spoke
         now = time.time()
         if now - self.last_guidance_time < self.MIN_GUIDANCE_INTERVAL:
             return None
             
-        self.is_analyzing = True
+        # Get recent turns
+        recent_text = conversation.get_recent(8)
+        if not recent_text:
+            return None
+            
+        # Skip very short utterances
+        last_turn = conversation.turns[-1] if conversation.turns else None
+        if last_turn and len(last_turn["text"].split()) < self.MIN_WORDS_TO_ANALYZE:
+            return None
         
         try:
-            # Build context
-            transcript = conversation.get_transcript(max_turns=40)
-            recent = conversation.get_recent(8)
-            state_context = conversation.call_state.to_context_string()
+            # Get relevant knowledge
+            knowledge_context = ""
+            if last_turn:
+                results = self.vector_db.search(
+                    last_turn["text"], 
+                    top_k=2, 
+                    agency=self.agency
+                )
+                if results:
+                    knowledge_context = "\n\nRelevant training:\n" + "\n".join([
+                        f"- {r['content'][:200]}" for r in results
+                    ])
             
-            # Get relevant training
-            training = self._get_training(last_text)
+            # Build the analysis prompt
+            call_state_str = conversation.call_state.to_context_string()
             
-            user_prompt = f"""═══ CALL STATE ═══
-{state_context}
+            prompt = f"""CALL STATE:
+{call_state_str}
 
-═══ CONVERSATION ═══
-{transcript}
+RECENT CONVERSATION:
+{recent_text}
+{knowledge_context}
 
-═══ LAST FEW EXCHANGES ═══
-{recent}
-
-═══ RELEVANT TRAINING ═══
-{training if training else "None"}
-
-═══ WHAT JUST HAPPENED ═══
-{trigger.upper()} just spoke: "{last_text}"
-
-Read the room. Output your JSON."""
+The {trigger_speaker.upper()} just spoke. What's your read? What do you do?"""
 
             # Call Claude
             response = await self.client.messages.create(
-                model=settings.claude_model,
-                max_tokens=600,
+                model="claude-sonnet-4-20250514",
+                max_tokens=400,
                 system=self.SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_prompt}]
+                messages=[{"role": "user", "content": prompt}]
             )
             
             # Log usage
-            if response.usage:
-                log_claude_usage(
-                    input_tokens=response.usage.input_tokens,
-                    output_tokens=response.usage.output_tokens,
-                    agency_code=self.agency,
-                    model=settings.claude_model,
-                    operation="veteran_brain"
-                )
+            log_claude_usage(
+                input_tokens=response.usage.input_tokens,
+                output_tokens=response.usage.output_tokens,
+                model="claude-sonnet-4-20250514",
+                agency_code=self.agency,
+                session_id=self.session_id,
+                query_type="veteran_analysis"
+            )
             
             # Parse response
-            result = self._parse_response(response.content[0].text)
+            text = response.content[0].text
             
-            if result:
-                # Update call state
-                self._update_state(conversation.call_state, result)
+            # Extract JSON from response
+            json_match = re.search(r'\{[\s\S]*\}', text)
+            if not json_match:
+                logger.warning(f"[Veteran] No JSON in response: {text[:100]}")
+                return None
                 
-                # Record guidance time if we're actually speaking
-                if result.get("action") != "breathe":
-                    self.last_guidance_time = now
-                    self.guidance_count += 1
+            result = json.loads(json_match.group())
+            
+            # Update call state
+            if result.get("temperature"):
+                conversation.call_state.temperature = result["temperature"]
+            if result.get("trajectory"):
+                conversation.call_state.trajectory = result["trajectory"]
+                
+            internal = result.get("internal", {})
+            if internal.get("hard_exit"):
+                conversation.call_state.hard_exit_detected = True
+            if internal.get("buying_signal"):
+                conversation.call_state.buying_signals += 1
+            if internal.get("objection_type"):
+                conversation.call_state.objection_count += 1
+                if internal["objection_type"] not in conversation.call_state.objections_raised:
+                    conversation.call_state.objections_raised.append(internal["objection_type"])
                     
+                # Track down-close level for price objections
+                if internal["objection_type"] == "price":
+                    conversation.call_state.down_close_level = min(
+                        conversation.call_state.down_close_level + 1, 
+                        5
+                    )
+            
+            # Update timing if we're speaking
+            if result.get("action") != "breathe" and result.get("guidance"):
+                self.last_guidance_time = now
+                
             return result
             
-        except Exception as e:
-            logger.error(f"[VeteranBrain] Error: {e}")
-            return None
-        finally:
-            self.is_analyzing = False
-    
-    def _get_training(self, text: str) -> str:
-        """Get relevant training materials"""
-        try:
-            db = get_vector_db()
-            results = db.search(text, top_k=2, agency=self.agency)
-            return "\n\n".join([r["content"] for r in results])
-        except:
-            return ""
-    
-    def _parse_response(self, text: str) -> Optional[dict]:
-        """Parse Claude's JSON response"""
-        try:
-            # Find JSON in response
-            json_match = re.search(r'\{[\s\S]*\}', text)
-            if json_match:
-                return json.loads(json_match.group())
+        except json.JSONDecodeError as e:
+            logger.error(f"[Veteran] JSON parse error: {e}")
             return None
         except Exception as e:
-            logger.error(f"[VeteranBrain] Parse error: {e}, text: {text[:100]}")
+            logger.error(f"[Veteran] Analysis error: {e}")
             return None
-    
-    def _update_state(self, state: CallState, result: dict):
-        """Update call state from Claude's analysis"""
-        state.temperature = result.get("temperature", state.temperature)
-        state.trajectory = result.get("trajectory", state.trajectory)
-        
-        internal = result.get("internal", {})
-        
-        # Track objections
-        obj_type = internal.get("objection_type")
-        if obj_type and obj_type != "null":
-            state.objection_count += 1
-            if obj_type not in state.objections_raised:
-                state.objections_raised.append(obj_type)
-                
-        # Track down-close
-        dcl = internal.get("down_close_level", 0)
-        if dcl > state.down_close_level:
-            state.down_close_level = dcl
-            
-        # Track hard exit
-        if internal.get("hard_exit"):
-            state.hard_exit_detected = True
-            state.is_salvageable = False
-            
-        # Track buying signals
-        if internal.get("buying_signal"):
-            state.buying_signals += 1
-            
-        # Update stage
-        stage = internal.get("stage_detected")
-        if stage and stage not in ["null", "unknown"]:
-            state.current_stage = stage
-            if stage not in state.stages_completed:
-                state.stages_completed.append(stage)
 
 
 # ==================== CONTEXT EXTRACTOR ====================
 
 class ContextExtractor:
-    """Extracts client/agent context from speech to enrich the call state"""
+    """Extracts structured context from conversation"""
     
     @staticmethod
     def extract_from_agent(text: str, state: CallState):
@@ -553,6 +476,7 @@ class ContextExtractor:
             r"(\d+)\s*kids?",
         ]
         word_to_num = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+        found_kids = False
         for pattern in kids_patterns:
             match = re.search(pattern, text_lower)
             if match:
@@ -562,8 +486,9 @@ class ContextExtractor:
                     state.num_kids = int(num)
                 else:
                     state.num_kids = word_to_num.get(num, 1)
+                found_kids = True
                 break
-        elif any(p in text_lower for p in ['my kids', 'the kids', 'our kids', 'my children']):
+        if not found_kids and any(p in text_lower for p in ['my kids', 'the kids', 'our kids', 'my children']):
             state.has_kids = True
             
         # Spouse
@@ -589,98 +514,142 @@ class ContextExtractor:
 # ==================== AGENT STREAM HANDLER ====================
 
 class AgentStreamHandler:
-    """Handles agent audio stream from Telnyx"""
+    """
+    Handles AGENT audio stream from Telnyx.
+    Transcribes via Deepgram, extracts context, tracks presentation stage.
+    Does NOT display to agent (they know what they're saying).
+    
+    KEY FIX: Uses asyncwebsocket (not asynclive) and connects on first media packet.
+    """
     
     SAMPLE_RATE = 8000
     
     def __init__(self, session_id: str):
         self.session_id = session_id
-        self.is_running = False
+        self.deepgram = None
         self.connection = None
-        self.conversation = get_conversation_buffer(session_id)
-        self._total_audio_bytes = 0
-        self._session_start_time = None
+        self.is_running = False
         self._connection_dead = False
         self._deepgram_initialized = False
+        self.conversation = get_conversation_buffer(session_id)
         
+        self._total_audio_bytes = 0
+        self._session_start_time = None
+        
+        logger.info(f"[AgentStream] Created for session {session_id}")
+    
     async def start(self) -> bool:
-        print(f"[AgentStream] Starting {self.session_id}", flush=True)
+        """Initialize handler - Deepgram connects lazily on first media"""
+        print(f"[AgentStream] Starting for {self.session_id}", flush=True)
         self._session_start_time = time.time()
         self.is_running = True
+        self._deepgram_initialized = False
         return True
     
     async def connect_deepgram(self):
-        """Connect to Deepgram - lazy initialization"""
+        """Connect to Deepgram - lazy init on first media packet"""
         if self._deepgram_initialized or not settings.deepgram_api_key:
-            return
-            
+            return False
+        
         self._deepgram_initialized = True
         
-        try:
-            client = DeepgramClient(api_key=settings.deepgram_api_key)
-            self.connection = client.listen.asyncwebsocket.v("1")
-            
-            self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
-            self.connection.on(LiveTranscriptionEvents.Transcript, self._on_transcript)
-            self.connection.on(LiveTranscriptionEvents.Error, self._on_error)
-            self.connection.on(LiveTranscriptionEvents.Close, self._on_close)
-            
-            options = LiveOptions(
-                model="nova-2",
-                language="en-US",
-                smart_format=True,
-                encoding="mulaw",
-                sample_rate=self.SAMPLE_RATE,
-                channels=1,
-                interim_results=True,
-                utterance_end_ms=1000,
-            )
-            
-            if await self.connection.start(options):
-                print(f"[AgentStream] Deepgram connected", flush=True)
+        # Retry logic
+        max_retries = 3
+        retry_delay = 0.5
+        
+        for attempt in range(max_retries):
+            try:
+                self.deepgram = DeepgramClient(settings.deepgram_api_key)
+                # KEY FIX: Use asyncwebsocket, same as client handler
+                self.connection = self.deepgram.listen.asyncwebsocket.v("1")
                 
-        except Exception as e:
-            logger.error(f"[AgentStream] Deepgram error: {e}")
-            
-    async def send_audio(self, audio_data: bytes):
-        if not self.is_running or self._connection_dead:
-            return
-            
-        # Lazy init Deepgram on first audio
-        if not self._deepgram_initialized:
-            await self.connect_deepgram()
-            
-        if not self.connection:
-            return
-            
-        try:
-            self._total_audio_bytes += len(audio_data)
-            await self.connection.send(audio_data)
-        except Exception as e:
-            if not self._connection_dead:
-                self._connection_dead = True
-                logger.error(f"[AgentStream] Send error: {e}")
+                self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
+                self.connection.on(LiveTranscriptionEvents.Transcript, self._on_transcript)
+                self.connection.on(LiveTranscriptionEvents.Error, self._on_error)
+                self.connection.on(LiveTranscriptionEvents.Close, self._on_close)
                 
+                options = LiveOptions(
+                    model="nova-2",
+                    language="en-US",
+                    smart_format=True,
+                    punctuate=True,
+                    interim_results=False,  # Only final for agent (context only)
+                    utterance_end_ms=1500,
+                    encoding="linear16",  # We convert mulaw to linear16
+                    sample_rate=self.SAMPLE_RATE,
+                    channels=1
+                )
+                
+                if await self.connection.start(options):
+                    print(f"[AgentStream] Deepgram connected (attempt {attempt + 1})", flush=True)
+                    return True
+                    
+            except Exception as e:
+                print(f"[AgentStream] Deepgram attempt {attempt + 1} failed: {e}", flush=True)
+                self.connection = None
+                self.deepgram = None
+                
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2
+        
+        print(f"[AgentStream] Deepgram failed after {max_retries} attempts - continuing without agent transcription", flush=True)
+        return False
+    
+    async def handle_telnyx_message(self, message: dict):
+        """Process Telnyx message with agent audio"""
+        event = message.get("event")
+        
+        if event == "connected":
+            print(f"[AgentStream] Telnyx connected", flush=True)
+        elif event == "start":
+            print(f"[AgentStream] Stream started", flush=True)
+        elif event == "media":
+            media = message.get("media", {})
+            payload = media.get("payload")
+            
+            if payload:
+                try:
+                    # Decode and convert mulaw to linear16
+                    ulaw_audio = base64.b64decode(payload)
+                    self._total_audio_bytes += len(ulaw_audio)
+                    pcm_audio = audioop.ulaw2lin(ulaw_audio, 2)
+                    
+                    # Lazy init Deepgram on first actual audio
+                    if not self._deepgram_initialized:
+                        await self.connect_deepgram()
+                    
+                    # Send to Deepgram if connected
+                    if self.connection and self.is_running and not self._connection_dead:
+                        await self.connection.send(pcm_audio)
+                except Exception as e:
+                    if not self._connection_dead:
+                        self._connection_dead = True
+                        print(f"[AgentStream] Deepgram disconnected: {str(e)[:80]}", flush=True)
+        elif event == "stop":
+            await self.stop()
+    
     async def _on_open(self, *args, **kwargs):
         print(f"[AgentStream] Deepgram open", flush=True)
-        
+    
     async def _on_transcript(self, *args, **kwargs):
+        """Handle agent transcript - extract context, send to frontend"""
         try:
             result = kwargs.get('result') or (args[1] if len(args) > 1 else None)
             if not result:
                 return
-                
+            
             alternatives = result.channel.alternatives
             if not alternatives:
                 return
-                
+            
             transcript = alternatives[0].transcript
             is_final = result.is_final
             
             if not transcript:
                 return
-                
-            # Send to frontend
+            
+            # Send to frontend - IMPORTANT: agent transcripts should appear too
             await self._broadcast({
                 "type": "agent_transcript",
                 "text": transcript,
@@ -689,30 +658,36 @@ class AgentStreamHandler:
             
             if is_final:
                 print(f"[AgentStream] AGENT: {transcript[:60]}", flush=True)
+                
+                # Add to conversation buffer
                 self.conversation.add_turn("agent", transcript)
                 
-                # Extract context
+                # Extract context from agent speech
                 ContextExtractor.extract_from_agent(transcript, self.conversation.call_state)
                 
         except Exception as e:
             logger.error(f"[AgentStream] Transcript error: {e}")
-            
+    
     async def _broadcast(self, message: dict):
+        """Send message to frontend via session manager"""
         await session_manager._broadcast_to_session(self.session_id, message)
-        
+    
     async def _on_error(self, *args, **kwargs):
         if not self._connection_dead:
             self._connection_dead = True
             error = kwargs.get('error', 'Unknown')
             print(f"[AgentStream] Error: {str(error)[:80]}", flush=True)
-            
+    
     async def _on_close(self, *args, **kwargs):
-        logger.info("[AgentStream] Closed")
-        
+        logger.info(f"[AgentStream] Closed")
+    
     async def stop(self):
+        """Stop the handler and log usage"""
         print(f"[AgentStream] Stopping {self.session_id}", flush=True)
+        print(f"[AgentStream] Usage: {self._total_audio_bytes / (self.SAMPLE_RATE * 2):.1f}s", flush=True)
         self.is_running = False
         
+        # Log usage
         if self._total_audio_bytes > 0 and self._session_start_time:
             duration = self._total_audio_bytes / (self.SAMPLE_RATE * 2)
             log_deepgram_usage(
@@ -721,7 +696,8 @@ class AgentStreamHandler:
                 session_id=self.session_id,
                 model='nova-2'
             )
-            
+        
+        # Close Deepgram connection
         if self.connection:
             try:
                 await asyncio.wait_for(self.connection.finish(), timeout=3.0)
@@ -732,92 +708,139 @@ class AgentStreamHandler:
 # ==================== CLIENT STREAM HANDLER ====================
 
 class ClientStreamHandler:
-    """Handles client audio stream from Telnyx - THE MAIN EVENT"""
+    """
+    Handles CLIENT audio stream from Telnyx - THE MAIN EVENT.
+    Transcribes via Deepgram, triggers The Veteran Brain.
+    """
     
     SAMPLE_RATE = 8000
     
     def __init__(self, session_id: str):
         self.session_id = session_id
-        self.is_running = False
+        self.deepgram = None
         self.connection = None
+        self.is_running = False
+        self._connection_dead = False
         self.conversation = get_conversation_buffer(session_id)
         self._veteran = None
         self._generating = False
+        
         self._total_audio_bytes = 0
         self._session_start_time = None
-        self._connection_dead = False
         
-    async def start(self):
-        if self.is_running:
-            return
-            
-        try:
-            # Initialize The Veteran Brain
-            self._veteran = VeteranBrain(
-                session_id=self.session_id,
-                agency=self.conversation.agency
-            )
-            
-            # Initialize Deepgram
-            client = DeepgramClient(api_key=settings.deepgram_api_key)
-            self.connection = client.listen.asyncwebsocket.v("1")
-            
-            self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
-            self.connection.on(LiveTranscriptionEvents.Transcript, self._on_transcript)
-            self.connection.on(LiveTranscriptionEvents.Error, self._on_error)
-            self.connection.on(LiveTranscriptionEvents.Close, self._on_close)
-            
-            options = LiveOptions(
-                model="nova-2",
-                language="en-US",
-                smart_format=True,
-                encoding="mulaw",
-                sample_rate=self.SAMPLE_RATE,
-                channels=1,
-                interim_results=True,
-                utterance_end_ms=1000,
-            )
-            
-            if await self.connection.start(options):
-                self.is_running = True
-                self._session_start_time = time.time()
-                print(f"[ClientStream] Started {self.session_id}", flush=True)
+        logger.info(f"[ClientStream] Created for session {session_id}")
+    
+    async def start(self) -> bool:
+        """Initialize handler and connect Deepgram"""
+        print(f"[ClientStream] Starting for {self.session_id}", flush=True)
+        self._session_start_time = time.time()
+        
+        # Initialize The Veteran Brain
+        self._veteran = VeteranBrain(
+            session_id=self.session_id,
+            agency=self.conversation.agency
+        )
+        
+        # Connect to Deepgram with retry
+        max_retries = 3
+        retry_delay = 0.5
+        
+        for attempt in range(max_retries):
+            try:
+                self.deepgram = DeepgramClient(settings.deepgram_api_key)
+                self.connection = self.deepgram.listen.asyncwebsocket.v("1")
                 
-        except Exception as e:
-            logger.error(f"[ClientStream] Start error: {e}")
-            
-    async def send_audio(self, audio_data: bytes):
-        if not self.is_running or not self.connection or self._connection_dead:
-            return
-            
-        try:
-            self._total_audio_bytes += len(audio_data)
-            await self.connection.send(audio_data)
-        except Exception as e:
-            if not self._connection_dead:
-                self._connection_dead = True
-                logger.error(f"[ClientStream] Send error: {e}")
+                self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
+                self.connection.on(LiveTranscriptionEvents.Transcript, self._on_transcript)
+                self.connection.on(LiveTranscriptionEvents.Error, self._on_error)
+                self.connection.on(LiveTranscriptionEvents.Close, self._on_close)
                 
+                options = LiveOptions(
+                    model="nova-2",
+                    language="en-US",
+                    smart_format=True,
+                    punctuate=True,
+                    interim_results=True,  # Client gets interim for responsiveness
+                    utterance_end_ms=1000,
+                    encoding="linear16",
+                    sample_rate=self.SAMPLE_RATE,
+                    channels=1
+                )
+                
+                if await self.connection.start(options):
+                    self.is_running = True
+                    print(f"[ClientStream] Deepgram connected (attempt {attempt + 1})", flush=True)
+                    
+                    await self._broadcast({
+                        "type": "ready",
+                        "message": "Coaching active"
+                    })
+                    
+                    return True
+                    
+            except Exception as e:
+                print(f"[ClientStream] Deepgram attempt {attempt + 1} failed: {e}", flush=True)
+                self.connection = None
+                self.deepgram = None
+                
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2
+        
+        print(f"[ClientStream] Deepgram failed after {max_retries} attempts", flush=True)
+        self.is_running = True
+        await self._broadcast({"type": "ready"})
+        return True
+    
+    async def handle_telnyx_message(self, message: dict):
+        """Process Telnyx message with client audio"""
+        event = message.get("event")
+        
+        if event == "connected":
+            print(f"[ClientStream] Telnyx connected", flush=True)
+        elif event == "start":
+            print(f"[ClientStream] Stream started", flush=True)
+        elif event == "media":
+            media = message.get("media", {})
+            payload = media.get("payload")
+            
+            if payload:
+                try:
+                    # Decode and convert mulaw to linear16
+                    ulaw_audio = base64.b64decode(payload)
+                    self._total_audio_bytes += len(ulaw_audio)
+                    pcm_audio = audioop.ulaw2lin(ulaw_audio, 2)
+                    
+                    # Send to Deepgram
+                    if self.connection and self.is_running and not self._connection_dead:
+                        await self.connection.send(pcm_audio)
+                except Exception as e:
+                    if not self._connection_dead:
+                        self._connection_dead = True
+                        print(f"[ClientStream] Deepgram disconnected: {str(e)[:80]}", flush=True)
+        elif event == "stop":
+            await self.stop()
+    
     async def _on_open(self, *args, **kwargs):
         print(f"[ClientStream] Deepgram open", flush=True)
-        
+    
     async def _on_transcript(self, *args, **kwargs):
         """Handle client transcript - wake The Veteran"""
         try:
             result = kwargs.get('result') or (args[1] if len(args) > 1 else None)
             if not result:
                 return
-                
+            
             alternatives = result.channel.alternatives
             if not alternatives:
                 return
-                
+            
             transcript = alternatives[0].transcript
             is_final = result.is_final
             
             if not transcript:
                 return
-                
+            
             # Send to frontend
             await self._broadcast({
                 "type": "client_transcript",
@@ -828,7 +851,7 @@ class ClientStreamHandler:
             if is_final:
                 print(f"[ClientStream] CLIENT: {transcript[:60]}", flush=True)
                 
-                # Add to conversation
+                # Add to conversation buffer
                 self.conversation.add_turn("client", transcript)
                 
                 # Extract context
@@ -840,7 +863,7 @@ class ClientStreamHandler:
                     
         except Exception as e:
             logger.error(f"[ClientStream] Transcript error: {e}")
-            
+    
     async def _run_veteran(self):
         """Let The Veteran read the room and decide"""
         if self._generating:
@@ -895,23 +918,27 @@ class ClientStreamHandler:
             logger.error(f"[ClientStream] Veteran error: {e}")
         finally:
             self._generating = False
-            
+    
     async def _broadcast(self, message: dict):
+        """Send message to frontend via session manager"""
         await session_manager._broadcast_to_session(self.session_id, message)
-        
+    
     async def _on_error(self, *args, **kwargs):
         if not self._connection_dead:
             self._connection_dead = True
             error = kwargs.get('error', 'Unknown')
             print(f"[ClientStream] Error: {str(error)[:80]}", flush=True)
-            
+    
     async def _on_close(self, *args, **kwargs):
-        logger.info("[ClientStream] Closed")
-        
+        logger.info(f"[ClientStream] Closed")
+    
     async def stop(self):
+        """Stop the handler and log usage"""
         print(f"[ClientStream] Stopping {self.session_id}", flush=True)
+        print(f"[ClientStream] Usage: {self._total_audio_bytes / (self.SAMPLE_RATE * 2):.1f}s", flush=True)
         self.is_running = False
         
+        # Log usage
         if self._total_audio_bytes > 0 and self._session_start_time:
             duration = self._total_audio_bytes / (self.SAMPLE_RATE * 2)
             log_deepgram_usage(
@@ -920,13 +947,15 @@ class ClientStreamHandler:
                 session_id=self.session_id,
                 model='nova-2'
             )
-            
+        
+        # Close Deepgram connection
         if self.connection:
             try:
                 await asyncio.wait_for(self.connection.finish(), timeout=3.0)
             except:
                 pass
-                
+        
+        # Notify frontend
         await self._broadcast({"type": "stream_ended"})
 
 
@@ -937,6 +966,7 @@ _agent_handlers: Dict[str, AgentStreamHandler] = {}
 
 
 async def get_or_create_client_handler(session_id: str) -> ClientStreamHandler:
+    """Get or create client stream handler"""
     if session_id not in _client_handlers:
         handler = ClientStreamHandler(session_id)
         await handler.start()
@@ -945,6 +975,7 @@ async def get_or_create_client_handler(session_id: str) -> ClientStreamHandler:
 
 
 async def get_or_create_agent_handler(session_id: str) -> AgentStreamHandler:
+    """Get or create agent stream handler"""
     if session_id not in _agent_handlers:
         handler = AgentStreamHandler(session_id)
         await handler.start()
@@ -953,18 +984,20 @@ async def get_or_create_agent_handler(session_id: str) -> AgentStreamHandler:
 
 
 async def cleanup_handlers(session_id: str):
+    """Clean up handlers for a session"""
     if session_id in _client_handlers:
         await _client_handlers[session_id].stop()
         del _client_handlers[session_id]
-        
+    
     if session_id in _agent_handlers:
         await _agent_handlers[session_id].stop()
         del _agent_handlers[session_id]
-        
+    
     remove_conversation_buffer(session_id)
 
 
 async def remove_handler(session_id: str, stream_type: str = "client"):
+    """Remove a specific handler"""
     if stream_type == "client" and session_id in _client_handlers:
         await _client_handlers[session_id].stop()
         del _client_handlers[session_id]
@@ -974,6 +1007,7 @@ async def remove_handler(session_id: str, stream_type: str = "client"):
 
 
 def get_active_handlers():
+    """Get counts of active handlers"""
     return {
         "client_handlers": len(_client_handlers),
         "agent_handlers": len(_agent_handlers),
@@ -982,5 +1016,5 @@ def get_active_handlers():
 
 
 def get_deepgram_client():
-    from deepgram import DeepgramClient
+    """Get a Deepgram client instance"""
     return DeepgramClient(api_key=settings.deepgram_api_key)
