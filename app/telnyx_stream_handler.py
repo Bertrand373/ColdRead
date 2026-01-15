@@ -476,7 +476,6 @@ class ContextExtractor:
             r"(\d+)\s*kids?",
         ]
         word_to_num = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
-        found_kids = False
         for pattern in kids_patterns:
             match = re.search(pattern, text_lower)
             if match:
@@ -486,9 +485,8 @@ class ContextExtractor:
                     state.num_kids = int(num)
                 else:
                     state.num_kids = word_to_num.get(num, 1)
-                found_kids = True
                 break
-        if not found_kids and any(p in text_lower for p in ['my kids', 'the kids', 'our kids', 'my children']):
+        elif any(p in text_lower for p in ['my kids', 'the kids', 'our kids', 'my children']):
             state.has_kids = True
             
         # Spouse
@@ -519,7 +517,7 @@ class AgentStreamHandler:
     Transcribes via Deepgram, extracts context, tracks presentation stage.
     Does NOT display to agent (they know what they're saying).
     
-    KEY FIX: Uses asyncwebsocket (not asynclive) and connects on first media packet.
+    KEY FIX: Uses asynclive and connects on first media packet (lazy init).
     """
     
     SAMPLE_RATE = 8000
@@ -560,8 +558,8 @@ class AgentStreamHandler:
         for attempt in range(max_retries):
             try:
                 self.deepgram = DeepgramClient(settings.deepgram_api_key)
-                # KEY FIX: Use asyncwebsocket, same as client handler
-                self.connection = self.deepgram.listen.asyncwebsocket.v("1")
+                # Use asynclive (the SDK version on Render)
+                self.connection = self.deepgram.listen.asynclive.v("1")
                 
                 self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
                 self.connection.on(LiveTranscriptionEvents.Transcript, self._on_transcript)
@@ -580,9 +578,9 @@ class AgentStreamHandler:
                     channels=1
                 )
                 
-                if await self.connection.start(options):
-                    print(f"[AgentStream] Deepgram connected (attempt {attempt + 1})", flush=True)
-                    return True
+                await self.connection.start(options)
+                print(f"[AgentStream] Deepgram connected (attempt {attempt + 1})", flush=True)
+                return True
                     
             except Exception as e:
                 print(f"[AgentStream] Deepgram attempt {attempt + 1} failed: {e}", flush=True)
@@ -748,7 +746,7 @@ class ClientStreamHandler:
         for attempt in range(max_retries):
             try:
                 self.deepgram = DeepgramClient(settings.deepgram_api_key)
-                self.connection = self.deepgram.listen.asyncwebsocket.v("1")
+                self.connection = self.deepgram.listen.asynclive.v("1")
                 
                 self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
                 self.connection.on(LiveTranscriptionEvents.Transcript, self._on_transcript)
@@ -767,16 +765,16 @@ class ClientStreamHandler:
                     channels=1
                 )
                 
-                if await self.connection.start(options):
-                    self.is_running = True
-                    print(f"[ClientStream] Deepgram connected (attempt {attempt + 1})", flush=True)
-                    
-                    await self._broadcast({
-                        "type": "ready",
-                        "message": "Coaching active"
-                    })
-                    
-                    return True
+                await self.connection.start(options)
+                self.is_running = True
+                print(f"[ClientStream] Deepgram connected (attempt {attempt + 1})", flush=True)
+                
+                await self._broadcast({
+                    "type": "ready",
+                    "message": "Coaching active"
+                })
+                
+                return True
                     
             except Exception as e:
                 print(f"[ClientStream] Deepgram attempt {attempt + 1} failed: {e}", flush=True)
