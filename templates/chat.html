@@ -313,7 +313,7 @@
         }
         
         .empty-icon svg { width: 26px; height: 26px; color: var(--color-accent); }
-        .empty-title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px; }
+        .empty-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px; }
         .empty-text { font-size: 0.875rem; color: var(--color-text-muted); max-width: 280px; margin-bottom: 28px; }
         
         .suggestions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
@@ -380,7 +380,7 @@
         }
         
         .message.ai .ai-indicator svg {
-            width: 12px;
+            width: 16px;
             height: 12px;
             color: var(--color-accent);
         }
@@ -398,34 +398,36 @@
         
         .message-content.streaming { min-height: 24px; }
         
-        /* Thinking dots animation */
-        .thinking-dots {
+        /* Thinking waveform animation */
+        .thinking-waveform {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
+            height: 16px;
             padding: 4px 0;
         }
         
-        .thinking-dots span {
-            width: 6px;
-            height: 6px;
+        .thinking-waveform .bar {
+            width: 3px;
+            border-radius: 1.5px;
             background: var(--color-accent);
-            border-radius: 50%;
-            animation: dotPulse 1.4s ease-in-out infinite;
+            animation: waveformThink 1s ease-in-out infinite;
         }
         
-        .thinking-dots span:nth-child(1) { animation-delay: 0s; }
-        .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
-        .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+        .thinking-waveform .bar:nth-child(1) { height: 6px; animation-delay: 0s; }
+        .thinking-waveform .bar:nth-child(2) { height: 12px; animation-delay: 0.1s; }
+        .thinking-waveform .bar:nth-child(3) { height: 8px; animation-delay: 0.2s; }
+        .thinking-waveform .bar:nth-child(4) { height: 14px; animation-delay: 0.3s; }
+        .thinking-waveform .bar:nth-child(5) { height: 7px; animation-delay: 0.4s; }
         
-        @keyframes dotPulse {
-            0%, 60%, 100% { 
-                opacity: 0.3;
-                transform: scale(0.8);
+        @keyframes waveformThink {
+            0%, 100% { 
+                transform: scaleY(1);
+                opacity: 0.5;
             }
-            30% { 
-                opacity: 1;
-                transform: scale(1);
+            50% { 
+                transform: scaleY(0.4);
+                opacity: 0.3;
             }
         }
         
@@ -890,11 +892,6 @@
         
         <div class="chat-container" id="chatContainer">
             <div class="empty-state" id="emptyState">
-                <div class="empty-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-                    </svg>
-                </div>
                 <h2 class="empty-title">Ask Coachd</h2>
                 <p class="empty-text">Get tailored guidance based on your client's situation.</p>
                 <div class="suggestions">
@@ -1393,7 +1390,7 @@
         }
         
         // ============ MESSAGE RENDERING ============
-        const SPARKLE_ICON = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 9.5L23 12L14.5 14.5L12 23L9.5 14.5L1 12L9.5 9.5L12 1Z"/></svg>`;
+        const WAVEFORM_ICON = `<svg viewBox="0 0 45 32" fill="currentColor"><rect x="0" y="10" width="5" height="12" rx="2.5"/><rect x="10" y="4" width="5" height="24" rx="2.5"/><rect x="20" y="8" width="5" height="16" rx="2.5"/><rect x="30" y="2" width="5" height="28" rx="2.5"/><rect x="40" y="9" width="5" height="14" rx="2.5"/></svg>`;
         
         function addMessage(role, content) {
             if (emptyState && emptyState.parentNode) {
@@ -1409,7 +1406,7 @@
             
             if (displayRole === 'ai') {
                 messageEl.innerHTML = `
-                    <div class="ai-indicator">${SPARKLE_ICON} Coachd</div>
+                    <div class="ai-indicator">${WAVEFORM_ICON} Coachd</div>
                     <div class="message-content">${formatMessage(content)}</div>
                 `;
             } else {
@@ -1448,12 +1445,12 @@
             
             addMessage('user', text);
             
-            // Create AI message with sparkle indicator and thinking dots
+            // Create AI message with waveform indicator
             const messageEl = document.createElement('div');
             messageEl.className = 'message ai';
             messageEl.innerHTML = `
-                <div class="ai-indicator">${SPARKLE_ICON} Coachd</div>
-                <div class="message-content streaming"><div class="thinking-dots"><span></span><span></span><span></span></div></div>
+                <div class="ai-indicator">${WAVEFORM_ICON} Coachd</div>
+                <div class="message-content streaming"><div class="thinking-waveform"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div></div>
             `;
             chatContainer.appendChild(messageEl);
             
@@ -1514,7 +1511,7 @@
                                     const parsed = JSON.parse(data);
                                     const chunk = parsed.text || parsed.content;
                                     if (chunk) {
-                                        // Remove thinking dots on first real content
+                                        // Remove thinking waveform on first real content
                                         if (firstChunk) {
                                             contentEl.classList.remove('streaming');
                                             contentEl.innerHTML = '';

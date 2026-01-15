@@ -1157,11 +1157,16 @@ class ClientStreamHandler:
     async def _trigger_agent_deepgram(self):
         """Trigger agent's Deepgram connection after client is connected.
         
-        This solves the HTTP 400 issue - agent must connect AFTER client.
+        CRITICAL: Must wait before connecting to avoid Deepgram HTTP 400 rate limit.
+        Deepgram rejects rapid successive WebSocket connections from the same API key.
         """
         try:
             agent_handler = _agent_handlers.get(self.session_id)
             if agent_handler:
+                # CRITICAL: Wait for client connection to fully establish
+                # Deepgram rate-limits concurrent WebSocket connections
+                await asyncio.sleep(1.0)  # 1 second delay prevents HTTP 400
+                
                 print(f"[ClientStream] Triggering Agent Deepgram...", flush=True)
                 await agent_handler.connect_deepgram()
             else:
