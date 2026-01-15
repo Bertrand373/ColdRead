@@ -182,8 +182,8 @@ async def confirm_verification(data: ConfirmRequest):
     code = data.code.strip()
     print(f"[Verify] Confirming code for: {normalized}", flush=True)
     
-    # Validate code format
-    if not code.isdigit() or len(code) != 6:
+    # Validate code format (Telnyx sends 5-digit codes)
+    if not code.isdigit() or len(code) < 5 or len(code) > 6:
         raise HTTPException(status_code=400, detail="Invalid verification code format")
     
     try:
