@@ -191,7 +191,7 @@ async def confirm_verification(data: ConfirmRequest):
             response = await client.post(
                 f"{TELNYX_API_BASE}/verified_numbers/{normalized}/actions/verify",
                 headers=get_telnyx_headers(),
-                json={"code": code}
+                json={"verification_code": code}
             )
             
             print(f"[Verify] Confirm response: {response.status_code}", flush=True)
