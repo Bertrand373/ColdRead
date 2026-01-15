@@ -486,8 +486,10 @@ class ContextExtractor:
                 else:
                     state.num_kids = word_to_num.get(num, 1)
                 break
-        elif any(p in text_lower for p in ['my kids', 'the kids', 'our kids', 'my children']):
-            state.has_kids = True
+        else:
+            # No pattern matched - check for simple mentions
+            if any(p in text_lower for p in ['my kids', 'the kids', 'our kids', 'my children']):
+                state.has_kids = True
             
         # Spouse
         spouse_match = re.search(r"(?:wife|husband|spouse)(?:'s name is|,?\s+)(\w+)", text_lower)
