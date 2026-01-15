@@ -54,6 +54,9 @@ from .usage_tracker import (
 from .call_outcome_routes import router as outcome_router
 from .status_check import router as status_router
 
+# Phone verification for caller ID
+from .phone_verification import router as verification_router
+
 
 # ============ PYDANTIC MODELS ============
 
@@ -137,7 +140,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Coachd.ai",
     description="Real-time AI sales assistant for life insurance agents",
-    version="3.0.0",  # Dual-channel click-to-call
+    version="3.1.0",  # Added phone verification for caller ID
     lifespan=lifespan
 )
 
@@ -160,6 +163,7 @@ templates = Jinja2Templates(directory=str(templates_path))
 app.include_router(outcome_router)
 app.include_router(status_router)
 app.include_router(telnyx_router)
+app.include_router(verification_router)
 
 
 # Service worker must be served from root for proper scope

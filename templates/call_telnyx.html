@@ -18,7 +18,7 @@
     <!-- SEO -->
     <meta name="description" content="AI-powered sales coaching for life insurance agents.">
     
-    <!-- VERSION: 2025-12-24-v9-click-to-call -->
+    <!-- VERSION: 2025-01-15-v10-verification-flow -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -762,124 +762,104 @@
             align-items: center;
         }
         
-        .connecting-icon {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 24px;
-            background: var(--accent-soft);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: ringPulse 2s ease-in-out infinite;
-        }
-        
-        .connecting-icon.connected {
-            background: var(--success-soft);
-            animation: none;
-        }
-        
-        .connecting-icon.connected svg {
-            color: var(--success);
-        }
-        
-        @keyframes ringPulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.4); }
-            50% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(96, 165, 250, 0); }
-        }
-        
-        .connecting-icon svg {
-            width: 36px;
-            height: 36px;
-            color: var(--accent-dark);
-        }
-        
         .connecting-title {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             font-weight: 600;
             margin-bottom: 8px;
+            color: var(--text);
         }
         
         .connecting-subtitle {
             font-size: 0.9rem;
             color: var(--text-secondary);
-            margin-bottom: 24px;
+            margin-bottom: 32px;
             max-width: 260px;
             line-height: 1.5;
         }
         
-        /* Connection Steps */
+        /* Connection Steps - Refined Minimal */
         .connection-steps {
             display: flex;
             flex-direction: column;
             gap: 12px;
             margin-bottom: 32px;
             width: 100%;
-            max-width: 280px;
+            max-width: 300px;
         }
         
         .connection-step {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            background: var(--surface);
+            gap: 14px;
+            padding: 14px 18px;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
             border-radius: 12px;
-            opacity: 0.4;
+            opacity: 0.5;
             transition: all 0.3s ease;
         }
         
         .connection-step.active {
             opacity: 1;
-            background: var(--accent-soft);
+            border-color: var(--text);
         }
         
         .connection-step.complete {
             opacity: 1;
-            background: var(--success-soft);
+            border-color: var(--border);
         }
         
-        .step-icon {
-            width: 32px;
-            height: 32px;
+        .step-number {
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--border);
+            background: var(--surface);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
             flex-shrink: 0;
+            transition: all 0.3s ease;
         }
         
-        .connection-step.active .step-icon {
-            background: var(--accent);
+        .connection-step.active .step-number {
+            background: var(--text);
+            color: white;
             animation: stepPulse 1.5s ease-in-out infinite;
         }
         
-        .connection-step.complete .step-icon {
+        .connection-step.complete .step-number {
             background: var(--success);
+            color: white;
+        }
+        
+        .connection-step.complete .step-number svg {
+            width: 14px;
+            height: 14px;
         }
         
         @keyframes stepPulse {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-        
-        .step-icon svg {
-            width: 16px;
-            height: 16px;
-            color: white;
+            50% { transform: scale(1.08); }
         }
         
         .step-text {
             font-size: 0.9rem;
             font-weight: 500;
-            color: var(--text-secondary);
+            color: var(--text-muted);
+            transition: color 0.3s ease;
         }
         
-        .connection-step.active .step-text,
-        .connection-step.complete .step-text {
+        .connection-step.active .step-text {
             color: var(--text);
+        }
+        
+        .connection-step.complete .step-text {
+            color: var(--text-secondary);
         }
         
         .connecting-cancel {
@@ -1750,6 +1730,197 @@
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
         }
         
+        /* ========== VERIFICATION MODAL ========== */
+        .verify-modal .modal-icon {
+            background: var(--accent-soft);
+        }
+        
+        .verify-modal .modal-icon svg {
+            color: var(--accent);
+        }
+        
+        .method-toggle {
+            display: flex;
+            background: var(--surface);
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 16px;
+        }
+        
+        .method-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 12px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        
+        .method-btn.active {
+            background: var(--bg);
+            color: var(--text);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .method-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .code-input-wrapper {
+            margin-bottom: 16px;
+        }
+        
+        .code-input {
+            width: 100%;
+            padding: 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 0.5em;
+            text-align: center;
+            color: var(--text);
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.15s ease;
+        }
+        
+        .code-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: var(--bg);
+        }
+        
+        .code-input::placeholder {
+            letter-spacing: 0.3em;
+            color: var(--text-muted);
+        }
+        
+        .code-input.error {
+            border-color: var(--danger);
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        .resend-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+        
+        .resend-btn {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 0;
+        }
+        
+        .resend-btn:disabled {
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+        
+        .verify-sending {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 0;
+        }
+        
+        .verify-waveform {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 32px;
+            margin-bottom: 16px;
+        }
+        
+        .verify-waveform .bar {
+            width: 5px;
+            border-radius: 2.5px;
+            background: var(--accent);
+            animation: waveformPulse 1s ease-in-out infinite;
+        }
+        
+        .verify-waveform .bar:nth-child(1) { height: 12px; animation-delay: 0s; }
+        .verify-waveform .bar:nth-child(2) { height: 24px; animation-delay: 0.1s; }
+        .verify-waveform .bar:nth-child(3) { height: 16px; animation-delay: 0.2s; }
+        .verify-waveform .bar:nth-child(4) { height: 28px; animation-delay: 0.3s; }
+        .verify-waveform .bar:nth-child(5) { height: 14px; animation-delay: 0.4s; }
+        
+        .verify-success {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+        }
+        
+        .verify-success-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--success-soft);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        
+        .verify-success-icon svg {
+            width: 32px;
+            height: 32px;
+            color: var(--success);
+        }
+        
+        .verify-success-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        
+        .verify-success-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .verify-state { display: none; }
+        .verify-state.active { display: block; }
+        .verify-sending.active,
+        .verify-success.active {
+            display: flex;
+        }
+        
+        .verify-error {
+            font-size: 0.75rem;
+            color: var(--danger);
+            text-align: center;
+            margin-bottom: 12px;
+            display: none;
+        }
+        
+        .verify-error.visible {
+            display: block;
+        }
+        
         /* ========== RESPONSIVE ========== */
         @media (min-width: 768px) {
             .header { padding: 20px 32px; }
@@ -1998,41 +2169,22 @@
         
         <!-- Connecting Screen -->
         <div class="screen connecting-screen" id="connectingScreen">
-            <div class="connecting-icon" id="connectingIcon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                </svg>
-            </div>
-            <h1 class="connecting-title" id="connectingTitle">Setting Up Call...</h1>
-            <p class="connecting-subtitle" id="connectingSubtitle">This will just take a moment</p>
+            <h1 class="connecting-title" id="connectingTitle">Calling Your Phone...</h1>
+            <p class="connecting-subtitle" id="connectingSubtitle">Answer, then we'll dial your client</p>
             
             <div class="connection-steps">
                 <div class="connection-step active" id="stepAgent">
-                    <div class="step-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                        </svg>
-                    </div>
+                    <div class="step-number" id="stepAgentNumber">1</div>
                     <span class="step-text" id="stepAgentText">Calling your phone...</span>
                 </div>
                 
                 <div class="connection-step" id="stepClient">
-                    <div class="step-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                    </div>
+                    <div class="step-number" id="stepClientNumber">2</div>
                     <span class="step-text" id="stepClientText">Calling client...</span>
                 </div>
                 
                 <div class="connection-step" id="stepReady">
-                    <div class="step-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-                            <polyline points="22 4 12 14.01 9 11.01"/>
-                        </svg>
-                    </div>
+                    <div class="step-number" id="stepReadyNumber">3</div>
                     <span class="step-text">Ready to coach!</span>
                 </div>
             </div>
@@ -2124,6 +2276,105 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Verification Modal -->
+        <div class="modal-overlay verify-modal" id="verifyModal">
+            <div class="modal">
+                <!-- State 1: Initial -->
+                <div class="verify-state active" id="verifyStateInitial">
+                    <div class="modal-header">
+                        <div class="modal-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                <polyline points="9 12 11 14 15 10"/>
+                            </svg>
+                        </div>
+                        <h3 class="modal-title">Quick Verification</h3>
+                    </div>
+                    <p class="modal-desc">To display your caller ID, we need to verify your phone number once. This only takes a moment.</p>
+                    
+                    <div class="method-toggle">
+                        <button class="method-btn active" data-method="sms" onclick="Coachd.setVerifyMethod('sms')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            Text SMS
+                        </button>
+                        <button class="method-btn" data-method="call" onclick="Coachd.setVerifyMethod('call')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                            </svg>
+                            Phone Call
+                        </button>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button class="modal-btn modal-btn-cancel" onclick="Coachd.closeVerifyModal()">Cancel</button>
+                        <button class="modal-btn modal-btn-confirm" onclick="Coachd.sendVerifyCode()">Send Code</button>
+                    </div>
+                </div>
+                
+                <!-- State 2: Sending -->
+                <div class="verify-state verify-sending" id="verifyStateSending">
+                    <div class="verify-waveform">
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                        <div class="bar"></div>
+                    </div>
+                    <span class="modal-desc" style="margin-bottom:0">Sending verification code...</span>
+                </div>
+                
+                <!-- State 3: Enter Code -->
+                <div class="verify-state" id="verifyStateCode">
+                    <div class="modal-header">
+                        <div class="modal-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            </svg>
+                        </div>
+                        <h3 class="modal-title">Enter Code</h3>
+                    </div>
+                    <p class="modal-desc" id="verifyCodeDesc">We sent a 6-digit code to your phone</p>
+                    
+                    <div class="code-input-wrapper">
+                        <input type="text" 
+                               class="code-input" 
+                               id="verifyCodeInput"
+                               inputmode="numeric" 
+                               autocomplete="one-time-code"
+                               maxlength="6"
+                               placeholder="••••••"
+                               oninput="Coachd.handleCodeInput(this)">
+                    </div>
+                    
+                    <div class="verify-error" id="verifyError">Invalid code. Please try again.</div>
+                    
+                    <div class="resend-row">
+                        <span>Didn't receive it?</span>
+                        <button class="resend-btn" id="resendBtn" disabled onclick="Coachd.resendCode()">Resend (60s)</button>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button class="modal-btn modal-btn-cancel" onclick="Coachd.showVerifyState('verifyStateInitial')">Back</button>
+                        <button class="modal-btn modal-btn-confirm" id="verifyConfirmBtn" disabled onclick="Coachd.confirmVerifyCode()">Verify</button>
+                    </div>
+                </div>
+                
+                <!-- State 4: Success -->
+                <div class="verify-state verify-success" id="verifyStateSuccess">
+                    <div class="verify-success-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </div>
+                    <h3 class="verify-success-title">Verified!</h3>
+                    <p class="verify-success-subtitle">Connecting your call now...</p>
+                </div>
+            </div>
+        </div>
     </div>
     
     <!-- Page Loader -->
@@ -2200,7 +2451,11 @@
             },
             sentimentVisible: false,
             // Guidance validation
-            guidanceValidated: false
+            guidanceValidated: false,
+            // Phone verification
+            verifyMethod: 'sms',
+            verifyCountdown: 0,
+            verifyCountdownInterval: null
         };
         
         // ==================== DOM ====================
@@ -2238,7 +2493,14 @@
             get sentimentEmoji() { return document.getElementById('sentimentEmoji'); },
             get sentimentLabel() { return document.getElementById('sentimentLabel'); },
             get sentimentTrajectory() { return document.getElementById('sentimentTrajectory'); },
-            get sentimentTip() { return document.getElementById('sentimentTip'); }
+            get sentimentTip() { return document.getElementById('sentimentTip'); },
+            // Verification modal
+            get verifyModal() { return document.getElementById('verifyModal'); },
+            get verifyCodeInput() { return document.getElementById('verifyCodeInput'); },
+            get verifyConfirmBtn() { return document.getElementById('verifyConfirmBtn'); },
+            get verifyError() { return document.getElementById('verifyError'); },
+            get resendBtn() { return document.getElementById('resendBtn'); },
+            get verifyCodeDesc() { return document.getElementById('verifyCodeDesc'); }
         };
         
         // ==================== INIT ====================
@@ -2578,6 +2840,193 @@
             dom.errorModal.classList.remove('visible');
         }
         
+        // ==================== PHONE VERIFICATION ====================
+        function showVerifyModal() {
+            showVerifyState('verifyStateInitial');
+            dom.verifyModal.classList.add('visible');
+        }
+        
+        function closeVerifyModal() {
+            dom.verifyModal.classList.remove('visible');
+            stopVerifyCountdown();
+            // Reset state
+            if (dom.verifyCodeInput) dom.verifyCodeInput.value = '';
+            if (dom.verifyConfirmBtn) dom.verifyConfirmBtn.disabled = true;
+            if (dom.verifyError) dom.verifyError.classList.remove('visible');
+        }
+        
+        function showVerifyState(stateId) {
+            document.querySelectorAll('.verify-state').forEach(s => s.classList.remove('active'));
+            document.getElementById(stateId)?.classList.add('active');
+        }
+        
+        function setVerifyMethod(method) {
+            state.verifyMethod = method;
+            document.querySelectorAll('.method-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.method === method);
+            });
+        }
+        
+        async function checkPhoneVerified(phone) {
+            try {
+                const digits = phone.replace(/\D/g, '');
+                const response = await fetch(`/api/verify/check/${digits}`);
+                const data = await response.json();
+                return data.verified === true;
+            } catch (e) {
+                console.error('[Verify] Check failed:', e);
+                // On error, assume not verified to be safe
+                return false;
+            }
+        }
+        
+        async function sendVerifyCode() {
+            showVerifyState('verifyStateSending');
+            
+            try {
+                const response = await fetch('/api/verify/initiate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone_number: state.agentPhone,
+                        method: state.verifyMethod
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.already_verified) {
+                    // Already verified - proceed to call
+                    showVerifyState('verifyStateSuccess');
+                    setTimeout(() => {
+                        closeVerifyModal();
+                        proceedWithCall();
+                    }, 1500);
+                    return;
+                }
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Failed to send code');
+                }
+                
+                // Show code entry screen
+                const methodText = state.verifyMethod === 'sms' ? 'texted' : 'called';
+                if (dom.verifyCodeDesc) {
+                    dom.verifyCodeDesc.textContent = `We ${methodText} a 6-digit code to your phone`;
+                }
+                showVerifyState('verifyStateCode');
+                startVerifyCountdown();
+                
+                // Focus the input
+                setTimeout(() => dom.verifyCodeInput?.focus(), 100);
+                
+            } catch (e) {
+                console.error('[Verify] Send code failed:', e);
+                showVerifyState('verifyStateInitial');
+                showErrorModal('Verification Failed', e.message || 'Unable to send verification code. Please try again.');
+                closeVerifyModal();
+            }
+        }
+        
+        function handleCodeInput(input) {
+            // Strip non-digits
+            input.value = input.value.replace(/\D/g, '');
+            
+            // Clear error on input
+            if (dom.verifyError) dom.verifyError.classList.remove('visible');
+            if (dom.verifyCodeInput) dom.verifyCodeInput.classList.remove('error');
+            
+            // Enable/disable verify button
+            if (dom.verifyConfirmBtn) {
+                dom.verifyConfirmBtn.disabled = input.value.length !== 6;
+            }
+        }
+        
+        async function confirmVerifyCode() {
+            const code = dom.verifyCodeInput?.value?.trim();
+            if (!code || code.length !== 6) return;
+            
+            dom.verifyConfirmBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/verify/confirm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone_number: state.agentPhone,
+                        code: code
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Invalid code');
+                }
+                
+                // Success!
+                stopVerifyCountdown();
+                showVerifyState('verifyStateSuccess');
+                
+                // Auto-proceed to call
+                setTimeout(() => {
+                    closeVerifyModal();
+                    proceedWithCall();
+                }, 1500);
+                
+            } catch (e) {
+                console.error('[Verify] Confirm failed:', e);
+                // Show error
+                if (dom.verifyError) {
+                    dom.verifyError.textContent = e.message || 'Invalid code. Please try again.';
+                    dom.verifyError.classList.add('visible');
+                }
+                if (dom.verifyCodeInput) {
+                    dom.verifyCodeInput.classList.add('error');
+                    dom.verifyCodeInput.select();
+                }
+                dom.verifyConfirmBtn.disabled = false;
+            }
+        }
+        
+        function startVerifyCountdown() {
+            state.verifyCountdown = 60;
+            updateResendButton();
+            
+            state.verifyCountdownInterval = setInterval(() => {
+                state.verifyCountdown--;
+                updateResendButton();
+                
+                if (state.verifyCountdown <= 0) {
+                    stopVerifyCountdown();
+                }
+            }, 1000);
+        }
+        
+        function stopVerifyCountdown() {
+            if (state.verifyCountdownInterval) {
+                clearInterval(state.verifyCountdownInterval);
+                state.verifyCountdownInterval = null;
+            }
+        }
+        
+        function updateResendButton() {
+            if (!dom.resendBtn) return;
+            
+            if (state.verifyCountdown > 0) {
+                dom.resendBtn.disabled = true;
+                dom.resendBtn.textContent = `Resend (${state.verifyCountdown}s)`;
+            } else {
+                dom.resendBtn.disabled = false;
+                dom.resendBtn.textContent = 'Resend Code';
+            }
+        }
+        
+        async function resendCode() {
+            if (state.verifyCountdown > 0) return;
+            await sendVerifyCode();
+        }
+        
         // ==================== TELNYX CALL FLOW ====================
         
         // Helper to validate phone number
@@ -2640,6 +3089,23 @@
             state.clientPhone = clientPhone;
             dom.startBtn.disabled = true;
             
+            // Check if agent phone is verified for caller ID
+            const isVerified = await checkPhoneVerified(state.agentPhone);
+            
+            if (!isVerified) {
+                // Show verification modal
+                dom.startBtn.disabled = false;
+                showVerifyModal();
+                return;
+            }
+            
+            // Phone is verified, proceed with call
+            proceedWithCall();
+        }
+        
+        async function proceedWithCall() {
+            dom.startBtn.disabled = true;
+            
             // Reset reconnection state for new call
             state.wsReconnectAttempts = 0;
             state.wsReconnecting = false;
@@ -2648,13 +3114,10 @@
             showScreen('connectingScreen');
             resetConnectionSteps();
             
-            // Remove connected class from icon if present
-            document.getElementById('connectingIcon')?.classList.remove('connected');
-            
             // Update connecting screen message based on mode
             const connectingTitle = document.querySelector('.connecting-title');
             const connectingSubtitle = document.querySelector('.connecting-subtitle');
-            if (clientPhone) {
+            if (state.clientPhone) {
                 if (connectingTitle) connectingTitle.textContent = 'Calling Your Phone...';
                 if (connectingSubtitle) connectingSubtitle.textContent = 'Answer, then we\'ll dial your client';
             } else {
@@ -2669,7 +3132,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         agent_phone: state.agentPhone,
-                        client_phone: clientPhone || null,  // null triggers legacy 3-way mode
+                        client_phone: state.clientPhone || null,  // null triggers legacy 3-way mode
                         client_context: state.clientContext  // Quick Prep context for personalized coaching
                     })
                 });
@@ -2864,7 +3327,6 @@
                     document.getElementById('stepClientText').textContent = 'Client connected!';
                     document.getElementById('connectingTitle').textContent = 'All Connected!';
                     document.getElementById('connectingSubtitle').textContent = 'Starting coaching...';
-                    document.getElementById('connectingIcon').classList.add('connected');
                     // Brief pause to show success, then transition
                     setTimeout(() => onCallConnected(), 800);
                     break;
@@ -3018,6 +3480,11 @@
                 stepEl.classList.add('active');
             } else if (status === 'complete') {
                 stepEl.classList.add('complete');
+                // Replace number with checkmark
+                const numberEl = stepEl.querySelector('.step-number');
+                if (numberEl) {
+                    numberEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+                }
             }
         }
         
@@ -3038,6 +3505,11 @@
                 if (el) {
                     el.classList.remove('active', 'complete');
                     if (index === 0) el.classList.add('active');
+                    // Reset number content
+                    const numberEl = el.querySelector('.step-number');
+                    if (numberEl) {
+                        numberEl.textContent = (index + 1).toString();
+                    }
                 }
             });
             // Use optional chaining to prevent errors if elements don't exist
@@ -3047,8 +3519,8 @@
             const connectingSubtitle = document.getElementById('connectingSubtitle');
             if (stepAgentText) stepAgentText.textContent = 'Calling your phone...';
             if (stepClientText) stepClientText.textContent = 'Calling client...';
-            if (connectingTitle) connectingTitle.textContent = 'Setting Up Call...';
-            if (connectingSubtitle) connectingSubtitle.textContent = 'This will just take a moment';
+            if (connectingTitle) connectingTitle.textContent = 'Calling Your Phone...';
+            if (connectingSubtitle) connectingSubtitle.textContent = 'Answer, then we\'ll dial your client';
         }
         
         function onCallConnected() {
@@ -3114,8 +3586,6 @@
             state.isInCall = false;
             setStatus('');
             resetConnectionSteps();
-            // Remove connected class from icon
-            document.getElementById('connectingIcon')?.classList.remove('connected');
             showScreen('startScreen');
         }
         
@@ -3750,8 +4220,6 @@
                 resetCaptions();
                 resetSentiment();
                 resetConnectionSteps();
-                // Remove connected class from icon
-                document.getElementById('connectingIcon')?.classList.remove('connected');
                 console.log('[StartNewCall] Showing start screen');
                 showScreen('startScreen');
             } catch (err) {
@@ -3834,6 +4302,14 @@
             setCallType,
             closeErrorModal,
             toggleTranscript,
+            // Verification
+            setVerifyMethod,
+            sendVerifyCode,
+            handleCodeInput,
+            confirmVerifyCode,
+            resendCode,
+            showVerifyState,
+            closeVerifyModal,
             getState: () => state
         };
     })();
