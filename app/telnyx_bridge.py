@@ -203,7 +203,8 @@ def generate_agent_conference_texml(session_id: str) -> str:
         <Conference
             startConferenceOnEnter="true"
             endConferenceOnExit="true"
-            beep="false">
+            beep="false"
+            waitUrl="">
             {conference_name}
         </Conference>
     </Dial>
