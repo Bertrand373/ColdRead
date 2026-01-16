@@ -915,6 +915,7 @@
         .call-screen { 
             position: relative;
             overflow: hidden;
+            background: var(--bg);  /* Explicit white to prevent any rendering differences */
         }
         
         /* FLEX LAYOUT for sidebar + main content */
@@ -935,7 +936,7 @@
             padding: 48px;
             text-align: center;
             cursor: pointer;
-            transition: background 0.2s, opacity 0.3s ease;
+            transition: opacity 0.3s ease;
             box-sizing: border-box;
             /* Enable scrolling */
             min-height: 0;
@@ -943,12 +944,8 @@
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
             
-            /* Subtle vignette - draws eye to center */
-            background: radial-gradient(
-                ellipse 80% 70% at center,
-                var(--bg) 0%,
-                rgba(0, 0, 0, 0.012) 100%
-            );
+            /* Pure white - premium doesn't need effects */
+            background: var(--bg);
         }
         
         /* When guidance is shown - smart centering with scroll support */
@@ -957,7 +954,9 @@
             padding: 48px;
         }
         
-        .teleprompter:active { background: var(--surface); }
+        .teleprompter:active { 
+            /* No visual feedback needed - tap dismisses guidance */
+        }
         
         .listening-state {
             display: flex;
@@ -1466,6 +1465,7 @@
             min-height: 0;
             overflow: hidden;
             position: relative;
+            background: var(--bg);  /* Explicit white to prevent any subtle differences */
         }
         
         /* Collapsed state - just a pill */
@@ -1544,7 +1544,7 @@
             box-shadow: 
                 0 8px 32px rgba(0, 0, 0, 0.08),
                 0 2px 8px rgba(0, 0, 0, 0.04);
-            border: 1px solid rgba(0, 0, 0, 0.03);
+            /* No border - shadow defines edges */
             
             overflow: hidden;
             
@@ -1810,6 +1810,7 @@
             flex-direction: row;
             min-height: 0;
             overflow: hidden;
+            background: var(--bg);  /* Explicit white */
         }
         
         .guidance-area .teleprompter {
