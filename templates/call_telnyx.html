@@ -485,6 +485,7 @@
             min-height: 50px;
             transition: all 0.2s ease;
             text-align: center;
+            text-align-last: center;
         }
         
         .form-select:focus {
@@ -809,88 +810,143 @@
             line-height: 1.5;
         }
         
-        /* Connection Steps - Refined Minimal */
+        /* Connection Steps - Premium */
         .connection-steps {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 0;
             margin-bottom: 32px;
             width: 100%;
-            max-width: 300px;
+            max-width: 280px;
+            position: relative;
         }
-        
+
+        /* Vertical connecting line */
+        .connection-steps::before {
+            content: '';
+            position: absolute;
+            left: 23px;
+            top: 24px;
+            bottom: 24px;
+            width: 2px;
+            background: var(--border);
+            border-radius: 1px;
+        }
+
         .connection-step {
             display: flex;
             align-items: center;
-            gap: 14px;
-            padding: 14px 18px;
-            background: var(--bg);
-            border: 1.5px solid var(--border);
-            border-radius: 12px;
-            opacity: 0.5;
-            transition: all 0.3s ease;
+            gap: 16px;
+            padding: 16px 0;
+            position: relative;
+            z-index: 1;
         }
-        
-        .connection-step.active {
-            opacity: 1;
-            border-color: var(--text);
-        }
-        
-        .connection-step.complete {
-            opacity: 1;
-            border-color: var(--border);
-        }
-        
-        .step-number {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
+
+        /* Step indicator - icon based */
+        .step-indicator {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
             background: var(--surface);
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: var(--text-muted);
+            border: 1.5px solid var(--border);
             flex-shrink: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .step-indicator svg {
+            width: 22px;
+            height: 22px;
+            color: var(--text-muted);
             transition: all 0.3s ease;
         }
-        
-        .connection-step.active .step-number {
-            background: var(--text);
-            color: white;
-            animation: stepPulse 1.5s ease-in-out infinite;
+
+        /* Waiting state */
+        .connection-step.waiting .step-indicator {
+            opacity: 0.5;
         }
-        
-        .connection-step.complete .step-number {
-            background: var(--success);
-            color: white;
+
+        .connection-step.waiting .step-text {
+            opacity: 0.5;
         }
-        
-        .connection-step.complete .step-number svg {
-            width: 14px;
-            height: 14px;
+
+        /* Active state */
+        .connection-step.active .step-indicator {
+            background: var(--accent-soft);
+            border-color: var(--accent);
+            animation: indicatorPulse 2s ease-in-out infinite;
         }
-        
-        @keyframes stepPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.08); }
+
+        .connection-step.active .step-indicator svg {
+            color: var(--accent-dark);
         }
-        
+
+        /* Phone ringing animation */
+        .connection-step.active[data-step="agent"] .step-indicator svg {
+            animation: phoneRing 1s ease-in-out infinite;
+        }
+
+        @keyframes indicatorPulse {
+            0%, 100% { 
+                box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.3);
+            }
+            50% { 
+                box-shadow: 0 0 0 8px rgba(96, 165, 250, 0);
+            }
+        }
+
+        @keyframes phoneRing {
+            0%, 100% { transform: rotate(0deg); }
+            10% { transform: rotate(-12deg); }
+            20% { transform: rotate(12deg); }
+            30% { transform: rotate(-10deg); }
+            40% { transform: rotate(10deg); }
+            50% { transform: rotate(0deg); }
+        }
+
+        /* Complete state */
+        .connection-step.complete .step-indicator {
+            background: var(--success-soft);
+            border-color: var(--success);
+        }
+
+        .connection-step.complete .step-indicator svg {
+            color: var(--success);
+        }
+
+        /* Text styling */
+        .step-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
         .step-text {
-            font-size: 0.9rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
             font-weight: 500;
-            color: var(--text-muted);
-            transition: color 0.3s ease;
-        }
-        
-        .connection-step.active .step-text {
             color: var(--text);
+            transition: all 0.3s ease;
         }
-        
-        .connection-step.complete .step-text {
-            color: var(--text-secondary);
+
+        .connection-step.waiting .step-text {
+            color: var(--text-muted);
+        }
+
+        .step-subtext {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .connection-step.active .step-subtext {
+            color: var(--accent-dark);
+        }
+
+        .connection-step.complete .step-subtext {
+            color: var(--success);
         }
         
         .connecting-cancel {
@@ -2715,8 +2771,8 @@
         
         <!-- Start Screen -->
         <div class="screen start-screen" id="startScreen">
-            <h1 class="start-title">Ready to Coach</h1>
-            <p class="start-subtitle">Live coaching enabled</p>
+            <h1 class="start-title">Ready to close?</h1>
+            <p class="start-subtitle">Your coach is on standby</p>
             
             <div class="start-phone-display" id="phoneDisplay">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2752,19 +2808,43 @@
             <p class="connecting-subtitle" id="connectingSubtitle">Answer, then we'll dial your client</p>
             
             <div class="connection-steps">
-                <div class="connection-step active" id="stepAgent">
-                    <div class="step-number" id="stepAgentNumber">1</div>
-                    <span class="step-text" id="stepAgentText">Calling your phone...</span>
+                <div class="connection-step active" id="stepAgent" data-step="agent">
+                    <div class="step-indicator" id="stepAgentIndicator">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+                        </svg>
+                    </div>
+                    <div class="step-content">
+                        <span class="step-text">Your phone</span>
+                        <span class="step-subtext" id="stepAgentSubtext">Ringing...</span>
+                    </div>
                 </div>
                 
-                <div class="connection-step" id="stepClient">
-                    <div class="step-number" id="stepClientNumber">2</div>
-                    <span class="step-text" id="stepClientText">Calling client...</span>
+                <div class="connection-step waiting" id="stepClient" data-step="client">
+                    <div class="step-indicator" id="stepClientIndicator">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </div>
+                    <div class="step-content">
+                        <span class="step-text">Client</span>
+                        <span class="step-subtext" id="stepClientSubtext">Waiting...</span>
+                    </div>
                 </div>
                 
-                <div class="connection-step" id="stepReady">
-                    <div class="step-number" id="stepReadyNumber">3</div>
-                    <span class="step-text">Ready to coach!</span>
+                <div class="connection-step waiting" id="stepReady" data-step="ready">
+                    <div class="step-indicator" id="stepReadyIndicator">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <rect x="4" y="8" width="3" height="8" rx="1.5"/>
+                            <rect x="10.5" y="4" width="3" height="16" rx="1.5"/>
+                            <rect x="17" y="6" width="3" height="12" rx="1.5"/>
+                        </svg>
+                    </div>
+                    <div class="step-content">
+                        <span class="step-text">Coach</span>
+                        <span class="step-subtext" id="stepReadySubtext">Ready to guide</span>
+                    </div>
                 </div>
             </div>
             
@@ -3900,7 +3980,8 @@
                     console.log('✅ Client connected!');
                     updateConnectionStep('client', 'complete');
                     updateConnectionStep('ready', 'complete');
-                    document.getElementById('stepClientText').textContent = 'Client connected!';
+                    document.getElementById('stepClientSubtext').textContent = 'Connected';
+                    document.getElementById('stepReadySubtext').textContent = 'Listening';
                     document.getElementById('connectingTitle').textContent = 'All Connected!';
                     document.getElementById('connectingSubtitle').textContent = 'Starting coaching...';
                     // Brief pause to show success, then transition
@@ -3935,14 +4016,15 @@
                     console.log('🔄 Redialing client, attempt', msg.attempt || 2);
                     document.getElementById('connectingTitle').textContent = 'Redialing...';
                     document.getElementById('connectingSubtitle').textContent = 'Client didn\'t answer, trying again';
-                    document.getElementById('stepClientText').textContent = 'Redialing...';
+                    document.getElementById('stepClientSubtext').textContent = 'Redialing...';
                     break;
                 case 'client_dialing':
                     // Client is being dialed (could be initial or redial)
                     console.log('📞 Dialing client, attempt', msg.attempt || 1);
                     updateConnectionStep('agent', 'complete');
                     updateConnectionStep('client', 'active');
-                    document.getElementById('stepAgentText').textContent = 'You\'re connected!';
+                    document.getElementById('stepAgentSubtext').textContent = 'Connected';
+                    document.getElementById('stepClientSubtext').textContent = 'Ringing...';
                     document.getElementById('connectingTitle').textContent = 'Calling Client...';
                     document.getElementById('connectingSubtitle').textContent = msg.attempt > 1 
                         ? 'Second attempt...' 
@@ -4044,7 +4126,8 @@
                 // Client is ringing - update UI
                 updateConnectionStep('agent', 'complete');
                 updateConnectionStep('client', 'active');
-                document.getElementById('stepAgentText').textContent = 'You\'re connected!';
+                document.getElementById('stepAgentSubtext').textContent = 'Connected';
+                document.getElementById('stepClientSubtext').textContent = 'Ringing...';
                 document.getElementById('connectingTitle').textContent = 'Calling Client...';
                 document.getElementById('connectingSubtitle').textContent = 'Waiting for them to answer';
             }
@@ -4054,16 +4137,18 @@
             const stepEl = document.getElementById('step' + step.charAt(0).toUpperCase() + step.slice(1));
             if (!stepEl) return;
             
-            stepEl.classList.remove('active', 'complete');
+            stepEl.classList.remove('active', 'complete', 'waiting');
             if (status === 'active') {
                 stepEl.classList.add('active');
             } else if (status === 'complete') {
                 stepEl.classList.add('complete');
-                // Replace number with checkmark
-                const numberEl = stepEl.querySelector('.step-number');
-                if (numberEl) {
-                    numberEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+                // Replace icon with checkmark
+                const indicatorEl = stepEl.querySelector('.step-indicator');
+                if (indicatorEl) {
+                    indicatorEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>';
                 }
+            } else {
+                stepEl.classList.add('waiting');
             }
         }
         
@@ -4078,28 +4163,51 @@
         }
         
         function resetConnectionSteps() {
-            const steps = ['Agent', 'Client', 'Ready'];
-            steps.forEach((step, index) => {
-                const el = document.getElementById('step' + step);
-                if (el) {
-                    el.classList.remove('active', 'complete');
-                    if (index === 0) el.classList.add('active');
-                    // Reset number content
-                    const numberEl = el.querySelector('.step-number');
-                    if (numberEl) {
-                        numberEl.textContent = (index + 1).toString();
-                    }
+            // Reset step 1 - Agent
+            const stepAgent = document.getElementById('stepAgent');
+            if (stepAgent) {
+                stepAgent.classList.remove('complete', 'waiting');
+                stepAgent.classList.add('active');
+                const indicator = stepAgent.querySelector('.step-indicator');
+                if (indicator) {
+                    indicator.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>';
                 }
-            });
-            // Use optional chaining to prevent errors if elements don't exist
-            const stepAgentText = document.getElementById('stepAgentText');
-            const stepClientText = document.getElementById('stepClientText');
+            }
+            
+            // Reset step 2 - Client
+            const stepClient = document.getElementById('stepClient');
+            if (stepClient) {
+                stepClient.classList.remove('active', 'complete');
+                stepClient.classList.add('waiting');
+                const indicator = stepClient.querySelector('.step-indicator');
+                if (indicator) {
+                    indicator.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+                }
+            }
+            
+            // Reset step 3 - Ready
+            const stepReady = document.getElementById('stepReady');
+            if (stepReady) {
+                stepReady.classList.remove('active', 'complete');
+                stepReady.classList.add('waiting');
+                const indicator = stepReady.querySelector('.step-indicator');
+                if (indicator) {
+                    indicator.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="8" width="3" height="8" rx="1.5"/><rect x="10.5" y="4" width="3" height="16" rx="1.5"/><rect x="17" y="6" width="3" height="12" rx="1.5"/></svg>';
+                }
+            }
+            
+            // Reset subtexts
+            const stepAgentSubtext = document.getElementById('stepAgentSubtext');
+            const stepClientSubtext = document.getElementById('stepClientSubtext');
+            const stepReadySubtext = document.getElementById('stepReadySubtext');
             const connectingTitle = document.getElementById('connectingTitle');
             const connectingSubtitle = document.getElementById('connectingSubtitle');
-            if (stepAgentText) stepAgentText.textContent = 'Calling your phone...';
-            if (stepClientText) stepClientText.textContent = 'Calling client...';
-            if (connectingTitle) connectingTitle.textContent = 'Calling Your Phone...';
-            if (connectingSubtitle) connectingSubtitle.textContent = 'Answer, then we\'ll dial your client';
+            
+            if (stepAgentSubtext) stepAgentSubtext.textContent = 'Ringing...';
+            if (stepClientSubtext) stepClientSubtext.textContent = 'Waiting...';
+            if (stepReadySubtext) stepReadySubtext.textContent = 'Ready to guide';
+            if (connectingTitle) connectingTitle.textContent = 'Connecting...';
+            if (connectingSubtitle) connectingSubtitle.textContent = 'Answer your phone to begin';
         }
         
         function onCallConnected() {
