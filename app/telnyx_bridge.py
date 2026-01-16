@@ -148,7 +148,7 @@ def generate_agent_dtmf_texml(session_id: str) -> str:
     
     - Start streaming agent audio immediately (before DTMF)
     - Wait for agent to press 1 before dialing client
-    - 10 second timeout for DTMF input
+    - 30 second timeout for DTMF input (gives agent time to get ready)
     - On success (press 1): redirect to /agent-ready endpoint
     - On timeout/no input: hang up with message
     """
@@ -165,10 +165,10 @@ def generate_agent_dtmf_texml(session_id: str) -> str:
     <Start>
         <Stream url="{agent_stream_url}" track="inbound_track" />
     </Start>
-    <Gather action="{dtmf_action_url}" method="POST" numDigits="1" timeout="10">
-        <Say voice="Polly.Matthew" language="en-US">Press 1 when ready.</Say>
+    <Gather action="{dtmf_action_url}" method="POST" numDigits="1" timeout="30">
+        <Say voice="Polly.Joanna" language="en-US">Coachd ready. Press 1 to dial your client.</Say>
     </Gather>
-    <Say voice="Polly.Matthew" language="en-US">No response received. Goodbye.</Say>
+    <Say voice="Polly.Joanna" language="en-US">No response received. Goodbye.</Say>
     <Hangup />
 </Response>"""
     
@@ -188,9 +188,7 @@ def generate_agent_conference_texml(session_id: str) -> str:
     - Join conference so they can hear/talk to client
     - startConferenceOnEnter="true" - conference starts when agent joins
     - endConferenceOnExit="true" - conference ends if agent hangs up
-    
-    The waitUrl plays ringback while waiting. It's session-aware and will
-    return silence once the client connects, stopping the ringback naturally.
+    - No waitUrl - agent hears silence while waiting (cleaner than hold music)
     """
     conference_name = f"coachd_{session_id}"
     
@@ -198,18 +196,14 @@ def generate_agent_conference_texml(session_id: str) -> str:
     print(f"[TeXML] Conference: {conference_name}", flush=True)
     print(f"[TeXML] Note: Agent stream already started in DTMF phase", flush=True)
     
-    # Session-aware ringback - stops automatically when client connects
-    ringback_url = f"{settings.base_url}/api/telnyx/ringback?session_id={session_id}"
-    
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Say voice="Polly.Matthew" language="en-US">Calling.</Say>
+    <Say voice="Polly.Joanna" language="en-US">Calling.</Say>
     <Dial>
         <Conference
             startConferenceOnEnter="true"
             endConferenceOnExit="true"
-            beep="false"
-            waitUrl="{ringback_url}">
+            beep="false">
             {conference_name}
         </Conference>
     </Dial>
