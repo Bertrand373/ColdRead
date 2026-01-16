@@ -18,7 +18,7 @@
     <!-- SEO -->
     <meta name="description" content="AI-powered sales coaching for life insurance agents.">
     
-    <!-- VERSION: 2025-01-16-v14-premium-guidance-redesign -->
+    <!-- VERSION: 2025-01-16-v15-guidance-history-timestamps -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -1708,6 +1708,372 @@
             border-radius: 0 0 16px 16px;
         }
         
+        /* ========== TRANSCRIPT TIMESTAMPS ========== */
+        .transcript-msg-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .transcript-time {
+            font-size: 0.6rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+            opacity: 0.7;
+        }
+        
+        /* ========== HISTORY PILL (Right side) ========== */
+        .history-pill {
+            position: absolute;
+            right: 56px; /* Space for temp meter */
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            
+            background: var(--surface);
+            border-radius: 24px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        
+        .history-pill:hover {
+            background: var(--border);
+        }
+        
+        .history-pill:active {
+            transform: translateY(-50%) scale(0.98);
+        }
+        
+        .history-pill.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-50%) translateX(20px);
+        }
+        
+        .history-pill .pill-icon {
+            width: 14px;
+            height: 14px;
+            color: var(--text-muted);
+        }
+        
+        .history-pill .pill-count {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--accent-dark);
+            background: var(--accent-soft);
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+        
+        .history-pill .pill-count.empty {
+            display: none;
+        }
+        
+        /* ========== HISTORY PANEL (Right - Expanded) ========== */
+        .history-panel {
+            position: absolute;
+            right: 56px; /* Space for temp meter */
+            top: 24px;
+            bottom: 24px;
+            width: 300px;
+            z-index: 20;
+            
+            display: flex;
+            flex-direction: column;
+            
+            /* Premium glass effect */
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            
+            border-radius: 16px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.08),
+                0 2px 8px rgba(0, 0, 0, 0.04);
+            
+            overflow: hidden;
+            
+            /* Hidden by default */
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(20px);
+            transition: all 0.25s ease-out;
+        }
+        
+        .history-panel.expanded {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(0);
+        }
+        
+        .history-panel-header {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(to bottom, 
+                rgba(255,255,255,1) 0%, 
+                rgba(250,250,250,1) 100%
+            );
+            flex-shrink: 0;
+        }
+        
+        .history-panel-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .history-panel-header .panel-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+        
+        .history-panel-header .panel-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+        
+        .history-panel-close {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.15s ease;
+        }
+        
+        .history-panel-close:hover {
+            background: var(--surface);
+            color: var(--text);
+        }
+        
+        .history-panel-close svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .history-panel-feed {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px;
+            padding-bottom: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            
+            /* Hidden scrollbar - premium */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        
+        .history-panel-feed::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* Fade at bottom */
+        .history-panel::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 32px;
+            background: linear-gradient(to top, rgba(255,255,255,0.95), transparent);
+            pointer-events: none;
+            z-index: 1;
+            border-radius: 0 0 16px 16px;
+        }
+        
+        /* ========== HISTORY ITEM ========== */
+        .history-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            animation: historyFadeIn 0.2s ease;
+        }
+        
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        
+        @keyframes historyFadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .history-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .history-time {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--accent-dark);
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .history-text {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text);
+        }
+        
+        .history-text strong {
+            font-weight: 700;
+        }
+        
+        .history-empty {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-style: italic;
+        }
+        
+        /* ========== MOBILE HISTORY BADGE ========== */
+        .mobile-history-badge {
+            display: none;
+            position: absolute;
+            right: 16px;
+            bottom: 80px;
+            z-index: 15;
+            
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--surface);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .mobile-history-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .mobile-history-badge:active {
+            transform: scale(0.95);
+        }
+        
+        .mobile-history-badge svg {
+            width: 20px;
+            height: 20px;
+            color: var(--text-secondary);
+        }
+        
+        .mobile-history-badge .badge-count {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: var(--accent);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .mobile-history-badge .badge-count.empty {
+            display: none;
+        }
+        
+        /* ========== MOBILE HISTORY BOTTOM SHEET ========== */
+        .mobile-history-sheet {
+            display: none;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 100;
+            
+            background: white;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
+            
+            max-height: 60vh;
+            
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            flex-direction: column;
+        }
+        
+        .mobile-history-sheet.expanded {
+            transform: translateY(0);
+        }
+        
+        .mobile-history-sheet .sheet-handle {
+            width: 36px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin: 12px auto 0;
+            flex-shrink: 0;
+        }
+        
+        .mobile-history-sheet .history-panel-header {
+            padding-top: 8px;
+        }
+        
+        .mobile-history-sheet .history-panel-feed {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px;
+            padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+        }
+        
+        /* Backdrop for mobile sheet */
+        .history-sheet-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 99;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .history-sheet-backdrop.visible {
+            opacity: 1;
+        }
+        
         /* LEGACY - keep for compatibility but hidden */
         .transcript-sidebar {
             display: none;
@@ -1859,7 +2225,7 @@
             background: var(--bg);
         }
         
-        /* Guidance area: teleprompter + temp meter side by side */
+        /* Guidance area: teleprompter centered, temp meter absolute */
         .guidance-area {
             flex: 1;
             display: flex;
@@ -1867,19 +2233,27 @@
             min-height: 0;
             overflow: hidden;
             background: var(--bg);  /* Explicit white */
+            position: relative;  /* For absolute positioned children */
         }
         
         .guidance-area .teleprompter {
             flex: 1;
             min-width: 0;
+            /* True centering - no longer affected by temp meter */
         }
         
-        /* ========== TEMPERATURE METER ========== */
+        /* ========== TEMPERATURE METER (Absolute - doesn't affect layout) ========== */
         .temp-meter {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 5;
+            
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 24px 16px;
+            padding: 16px 8px;
             gap: 8px;
             opacity: 0;
             transition: opacity 0.4s ease;
@@ -1890,8 +2264,8 @@
         }
         
         /* Fade temp meter when guidance is showing - guidance is the star */
-        .teleprompter.has-guidance ~ .temp-meter {
-            opacity: 0.5;
+        .guidance-area.has-guidance .temp-meter {
+            opacity: 0.4;
         }
         
         .temp-label {
@@ -2012,7 +2386,8 @@
         /* Mobile: meter on right edge, more compact */
         @media (max-width: 768px) {
             .temp-meter {
-                padding: 16px 10px;
+                right: 8px;
+                padding: 12px 6px;
             }
             
             .temp-track {
@@ -2046,6 +2421,36 @@
             /* Hide desktop transcript pill on mobile */
             .transcript-pill {
                 display: none;
+            }
+            
+            /* Hide desktop history pill on mobile */
+            .history-pill {
+                display: none;
+            }
+            
+            /* Hide desktop history panel on mobile */
+            .history-panel {
+                display: none;
+            }
+            
+            /* Show mobile history badge */
+            .mobile-history-badge {
+                display: flex;
+            }
+            
+            /* Show mobile history sheet */
+            .mobile-history-sheet {
+                display: flex;
+            }
+            
+            /* Show backdrop when needed */
+            .history-sheet-backdrop {
+                display: block;
+                pointer-events: none;
+            }
+            
+            .history-sheet-backdrop.visible {
+                pointer-events: auto;
             }
             
             /* Mobile transcript panel - bottom sheet style */
@@ -2115,6 +2520,7 @@
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
                 padding: 32px 24px;
+                padding-bottom: 100px; /* Space for transcript bar */
                 justify-content: flex-start;  /* Start from top for scroll */
             }
             
@@ -2122,6 +2528,7 @@
             .call-main .teleprompter.has-guidance {
                 justify-content: flex-start;
                 padding: 32px 24px;
+                padding-bottom: 100px;
             }
             
             /* Guidance with smart centering */
@@ -2139,7 +2546,8 @@
             
             /* Temp meter on mobile */
             .temp-meter {
-                padding: 16px 12px;
+                right: 8px;
+                padding: 12px 6px;
             }
         }
         
@@ -2878,6 +3286,64 @@
                     </div>
                 </div>
                 
+                <!-- History Pill (Collapsed state - Right side) -->
+                <div class="history-pill" id="historyPill" onclick="Coachd.toggleHistory()">
+                    <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    <span class="pill-count empty" id="historyCount">0</span>
+                </div>
+                
+                <!-- History Panel (Expanded state - Right side) -->
+                <div class="history-panel" id="historyPanel">
+                    <div class="history-panel-header">
+                        <div class="history-panel-header-left">
+                            <div class="panel-dot"></div>
+                            <span class="panel-title">Guidance History</span>
+                        </div>
+                        <button class="history-panel-close" onclick="Coachd.toggleHistory()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <path d="M18 6L6 18M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="history-panel-feed" id="historyFeed">
+                        <div class="history-empty" id="historyEmpty">No guidance yet</div>
+                    </div>
+                </div>
+                
+                <!-- Mobile History Badge -->
+                <div class="mobile-history-badge" id="mobileHistoryBadge" onclick="Coachd.toggleMobileHistory()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    <span class="badge-count empty" id="mobileHistoryCount">0</span>
+                </div>
+                
+                <!-- Mobile History Bottom Sheet Backdrop -->
+                <div class="history-sheet-backdrop" id="historySheetBackdrop" onclick="Coachd.toggleMobileHistory()"></div>
+                
+                <!-- Mobile History Bottom Sheet -->
+                <div class="mobile-history-sheet" id="mobileHistorySheet">
+                    <div class="sheet-handle"></div>
+                    <div class="history-panel-header">
+                        <div class="history-panel-header-left">
+                            <div class="panel-dot"></div>
+                            <span class="panel-title">Guidance History</span>
+                        </div>
+                        <button class="history-panel-close" onclick="Coachd.toggleMobileHistory()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <path d="M18 6L6 18M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="history-panel-feed" id="mobileHistoryFeed">
+                        <div class="history-empty">No guidance yet</div>
+                    </div>
+                </div>
+                
                 <!-- Main Guidance Area -->
                 <div class="call-main">
                     <div class="guidance-area">
@@ -3087,6 +3553,7 @@
             isInCall: false,
             seconds: 0,
             timerInterval: null,
+            callStartTime: null,  // For relative timestamps
             guidanceHistory: [],
             selectedTipIndex: null,
             callOutcome: null,
@@ -3105,6 +3572,9 @@
             transcriptUserScrolled: false,
             currentClientText: '',
             currentClientElement: null,
+            // History panel state
+            historyExpanded: false,
+            mobileHistoryExpanded: false,
             clientContext: {
                 product: 'whole_life',
                 age: null,
@@ -3173,7 +3643,21 @@
             get verifyConfirmBtn() { return document.getElementById('verifyConfirmBtn'); },
             get verifyError() { return document.getElementById('verifyError'); },
             get resendBtn() { return document.getElementById('resendBtn'); },
-            get verifyCodeDesc() { return document.getElementById('verifyCodeDesc'); }
+            get verifyCodeDesc() { return document.getElementById('verifyCodeDesc'); },
+            // History panel (desktop)
+            get historyPill() { return document.getElementById('historyPill'); },
+            get historyPanel() { return document.getElementById('historyPanel'); },
+            get historyFeed() { return document.getElementById('historyFeed'); },
+            get historyCount() { return document.getElementById('historyCount'); },
+            get historyEmpty() { return document.getElementById('historyEmpty'); },
+            // History panel (mobile)
+            get mobileHistoryBadge() { return document.getElementById('mobileHistoryBadge'); },
+            get mobileHistorySheet() { return document.getElementById('mobileHistorySheet'); },
+            get mobileHistoryFeed() { return document.getElementById('mobileHistoryFeed'); },
+            get mobileHistoryCount() { return document.getElementById('mobileHistoryCount'); },
+            get historySheetBackdrop() { return document.getElementById('historySheetBackdrop'); },
+            // Guidance area (for has-guidance class)
+            get guidanceArea() { return document.querySelector('.guidance-area'); }
         };
         
         // ==================== INIT ====================
@@ -3210,7 +3694,7 @@
         }
         
         async function init() {
-            console.log('🚀 Coachd.ai Live Call (Telnyx) - VERSION: 2025-01-11-transcript-sidebar');
+            console.log('🚀 Coachd.ai Live Call (Telnyx) - VERSION: 2025-01-16-v15-guidance-history');
             
             // SECURITY: Gate on validated agency code FIRST
             const validatedAgency = checkAgencyCode();
@@ -3454,6 +3938,14 @@
             return `${m}:${sec.toString().padStart(2, '0')}`;
         }
         
+        function getCallRelativeTime(timestamp) {
+            if (!state.callStartTime) return '0:00';
+            const elapsed = Math.floor((timestamp - state.callStartTime) / 1000);
+            const mins = Math.floor(Math.max(0, elapsed) / 60);
+            const secs = Math.max(0, elapsed) % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
         function setStatus(status) {
             // Status indicator removed - end button now in header
             // This function kept for compatibility but does nothing
@@ -3472,6 +3964,7 @@
         
         function startTimer() {
             state.seconds = 0;
+            state.callStartTime = Date.now();  // Track when call started for timestamps
             state.timerInterval = setInterval(() => {
                 state.seconds++;
                 dom.timer.textContent = formatTime(state.seconds);
@@ -4507,8 +5000,12 @@
         function createTranscriptMessage(speaker, text) {
             const div = document.createElement('div');
             div.className = `transcript-msg ${speaker}`;
+            const timestamp = getCallRelativeTime(Date.now());
             div.innerHTML = `
-                <span class="transcript-label">${speaker.toUpperCase()}</span>
+                <div class="transcript-msg-header">
+                    <span class="transcript-label">${speaker.toUpperCase()}</span>
+                    <span class="transcript-time">${timestamp}</span>
+                </div>
                 <div class="transcript-text">${text}</div>
             `;
             return div;
@@ -4559,6 +5056,125 @@
             if (panel && panel.classList.contains('expanded')) {
                 panel.classList.remove('expanded');
                 if (pill) pill.classList.remove('hidden');
+            }
+        }
+        
+        // ==================== HISTORY PANEL ====================
+        function toggleHistory() {
+            const panel = dom.historyPanel;
+            const pill = dom.historyPill;
+            
+            if (!panel) return;
+            
+            state.historyExpanded = !state.historyExpanded;
+            
+            if (state.historyExpanded) {
+                // Expand - hide pill, show panel
+                if (pill) pill.classList.add('hidden');
+                panel.classList.add('expanded');
+                // Collapse transcript if open
+                collapseTranscript();
+                // Render latest history
+                renderHistoryPanel();
+            } else {
+                // Collapse - show pill, hide panel
+                panel.classList.remove('expanded');
+                if (pill) pill.classList.remove('hidden');
+            }
+        }
+        
+        function collapseHistory() {
+            // Auto-collapse when guidance shows
+            const panel = dom.historyPanel;
+            const pill = dom.historyPill;
+            
+            if (panel && panel.classList.contains('expanded')) {
+                panel.classList.remove('expanded');
+                if (pill) pill.classList.remove('hidden');
+                state.historyExpanded = false;
+            }
+        }
+        
+        function toggleMobileHistory() {
+            state.mobileHistoryExpanded = !state.mobileHistoryExpanded;
+            
+            const sheet = dom.mobileHistorySheet;
+            const backdrop = dom.historySheetBackdrop;
+            
+            if (state.mobileHistoryExpanded) {
+                if (sheet) sheet.classList.add('expanded');
+                if (backdrop) backdrop.classList.add('visible');
+                // Render latest history
+                renderMobileHistoryPanel();
+            } else {
+                if (sheet) sheet.classList.remove('expanded');
+                if (backdrop) backdrop.classList.remove('visible');
+            }
+        }
+        
+        function renderHistoryPanel() {
+            const feed = dom.historyFeed;
+            if (!feed) return;
+            
+            if (state.guidanceHistory.length === 0) {
+                feed.innerHTML = '<div class="history-empty">No guidance yet</div>';
+                return;
+            }
+            
+            // Render in reverse order (newest first)
+            const items = [...state.guidanceHistory].reverse();
+            feed.innerHTML = items.map(item => {
+                const time = item.relativeTime || '0:00';
+                const text = formatGuidanceText(item.text || '');
+                return `
+                    <div class="history-item">
+                        <div class="history-item-header">
+                            <span class="history-time">${time}</span>
+                        </div>
+                        <div class="history-text">${text}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function renderMobileHistoryPanel() {
+            const feed = dom.mobileHistoryFeed;
+            if (!feed) return;
+            
+            if (state.guidanceHistory.length === 0) {
+                feed.innerHTML = '<div class="history-empty">No guidance yet</div>';
+                return;
+            }
+            
+            // Render in reverse order (newest first)
+            const items = [...state.guidanceHistory].reverse();
+            feed.innerHTML = items.map(item => {
+                const time = item.relativeTime || '0:00';
+                const text = formatGuidanceText(item.text || '');
+                return `
+                    <div class="history-item">
+                        <div class="history-item-header">
+                            <span class="history-time">${time}</span>
+                        </div>
+                        <div class="history-text">${text}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function updateHistoryCount() {
+            const count = state.guidanceHistory.length;
+            
+            // Desktop count
+            if (dom.historyCount) {
+                dom.historyCount.textContent = count;
+                dom.historyCount.classList.toggle('empty', count === 0);
+            }
+            
+            // Mobile count
+            if (dom.mobileHistoryCount) {
+                dom.mobileHistoryCount.textContent = count;
+                dom.mobileHistoryCount.classList.toggle('empty', count === 0);
             }
         }
         
@@ -4634,12 +5250,17 @@
             // Clean up leading/trailing quotes
             displayText = displayText.replace(/^["']|["']$/g, '').trim();
             
+            const now = Date.now();
             state.guidanceHistory.push({
                 text: displayText,
                 raw: text,
                 action: action,
-                timestamp: Date.now()
+                timestamp: now,
+                relativeTime: getCallRelativeTime(now)
             });
+            
+            // Update history count badge
+            updateHistoryCount();
             
             showGuidance(displayText, action);
             
@@ -4760,13 +5381,18 @@
             }
             
             const sayThis = extractSayThis(fullText);
+            const now = Date.now();
             
             state.guidanceHistory.push({
                 text: sayThis,
                 raw: fullText,
-                timestamp: Date.now(),
+                timestamp: now,
+                relativeTime: getCallRelativeTime(now),
                 objection_type: msg.objection_type
             });
+            
+            // Update history count badge
+            updateHistoryCount();
             
             // Final display - no cursor
             const displayText = sayThis || fullText;
@@ -4777,6 +5403,14 @@
                 dom.teleprompter.classList.add('has-guidance');
                 dom.guidanceState.classList.add('active');
             }
+            
+            // Add has-guidance to guidance-area for temp meter fade
+            if (dom.guidanceArea) {
+                dom.guidanceArea.classList.add('has-guidance');
+            }
+            
+            // Collapse history panel when guidance shows
+            collapseHistory();
             
             dom.guidanceText.innerHTML = formatGuidanceText(displayText);
             
@@ -4828,8 +5462,14 @@
             dom.guidanceState.classList.remove('active', 'strike', 'exit', 'warn', 'show-hint');
             dom.teleprompter.classList.add('has-guidance');
             
-            // Auto-collapse transcript when guidance shows
+            // Add has-guidance to guidance-area for temp meter fade
+            if (dom.guidanceArea) {
+                dom.guidanceArea.classList.add('has-guidance');
+            }
+            
+            // Auto-collapse transcript and history when guidance shows
             collapseTranscript();
+            collapseHistory();
             
             // Clear any existing dismiss hint timer
             clearTimeout(state.dismissHintTimer);
@@ -4880,6 +5520,11 @@
             dom.guidanceText.innerHTML = '';
             state.streamingGuidance = '';
             state.hasVibratedForCurrentGuidance = false;
+            
+            // Remove has-guidance from guidance-area
+            if (dom.guidanceArea) {
+                dom.guidanceArea.classList.remove('has-guidance');
+            }
         }
         
         // ==================== SENTIMENT ====================
@@ -5026,7 +5671,10 @@
                 state.sessionId = null;
                 state.clientPhone = null;
                 state.seconds = 0;
+                state.callStartTime = null;
                 state.isInCall = false;
+                state.historyExpanded = false;
+                state.mobileHistoryExpanded = false;
                 if (state.ws) {
                     state.ws.close();
                     state.ws = null;
@@ -5040,6 +5688,12 @@
                 
                 // Collapse transcript panel
                 collapseTranscript();
+                
+                // Collapse and reset history panels
+                collapseHistory();
+                if (dom.mobileHistorySheet) dom.mobileHistorySheet.classList.remove('expanded');
+                if (dom.historySheetBackdrop) dom.historySheetBackdrop.classList.remove('visible');
+                updateHistoryCount();
                 
                 dismissGuidance();
                 resetCaptions();
@@ -5127,6 +5781,9 @@
             setCallType,
             closeErrorModal,
             toggleTranscript,
+            // History panel
+            toggleHistory,
+            toggleMobileHistory,
             // Verification
             setVerifyMethod,
             sendVerifyCode,
