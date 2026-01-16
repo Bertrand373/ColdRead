@@ -2977,7 +2977,7 @@
         @media (min-width: 768px) {
             .header { padding: 20px 32px; }
             .teleprompter { padding: 40px; }
-            .review-screen, .outcome-screen, .noclose-screen, .identify-screen, .start-screen, .connecting-screen {
+            .review-screen, .outcome-screen, .noclose-screen, .identify-screen, .start-screen, .connecting-screen, .connected-screen {
                 max-width: 500px;
                 margin: 0 auto;
             }
@@ -3027,6 +3027,91 @@
         @keyframes waveformPulse {
             0%, 100% { transform: scaleY(1); opacity: 0.7; }
             50% { transform: scaleY(0.5); opacity: 0.4; }
+        }
+        
+        /* ========== CONNECTED SCREEN ========== */
+        .connected-screen {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px 24px;
+            background: var(--bg);
+        }
+        
+        .connected-screen.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .connected-check {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--success-soft);
+            border: 2px solid var(--success);
+            margin-bottom: 24px;
+            transform: scale(0);
+            opacity: 0;
+        }
+        
+        .connected-screen.active .connected-check {
+            animation: connectedBounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        
+        .connected-check svg {
+            width: 40px;
+            height: 40px;
+            color: var(--success);
+            stroke-dasharray: 50;
+            stroke-dashoffset: 50;
+        }
+        
+        .connected-screen.active .connected-check svg {
+            animation: connectedDrawCheck 0.4s ease forwards 0.3s;
+        }
+        
+        .connected-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        
+        .connected-screen.active .connected-title {
+            animation: connectedFadeUp 0.4s ease forwards 0.2s;
+        }
+        
+        .connected-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        
+        .connected-screen.active .connected-subtitle {
+            animation: connectedFadeUp 0.4s ease forwards 0.3s;
+        }
+        
+        @keyframes connectedBounceIn {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes connectedDrawCheck {
+            to { stroke-dashoffset: 0; }
+        }
+        
+        @keyframes connectedFadeUp {
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -3262,6 +3347,17 @@
             </div>
             
             <button class="connecting-cancel" onclick="Coachd.cancelCall()">Cancel</button>
+        </div>
+        
+        <!-- Connected Screen (shows briefly when client picks up) -->
+        <div class="screen connected-screen" id="connectedScreen">
+            <div class="connected-check">
+                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <h1 class="connected-title">Connected!</h1>
+            <p class="connected-subtitle">Client is on the line</p>
         </div>
         
         <!-- Call Screen -->
@@ -3961,9 +4057,9 @@
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
             
-            // Timer only visible during active call
+            // Timer visible during connected and call screens
             if (dom.timer) {
-                dom.timer.style.display = (screenId === 'callScreen') ? 'block' : 'none';
+                dom.timer.style.display = (screenId === 'callScreen' || screenId === 'connectedScreen') ? 'block' : 'none';
             }
         }
         
@@ -4731,17 +4827,31 @@
                 dom.endSessionBtn.classList.add('show');
             }
             
-            resetCaptions();
-            showScreen('callScreen');
+            // Mark all connection steps complete
+            updateConnectionStep('agent', 'complete');
+            updateConnectionStep('client', 'complete');
+            updateConnectionStep('ready', 'complete');
+            document.getElementById('stepClientSubtext').textContent = 'Connected';
+            document.getElementById('stepReadySubtext').textContent = 'Active';
+            
+            // Show "Connected!" screen first
+            showScreen('connectedScreen');
             startTimer();
-            setStatus('listening');
+            
+            console.log('[Call] Client connected - showing connected screen');
+            
+            // After 1.5 seconds, transition to guidance screen
+            setTimeout(() => {
+                resetCaptions();
+                showScreen('callScreen');
+                setStatus('listening');
+                console.log('[Call] Transitioned to guidance - listening');
+            }, 1500);
             
             // Keep screen awake
             if ('wakeLock' in navigator) {
                 navigator.wakeLock.request('screen').catch(() => {});
             }
-            
-            console.log('[Call] Connected and listening');
         }
         
         function cancelCall() {
