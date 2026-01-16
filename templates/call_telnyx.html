@@ -821,23 +821,24 @@
             position: relative;
         }
 
-        /* Vertical connecting line */
+        /* Vertical connecting line - centered on 48px icons */
         .connection-steps::before {
             content: '';
             position: absolute;
-            left: 23px;
+            left: 24px;
             top: 24px;
             bottom: 24px;
             width: 2px;
             background: var(--border);
             border-radius: 1px;
+            transform: translateX(-50%);
         }
 
         .connection-step {
             display: flex;
             align-items: center;
             gap: 16px;
-            padding: 16px 0;
+            padding: 12px 0;
             position: relative;
             z-index: 1;
         }
@@ -846,6 +847,7 @@
         .step-indicator {
             width: 48px;
             height: 48px;
+            min-width: 48px;
             border-radius: 14px;
             display: flex;
             align-items: center;
@@ -868,7 +870,7 @@
             opacity: 0.5;
         }
 
-        .connection-step.waiting .step-text {
+        .connection-step.waiting .step-content {
             opacity: 0.5;
         }
 
@@ -921,6 +923,7 @@
             display: flex;
             flex-direction: column;
             gap: 2px;
+            flex: 1;
         }
 
         .step-text {
@@ -928,6 +931,7 @@
             font-size: 0.95rem;
             font-weight: 500;
             color: var(--text);
+            line-height: 1.3;
             transition: all 0.3s ease;
         }
 
@@ -939,6 +943,7 @@
             font-size: 0.8rem;
             color: var(--text-muted);
             font-weight: 400;
+            line-height: 1.3;
         }
 
         .connection-step.active .step-subtext {
@@ -4507,21 +4512,28 @@
                 case 'redialing':
                     // Auto-redial in progress (first attempt failed)
                     console.log('🔄 Redialing client, attempt', msg.attempt || 2);
-                    document.getElementById('connectingTitle').textContent = 'Redialing...';
-                    document.getElementById('connectingSubtitle').textContent = 'Client didn\'t answer, trying again';
-                    document.getElementById('stepClientSubtext').textContent = 'Redialing...';
+                    document.getElementById('connectingTitle').textContent = 'Redialing Client...';
+                    document.getElementById('connectingSubtitle').textContent = 'First attempt failed, trying again';
+                    document.getElementById('stepClientSubtext').textContent = 'Retrying...';
                     break;
                 case 'client_dialing':
                     // Client is being dialed (could be initial or redial)
-                    console.log('📞 Dialing client, attempt', msg.attempt || 1);
+                    const dialAttempt = msg.attempt || 1;
+                    console.log('📞 Dialing client, attempt', dialAttempt);
                     updateConnectionStep('agent', 'complete');
                     updateConnectionStep('client', 'active');
                     document.getElementById('stepAgentSubtext').textContent = 'Connected';
-                    document.getElementById('stepClientSubtext').textContent = 'Ringing...';
-                    document.getElementById('connectingTitle').textContent = 'Calling Client...';
-                    document.getElementById('connectingSubtitle').textContent = msg.attempt > 1 
-                        ? 'Second attempt...' 
-                        : 'Waiting for them to answer';
+                    
+                    // Show different text for redial vs first dial
+                    if (dialAttempt > 1) {
+                        document.getElementById('stepClientSubtext').textContent = 'Redialing...';
+                        document.getElementById('connectingTitle').textContent = 'Redialing Client...';
+                        document.getElementById('connectingSubtitle').textContent = 'Second attempt';
+                    } else {
+                        document.getElementById('stepClientSubtext').textContent = 'Ringing...';
+                        document.getElementById('connectingTitle').textContent = 'Calling Client...';
+                        document.getElementById('connectingSubtitle').textContent = 'Waiting for them to answer';
+                    }
                     break;
                 case 'client_unavailable':
                     // Client couldn't be reached after 2 attempts
