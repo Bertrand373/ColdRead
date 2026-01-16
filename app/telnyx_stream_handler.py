@@ -663,12 +663,46 @@ class AgentStreamHandler:
                             await self.connection.send(silence)
                         except Exception as e:
                             if not self._connection_dead:
-                                print(f"[AgentStream] Keepalive failed: {e}", flush=True)
+                                print(f"[AgentStream] ⚠️ Keepalive failed: {e}", flush=True)
+                                print(f"[AgentStream] Triggering reconnect from keepalive", flush=True)
                                 self._connection_dead = True
+                                asyncio.create_task(self._reconnect())
         except asyncio.CancelledError:
             pass
         except Exception as e:
             print(f"[AgentStream] Keepalive error: {e}", flush=True)
+    
+    async def _reconnect(self):
+        """Reconnect Deepgram after disconnect"""
+        if not self.is_running:
+            return
+        
+        print(f"[AgentStream] Reconnecting Deepgram...", flush=True)
+        
+        # Cancel old keepalive
+        if self._keepalive_task:
+            self._keepalive_task.cancel()
+            self._keepalive_task = None
+        
+        # Close old connection
+        if self.connection:
+            try:
+                await asyncio.wait_for(self.connection.finish(), timeout=1.0)
+            except:
+                pass
+        
+        # Fully reset state
+        self.connection = None
+        self.deepgram = None
+        self._deepgram_connected = False
+        self._connection_dead = False
+        
+        # Reconnect
+        success = await self.connect_deepgram()
+        if success:
+            print(f"[AgentStream] ✅ Reconnected successfully!", flush=True)
+        else:
+            print(f"[AgentStream] ❌ Reconnect failed!", flush=True)
     
     async def handle_telnyx_message(self, message: dict):
         """Process Telnyx message with agent audio"""
@@ -697,7 +731,9 @@ class AgentStreamHandler:
                 except Exception as e:
                     if not self._connection_dead:
                         self._connection_dead = True
-                        print(f"[AgentStream] Deepgram disconnected: {str(e)[:80]}", flush=True)
+                        print(f"[AgentStream] ⚠️ Send failed: {str(e)[:60]}", flush=True)
+                        print(f"[AgentStream] Triggering reconnect from media handler", flush=True)
+                        asyncio.create_task(self._reconnect())
         elif event == "stop":
             await self.stop()
     
@@ -748,10 +784,16 @@ class AgentStreamHandler:
         if not self._connection_dead:
             self._connection_dead = True
             error = kwargs.get('error', 'Unknown')
-            print(f"[AgentStream] Error: {str(error)[:80]}", flush=True)
+            print(f"[AgentStream] ⚠️ Deepgram error: {str(error)[:80]}", flush=True)
+            print(f"[AgentStream] Triggering reconnect from error handler", flush=True)
+            asyncio.create_task(self._reconnect())
     
     async def _on_close(self, *args, **kwargs):
-        logger.info(f"[AgentStream] Closed")
+        print(f"[AgentStream] Deepgram closed", flush=True)
+        if not self._connection_dead and self.is_running:
+            self._connection_dead = True
+            print(f"[AgentStream] Triggering reconnect from close handler", flush=True)
+            asyncio.create_task(self._reconnect())
     
     async def stop(self):
         """Stop the handler and log usage"""
@@ -804,6 +846,8 @@ class ClientStreamHandler:
         
         self._total_audio_bytes = 0
         self._session_start_time = None
+        self._last_audio_time = 0  # Track last audio for keepalive
+        self._keepalive_task = None
         
         logger.info(f"[ClientStream] Created for session {session_id}")
     
@@ -848,6 +892,12 @@ class ClientStreamHandler:
                 self.is_running = True
                 print(f"[ClientStream] Deepgram connected (attempt {attempt + 1})", flush=True)
                 
+                # Start keepalive to prevent Deepgram timeout
+                self._last_audio_time = time.time()
+                if self._keepalive_task:
+                    self._keepalive_task.cancel()
+                self._keepalive_task = asyncio.create_task(self._keepalive_loop())
+                
                 # NOW trigger agent's Deepgram - client just answered, conversation starting
                 await self._trigger_agent_deepgram()
                 
@@ -871,6 +921,94 @@ class ClientStreamHandler:
         self.is_running = True
         await self._broadcast({"type": "ready"})
         return True
+    
+    async def _keepalive_loop(self):
+        """Send keepalive to prevent Deepgram timeout during silence"""
+        try:
+            while self.is_running and not self._connection_dead:
+                await asyncio.sleep(5.0)
+                
+                if self.connection and not self._connection_dead:
+                    if time.time() - self._last_audio_time > 5.0:
+                        try:
+                            silence = b'\x00' * 1600
+                            await self.connection.send(silence)
+                        except Exception as e:
+                            if not self._connection_dead:
+                                print(f"[ClientStream] Keepalive failed: {e}", flush=True)
+                                self._connection_dead = True
+                                asyncio.create_task(self._reconnect())
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            print(f"[ClientStream] Keepalive error: {e}", flush=True)
+    
+    async def _reconnect(self):
+        """Reconnect Deepgram after disconnect"""
+        if not self.is_running:
+            return
+        
+        print(f"[ClientStream] Reconnecting Deepgram...", flush=True)
+        
+        # Close old connection
+        if self.connection:
+            try:
+                await asyncio.wait_for(self.connection.finish(), timeout=1.0)
+            except:
+                pass
+            self.connection = None
+        
+        # Reset state
+        self._connection_dead = False
+        
+        # Reconnect
+        max_retries = 3
+        retry_delay = 0.3
+        
+        for attempt in range(max_retries):
+            try:
+                self.deepgram = DeepgramClient(settings.deepgram_api_key)
+                self.connection = self.deepgram.listen.asynclive.v("1")
+                
+                self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
+                self.connection.on(LiveTranscriptionEvents.Transcript, self._on_transcript)
+                self.connection.on(LiveTranscriptionEvents.Error, self._on_error)
+                self.connection.on(LiveTranscriptionEvents.Close, self._on_close)
+                
+                options = LiveOptions(
+                    model="nova-2",
+                    language="en-US",
+                    smart_format=True,
+                    punctuate=True,
+                    interim_results=True,
+                    utterance_end_ms=1000,
+                    encoding="linear16",
+                    sample_rate=self.SAMPLE_RATE,
+                    channels=1
+                )
+                
+                await self.connection.start(options)
+                print(f"[ClientStream] Reconnected (attempt {attempt + 1})", flush=True)
+                
+                # Restart keepalive
+                self._last_audio_time = time.time()
+                if self._keepalive_task:
+                    self._keepalive_task.cancel()
+                self._keepalive_task = asyncio.create_task(self._keepalive_loop())
+                
+                return True
+                
+            except Exception as e:
+                print(f"[ClientStream] Reconnect attempt {attempt + 1} failed: {e}", flush=True)
+                self.connection = None
+                self.deepgram = None
+                
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay)
+                    retry_delay *= 2
+        
+        print(f"[ClientStream] Reconnect failed after {max_retries} attempts", flush=True)
+        return False
     
     async def handle_telnyx_message(self, message: dict):
         """Process Telnyx message with client audio"""
