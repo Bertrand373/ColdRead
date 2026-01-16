@@ -570,7 +570,7 @@ class AgentStreamHandler:
                     language="en-US",
                     smart_format=True,
                     punctuate=True,
-                    interim_results=True,
+                    interim_results=False,  # Only final - prevents duplicates, agent doesn't need real-time
                     utterance_end_ms=1000,
                     encoding="linear16",
                     sample_rate=self.SAMPLE_RATE,
@@ -753,7 +753,7 @@ class ClientStreamHandler:
                     language="en-US",
                     smart_format=True,
                     punctuate=True,
-                    interim_results=True,  # Client gets interim for responsiveness
+                    interim_results=False,  # Only final - cleaner display, less traffic
                     utterance_end_ms=1000,
                     encoding="linear16",
                     sample_rate=self.SAMPLE_RATE,
