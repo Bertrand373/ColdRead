@@ -518,7 +518,7 @@ class AgentStreamHandler:
     Transcribes via Deepgram, extracts context, tracks presentation stage.
     Does NOT display to agent (they know what they're saying).
     
-    KEY FIX: Uses asynclive and connects eagerly in start() (same as client).
+    KEY FIX: Deepgram connects when CLIENT answers (triggered by ClientStreamHandler) to avoid timeout during ringback.
     """
     
     SAMPLE_RATE = 8000
@@ -529,6 +529,7 @@ class AgentStreamHandler:
         self.connection = None
         self.is_running = False
         self._connection_dead = False
+        self._deepgram_connected = False
         self.conversation = get_conversation_buffer(session_id)
         
         self._total_audio_bytes = 0
@@ -537,13 +538,22 @@ class AgentStreamHandler:
         logger.info(f"[AgentStream] Created for session {session_id}")
     
     async def start(self) -> bool:
-        """Initialize handler and connect Deepgram eagerly (like client)"""
+        """Initialize handler - Deepgram connects when client answers (triggered externally)"""
         print(f"[AgentStream] Starting for {self.session_id}", flush=True)
         self._session_start_time = time.time()
+        self.is_running = True
+        self._deepgram_connected = False
+        return True
+    
+    async def connect_deepgram(self):
+        """Connect to Deepgram - called when client answers to avoid timeout during ringback"""
+        if self._deepgram_connected:
+            return True
         
-        # Connect to Deepgram with retry (same pattern as client)
+        self._deepgram_connected = True
+        
         max_retries = 3
-        retry_delay = 0.5
+        retry_delay = 0.3
         
         for attempt in range(max_retries):
             try:
@@ -560,7 +570,7 @@ class AgentStreamHandler:
                     language="en-US",
                     smart_format=True,
                     punctuate=True,
-                    interim_results=True,  # Match client settings
+                    interim_results=True,
                     utterance_end_ms=1000,
                     encoding="linear16",
                     sample_rate=self.SAMPLE_RATE,
@@ -568,7 +578,6 @@ class AgentStreamHandler:
                 )
                 
                 await self.connection.start(options)
-                self.is_running = True
                 print(f"[AgentStream] Deepgram connected (attempt {attempt + 1})", flush=True)
                 return True
                 
@@ -581,13 +590,8 @@ class AgentStreamHandler:
                     await asyncio.sleep(retry_delay)
                     retry_delay *= 2
         
-        print(f"[AgentStream] Deepgram failed after {max_retries} attempts - continuing without agent transcription", flush=True)
-        self.is_running = True
-        return True
-    
-    async def connect_deepgram(self):
-        """Legacy method - now handled in start()"""
-        return self.connection is not None
+        print(f"[AgentStream] Deepgram failed after {max_retries} attempts", flush=True)
+        return False
     
     async def handle_telnyx_message(self, message: dict):
         """Process Telnyx message with agent audio"""
@@ -596,7 +600,7 @@ class AgentStreamHandler:
         if event == "connected":
             print(f"[AgentStream] Telnyx connected", flush=True)
         elif event == "start":
-            print(f"[AgentStream] Stream started", flush=True)
+            print(f"[AgentStream] Stream started - waiting for client to answer", flush=True)
         elif event == "media":
             media = message.get("media", {})
             payload = media.get("payload")
@@ -608,7 +612,7 @@ class AgentStreamHandler:
                     self._total_audio_bytes += len(ulaw_audio)
                     pcm_audio = audioop.ulaw2lin(ulaw_audio, 2)
                     
-                    # Send to Deepgram if connected
+                    # Only send to Deepgram if connected (triggered by client answering)
                     if self.connection and self.is_running and not self._connection_dead:
                         await self.connection.send(pcm_audio)
                 except Exception as e:
@@ -760,6 +764,9 @@ class ClientStreamHandler:
                 self.is_running = True
                 print(f"[ClientStream] Deepgram connected (attempt {attempt + 1})", flush=True)
                 
+                # NOW trigger agent's Deepgram - client just answered, conversation starting
+                await self._trigger_agent_deepgram()
+                
                 await self._broadcast({
                     "type": "ready",
                     "message": "Coaching active"
@@ -809,6 +816,18 @@ class ClientStreamHandler:
                         print(f"[ClientStream] Deepgram disconnected: {str(e)[:80]}", flush=True)
         elif event == "stop":
             await self.stop()
+    
+    async def _trigger_agent_deepgram(self):
+        """Trigger agent's Deepgram connection now that client answered"""
+        try:
+            agent_handler = _agent_handlers.get(self.session_id)
+            if agent_handler:
+                print(f"[ClientStream] Triggering Agent Deepgram (client answered)", flush=True)
+                await agent_handler.connect_deepgram()
+            else:
+                print(f"[ClientStream] No agent handler found for {self.session_id}", flush=True)
+        except Exception as e:
+            print(f"[ClientStream] Failed to trigger agent Deepgram: {e}", flush=True)
     
     async def _on_open(self, *args, **kwargs):
         print(f"[ClientStream] Deepgram open", flush=True)
