@@ -3383,6 +3383,11 @@
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
+            
+            // Timer only visible during active call
+            if (dom.timer) {
+                dom.timer.style.display = (screenId === 'callScreen') ? 'block' : 'none';
+            }
         }
         
         function startTimer() {
