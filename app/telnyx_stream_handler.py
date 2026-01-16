@@ -754,8 +754,6 @@ class AgentStreamHandler:
                         encoding="linear16",
                         sample_rate=self.SAMPLE_RATE,
                         channels=1,
-                        # Enable keepalive from Deepgram side
-                        no_delay=True,
                     )
                     
                     await self.connection.start(options)
@@ -1030,7 +1028,6 @@ class ClientStreamHandler:
                         encoding="linear16",
                         sample_rate=self.SAMPLE_RATE,
                         channels=1,
-                        no_delay=True,
                     )
                     
                     await self.connection.start(options)
