@@ -18,7 +18,7 @@
     <!-- SEO -->
     <meta name="description" content="AI-powered sales coaching for life insurance agents.">
     
-    <!-- VERSION: 2025-01-15-v13-temperature-meter -->
+    <!-- VERSION: 2025-01-16-v14-premium-guidance-redesign -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -226,6 +226,37 @@
         }
         
         .agent-badge.show { display: flex; }
+        
+        /* End Session Button - Header version (during calls) */
+        .end-session-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 14px;
+            background: var(--surface);
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .end-session-btn:hover {
+            background: var(--border);
+            color: var(--text);
+        }
+        
+        .end-session-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .end-session-btn.show {
+            display: flex;
+        }
         
         .agent-badge svg {
             width: 14px;
@@ -898,25 +929,32 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;  /* Start from top for scroll support */
             width: 100%;
             max-width: 100%;
-            padding: 24px;
+            padding: 48px;
             text-align: center;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.2s, opacity 0.3s ease;
             box-sizing: border-box;
             /* Enable scrolling */
             min-height: 0;
             overflow-y: auto;
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
+            
+            /* Subtle vignette - draws eye to center */
+            background: radial-gradient(
+                ellipse 80% 70% at center,
+                var(--bg) 0%,
+                rgba(0, 0, 0, 0.012) 100%
+            );
         }
         
-        /* When guidance is shown, let guidance-state handle its own centering */
+        /* When guidance is shown - smart centering with scroll support */
         .teleprompter.has-guidance {
             justify-content: flex-start;
-            padding: 24px;
+            padding: 48px;
         }
         
         .teleprompter:active { background: var(--surface); }
@@ -927,9 +965,47 @@
             align-items: center;
             width: 100%;
             max-width: 100%;
+            /* Smart centering - stays centered in flex-start container */
+            margin: auto 0;
         }
         
+        /* Branded Waveform - replaces ring */
+        .listening-waveform {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .waveform-bar {
+            width: 4px;
+            background: var(--accent);
+            border-radius: 2px;
+            animation: waveBreath 2s ease-in-out infinite;
+        }
+        
+        .waveform-bar:nth-child(1) { height: 20px; animation-delay: 0s; }
+        .waveform-bar:nth-child(2) { height: 32px; animation-delay: 0.15s; }
+        .waveform-bar:nth-child(3) { height: 40px; animation-delay: 0.3s; }
+        .waveform-bar:nth-child(4) { height: 32px; animation-delay: 0.45s; }
+        .waveform-bar:nth-child(5) { height: 20px; animation-delay: 0.6s; }
+        
+        @keyframes waveBreath {
+            0%, 100% { 
+                transform: scaleY(0.5); 
+                opacity: 0.4; 
+            }
+            50% { 
+                transform: scaleY(1); 
+                opacity: 0.8; 
+            }
+        }
+        
+        /* Legacy ring - hidden but kept for fallback */
         .listening-ring {
+            display: none;
             width: 48px;
             height: 48px;
             border: 2px solid var(--accent);
@@ -945,15 +1021,16 @@
         
         .listening-text {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.1rem;
+            font-size: 0.85rem;
             font-weight: 600;
-            color: var(--text-secondary);
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
         }
         
+        /* Remove the subtitle - just "Listening" is enough */
         .listening-hint {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-top: 8px;
+            display: none;
         }
         
         /* ========== SENTIMENT INDICATOR ========== */
@@ -1184,89 +1261,137 @@
             align-items: center;
             justify-content: flex-start;
             width: 100%;
-            max-width: 700px;
+            max-width: 900px;
             padding: 16px;
             box-sizing: border-box;
             position: relative;
-            /* Don't constrain height - let teleprompter handle scrolling */
+            /* Smart centering: margin auto centers when content is short,
+               but allows natural scroll when content is tall */
+            margin: auto 0;
         }
         
         .guidance-state.active { 
             display: flex;
-            animation: guidanceEntry 0.3s ease-out;
+            animation: guidanceReveal 0.35s ease-out;
         }
         
-        /* Subtle glow on arrival - fades out after 2s */
-        .guidance-state.active::before {
-            content: '';
+        /* Premium reveal animation - scale + blur */
+        @keyframes guidanceReveal {
+            0% { 
+                opacity: 0; 
+                transform: scale(0.98);
+                filter: blur(4px);
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1);
+                filter: blur(0);
+            }
+        }
+        
+        /* STRIKE action - subtle green tint on reveal */
+        .guidance-state.strike {
+            animation: guidanceRevealStrike 0.35s ease-out;
+        }
+        
+        @keyframes guidanceRevealStrike {
+            0% { 
+                opacity: 0; 
+                transform: scale(0.98);
+                filter: blur(4px);
+                background: rgba(16, 185, 129, 0.1);
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1);
+                filter: blur(0);
+                background: transparent;
+            }
+        }
+        
+        /* EXIT action - subtle red tint on reveal */
+        .guidance-state.exit {
+            animation: guidanceRevealExit 0.35s ease-out;
+        }
+        
+        @keyframes guidanceRevealExit {
+            0% { 
+                opacity: 0; 
+                transform: scale(0.98);
+                filter: blur(4px);
+                background: rgba(239, 68, 68, 0.08);
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1);
+                filter: blur(0);
+                background: transparent;
+            }
+        }
+        
+        /* WARN action - subtle amber tint */
+        .guidance-state.warn {
+            animation: guidanceRevealWarn 0.35s ease-out;
+        }
+        
+        @keyframes guidanceRevealWarn {
+            0% { 
+                opacity: 0; 
+                transform: scale(0.98);
+                filter: blur(4px);
+                background: rgba(217, 119, 6, 0.08);
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1);
+                filter: blur(0);
+                background: transparent;
+            }
+        }
+        
+        /* Dismiss hint - fades in after 3s */
+        .dismiss-hint {
             position: absolute;
-            top: 0;
+            bottom: 0;
             left: 50%;
             transform: translateX(-50%);
-            width: 200px;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, var(--accent), transparent);
-            border-radius: 2px;
+            
+            font-size: 0.75rem;
+            color: var(--text-muted);
             opacity: 0;
-            animation: glowPulse 2s ease-out forwards;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
         }
         
-        @keyframes guidanceEntry {
-            from { 
-                opacity: 0; 
-                transform: translateY(-8px); 
-            }
-            to { 
-                opacity: 1; 
-                transform: translateY(0); 
-            }
-        }
-        
-        @keyframes glowPulse {
-            0% { opacity: 0; }
-            15% { opacity: 0.6; }
-            100% { opacity: 0; }
-        }
-        
-        /* STRIKE action - buying signal, close now */
-        .guidance-state.strike::before {
-            background: linear-gradient(90deg, transparent, var(--success), transparent) !important;
-        }
-        
-        /* EXIT action - preserve relationship */
-        .guidance-state.exit::before {
-            background: linear-gradient(90deg, transparent, var(--danger), transparent) !important;
-        }
-        
-        /* WARN action - reminder/missed stage */
-        .guidance-state.warn::before {
-            background: linear-gradient(90deg, transparent, #D97706, transparent) !important;
+        .guidance-state.show-hint .dismiss-hint {
+            opacity: 1;
         }
         
         .guidance-text {
             width: 100%;
             max-width: 100%;
-            font-size: clamp(1.5rem, 4vw, 2.25rem);
-            line-height: 1.55;
+            font-size: clamp(1.4rem, 3.5vw, 2.5rem);
+            line-height: 1.6;
             font-weight: 500;
             color: var(--text);
             text-align: center;
             overflow-wrap: break-word;
             word-wrap: break-word;
-            padding-bottom: 16px; /* Buffer for scroll */
+            padding-bottom: 24px; /* Buffer for dismiss hint */
+            letter-spacing: -0.01em;
         }
         
-        /* Bold key phrases for quick scanning */
+        /* Numbers and prices stay bold - no special color for quotes anymore */
         .guidance-text .say-this {
-            color: var(--accent-dark);
-            font-weight: 600;
+            /* Removed blue color - just inherit normal text */
+            font-weight: 500;
         }
         
         .guidance-text .cursor {
             display: inline-block;
             width: 3px;
             height: 1.3em;
-            background: var(--accent-dark);
+            background: var(--accent);
             margin-left: 3px;
             animation: blink 0.6s infinite;
             vertical-align: text-bottom;
@@ -1283,7 +1408,7 @@
         }
         
         .loading-dots {
-            color: var(--accent-dark);
+            color: var(--accent);
             animation: loadingPulse 1.2s ease-in-out infinite;
             margin-left: 8px;
         }
@@ -1303,13 +1428,12 @@
         .guidance-text strong { font-weight: 700; }
         
         /* ========== CALL FOOTER ========== */
+        /* Footer is now hidden - end button moved to header */
         .call-footer {
-            padding: 16px 24px 24px;
-            display: flex;
-            justify-content: center;
-            flex-shrink: 0;
+            display: none;
         }
         
+        /* Legacy styles kept for reference */
         .end-btn {
             display: flex;
             align-items: center;
@@ -1335,22 +1459,202 @@
         
         .end-btn svg { width: 18px; height: 18px; }
         
-        /* ========== TRANSCRIPT SIDEBAR ========== */
+        /* ========== TRANSCRIPT PANEL (Floating) ========== */
         .call-content-wrapper {
             display: flex;
             flex: 1;
             min-height: 0;
             overflow: hidden;
+            position: relative;
         }
         
-        .transcript-sidebar {
-            width: 280px;
+        /* Collapsed state - just a pill */
+        .transcript-pill {
+            position: absolute;
+            left: 24px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            
             background: var(--surface);
-            border-right: 1px solid var(--border);
+            border-radius: 24px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        
+        .transcript-pill:hover {
+            background: var(--border);
+        }
+        
+        .transcript-pill:active {
+            transform: translateY(-50%) scale(0.98);
+        }
+        
+        .transcript-pill.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-50%) translateX(-20px);
+        }
+        
+        .transcript-pill .pill-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pillPulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pillPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        .transcript-pill .pill-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        
+        /* Expanded state - floating panel */
+        .transcript-panel {
+            position: absolute;
+            left: 24px;
+            top: 24px;
+            bottom: 24px;
+            width: 300px;
+            z-index: 20;
+            
             display: flex;
             flex-direction: column;
-            position: relative;
+            
+            /* Premium glass effect */
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            
+            border-radius: 16px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.08),
+                0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            
+            overflow: hidden;
+            
+            /* Hidden by default */
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-20px);
+            transition: all 0.25s ease-out;
+        }
+        
+        .transcript-panel.expanded {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(0);
+        }
+        
+        .transcript-panel-header {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(to bottom, 
+                rgba(255,255,255,1) 0%, 
+                rgba(250,250,250,1) 100%
+            );
             flex-shrink: 0;
+        }
+        
+        .transcript-panel-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .transcript-panel-header .panel-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pillPulse 2s ease-in-out infinite;
+        }
+        
+        .transcript-panel-header .panel-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+        
+        .transcript-panel-close {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.15s ease;
+        }
+        
+        .transcript-panel-close:hover {
+            background: var(--surface);
+            color: var(--text);
+        }
+        
+        .transcript-panel-close svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        .transcript-panel-feed {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px;
+            padding-bottom: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            
+            /* Hidden scrollbar - premium */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        
+        .transcript-panel-feed::-webkit-scrollbar {
+            display: none;
+        }
+        
+        /* Fade at bottom */
+        .transcript-panel::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 32px;
+            background: linear-gradient(to top, rgba(255,255,255,0.92), transparent);
+            pointer-events: none;
+            z-index: 1;
+            border-radius: 0 0 16px 16px;
+        }
+        
+        /* LEGACY - keep for compatibility but hidden */
+        .transcript-sidebar {
+            display: none;
         }
         
         .transcript-header {
@@ -1528,6 +1832,11 @@
             opacity: 1;
         }
         
+        /* Fade temp meter when guidance is showing - guidance is the star */
+        .teleprompter.has-guidance ~ .temp-meter {
+            opacity: 0.5;
+        }
+        
         .temp-label {
             font-size: 0.65rem;
             font-weight: 600;
@@ -1671,56 +1980,68 @@
             flex-shrink: 0;
         }
         
-        /* Mobile: Transcript as bottom drawer */
+        /* Mobile: Floating transcript as bottom sheet */
         @media (max-width: 768px) {
             .call-content-wrapper {
                 flex-direction: column;
             }
             
-            .transcript-sidebar {
-                width: 100%;
-                height: auto;
-                max-height: 140px;
-                border-right: none;
-                border-top: 1px solid var(--border);
-                order: 2; /* Move below main content */
-                transition: max-height 0.3s ease;
-            }
-            
-            .transcript-sidebar.collapsed {
-                max-height: 44px;
-                overflow: hidden;
-            }
-            
-            .transcript-sidebar.collapsed .transcript-feed {
+            /* Hide desktop transcript pill on mobile */
+            .transcript-pill {
                 display: none;
             }
             
-            .transcript-header {
+            /* Mobile transcript panel - bottom sheet style */
+            .transcript-panel {
+                position: fixed;
+                left: 16px;
+                right: 16px;
+                bottom: 16px;
+                top: auto;
+                width: auto;
+                max-height: 40vh;
+                
+                /* Start collapsed */
+                transform: translateY(calc(100% - 52px));
+                opacity: 1;
+                pointer-events: auto;
+            }
+            
+            .transcript-panel.expanded {
+                transform: translateY(0);
+            }
+            
+            .transcript-panel-header {
                 cursor: pointer;
             }
             
-            .transcript-header::after {
+            /* Show drag handle on mobile */
+            .transcript-panel-header::before {
                 content: '';
-                margin-left: auto;
-                width: 0;
-                height: 0;
-                border-left: 5px solid transparent;
-                border-right: 5px solid transparent;
-                border-bottom: 5px solid var(--text-muted);
-                transition: transform 0.2s;
+                position: absolute;
+                top: 8px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 32px;
+                height: 4px;
+                background: var(--border);
+                border-radius: 2px;
             }
             
-            .transcript-sidebar.collapsed .transcript-header::after {
-                transform: rotate(180deg);
+            /* Always show panel on mobile (collapsed by default) */
+            .transcript-panel.mobile-visible {
+                opacity: 1;
+                pointer-events: auto;
+                transform: translateY(calc(100% - 52px));
             }
             
-            .transcript-sidebar::before {
-                display: none; /* No top fade on mobile */
+            .transcript-panel.mobile-visible.expanded {
+                transform: translateY(0);
             }
             
-            .transcript-sidebar::after {
-                display: none; /* No bottom fade on mobile */
+            /* Legacy sidebar - hidden on mobile */
+            .transcript-sidebar {
+                display: none;
             }
             
             .call-main {
@@ -1736,25 +2057,32 @@
                 min-height: 0;
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
+                padding: 32px 24px;
+                justify-content: flex-start;  /* Start from top for scroll */
             }
             
-            /* Only change alignment when guidance is shown */
+            /* Smart centering on mobile - margin auto handles it */
             .call-main .teleprompter.has-guidance {
                 justify-content: flex-start;
-                padding-top: 20px;
+                padding: 32px 24px;
             }
             
-            /* Guidance flows naturally, no separate scroll */
+            /* Guidance with smart centering */
             .call-main .guidance-state {
-                /* Remove any constraints - teleprompter handles scroll */
                 flex-shrink: 0;
-                padding-bottom: 20px; /* Buffer at bottom for comfortable scrolling */
+                padding-bottom: 24px; /* Buffer for dismiss hint */
+                margin: auto 0;  /* Centers when short, scrolls when tall */
             }
             
             .call-main .guidance-text {
                 /* Slightly smaller on mobile for better fit */
-                font-size: clamp(1.15rem, 4.5vw, 1.5rem);
-                line-height: 1.5;
+                font-size: clamp(1.2rem, 5vw, 1.6rem);
+                line-height: 1.55;
+            }
+            
+            /* Temp meter on mobile */
+            .temp-meter {
+                padding: 16px 12px;
             }
         }
         
@@ -2355,11 +2683,7 @@
             </div>
             <div class="header-right">
                 <span class="timer" id="timer">0:00</span>
-                <div class="status-indicator" id="statusIndicator">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <circle cx="12" cy="12" r="10"/>
-                    </svg>
-                </div>
+                <button class="end-session-btn" id="endSessionBtn" onclick="Coachd.endCall()">End</button>
             </div>
         </header>
         
@@ -2449,13 +2773,26 @@
         <!-- Call Screen -->
         <div class="screen call-screen" id="callScreen">
             <div class="call-content-wrapper">
-                <!-- Transcript Sidebar -->
-                <div class="transcript-sidebar" id="transcriptSidebar">
-                    <div class="transcript-header" onclick="Coachd.toggleTranscript()">
-                        <div class="transcript-header-icon"></div>
-                        <span class="transcript-header-text">Live Transcript</span>
+                <!-- Transcript Pill (Collapsed state) -->
+                <div class="transcript-pill" id="transcriptPill" onclick="Coachd.toggleTranscript()">
+                    <div class="pill-dot"></div>
+                    <span class="pill-label">Live</span>
+                </div>
+                
+                <!-- Transcript Panel (Expanded state) -->
+                <div class="transcript-panel" id="transcriptPanel">
+                    <div class="transcript-panel-header" onclick="Coachd.toggleTranscript()">
+                        <div class="transcript-panel-header-left">
+                            <div class="panel-dot"></div>
+                            <span class="panel-title">Live Transcript</span>
+                        </div>
+                        <button class="transcript-panel-close" onclick="event.stopPropagation(); Coachd.toggleTranscript()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <path d="M18 6L6 18M6 6l12 12"/>
+                            </svg>
+                        </button>
                     </div>
-                    <div class="transcript-feed" id="transcriptFeed">
+                    <div class="transcript-panel-feed" id="transcriptFeed">
                         <div class="transcript-empty" id="transcriptEmpty">Waiting for conversation...</div>
                     </div>
                 </div>
@@ -2465,13 +2802,20 @@
                     <div class="guidance-area">
                         <div class="teleprompter" id="teleprompter" onclick="Coachd.dismissGuidance()">
                             <div class="listening-state" id="listeningState">
-                                <div class="listening-ring"></div>
-                                <div class="listening-text">Ready</div>
-                                <div class="listening-hint">Connected — coaching active</div>
+                                <!-- Branded Waveform -->
+                                <div class="listening-waveform">
+                                    <div class="waveform-bar"></div>
+                                    <div class="waveform-bar"></div>
+                                    <div class="waveform-bar"></div>
+                                    <div class="waveform-bar"></div>
+                                    <div class="waveform-bar"></div>
+                                </div>
+                                <div class="listening-text">Listening</div>
                             </div>
                             
                             <div class="guidance-state" id="guidanceState">
                                 <div class="guidance-text" id="guidanceText"></div>
+                                <div class="dismiss-hint">Tap anywhere to dismiss</div>
                             </div>
                         </div>
                         
@@ -2484,16 +2828,6 @@
                             </div>
                             <span class="temp-label temp-bottom">Exit</span>
                         </div>
-                    </div>
-                    
-                    <div class="call-footer">
-                        <button class="end-btn" onclick="Coachd.endCall()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/>
-                                <line x1="23" y1="1" x2="1" y2="23"/>
-                            </svg>
-                            End Session
-                        </button>
                     </div>
                 </div>
             </div>
@@ -2685,6 +3019,7 @@
             streamingGuidance: '',
             hasVibratedForCurrentGuidance: false,
             guidanceDismissTimer: null,  // Fallback auto-dismiss
+            dismissHintTimer: null,       // Shows "tap to dismiss" after 3s
             // Transcript sidebar state
             transcriptUserScrolled: false,
             currentClientText: '',
@@ -2723,7 +3058,7 @@
             get completeScreen() { return document.getElementById('completeScreen'); },
             get startBtn() { return document.getElementById('startBtn'); },
             get timer() { return document.getElementById('timer'); },
-            get statusIndicator() { return document.getElementById('statusIndicator'); },
+            get endSessionBtn() { return document.getElementById('endSessionBtn'); },
             get teleprompter() { return document.getElementById('teleprompter'); },
             get listeningState() { return document.getElementById('listeningState'); },
             get guidanceState() { return document.getElementById('guidanceState'); },
@@ -2740,8 +3075,9 @@
             get errorModal() { return document.getElementById('errorModal'); },
             get errorModalTitle() { return document.getElementById('errorModalTitle'); },
             get errorModalMessage() { return document.getElementById('errorModalMessage'); },
-            // Transcript sidebar
-            get transcriptSidebar() { return document.getElementById('transcriptSidebar'); },
+            // Transcript panel (new floating design)
+            get transcriptPill() { return document.getElementById('transcriptPill'); },
+            get transcriptPanel() { return document.getElementById('transcriptPanel'); },
             get transcriptFeed() { return document.getElementById('transcriptFeed'); },
             get transcriptEmpty() { return document.getElementById('transcriptEmpty'); },
             // Sentiment indicator
@@ -3038,31 +3374,9 @@
         }
         
         function setStatus(status) {
-            const el = dom.statusIndicator;
-            el.className = 'status-indicator ' + (status || '');
-            
-            const icons = {
-                listening: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                    <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>`,
-                connecting: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                </svg>`,
-                ringing: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                </svg>`,
-                error: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="15" y1="9" x2="9" y2="15"/>
-                    <line x1="9" y1="9" x2="15" y2="15"/>
-                </svg>`,
-                '': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                    <circle cx="12" cy="12" r="10"/>
-                </svg>`
-            };
-            
-            el.innerHTML = icons[status] || icons[''];
+            // Status indicator removed - end button now in header
+            // This function kept for compatibility but does nothing
+            console.log('[Status]', status);
         }
         
         function showScreen(screenId) {
@@ -3793,6 +4107,11 @@
             // Disable landscape blocker during active call
             document.body.classList.add('call-active');
             
+            // Show end button in header
+            if (dom.endSessionBtn) {
+                dom.endSessionBtn.classList.add('show');
+            }
+            
             resetCaptions();
             showScreen('callScreen');
             startTimer();
@@ -3804,16 +4123,6 @@
             }
             
             console.log('[Call] Connected and listening');
-            
-            // Update hint based on call mode
-            const listeningHint = document.querySelector('.listening-hint');
-            if (listeningHint) {
-                if (state.clientPhone) {
-                    listeningHint.textContent = 'Connected — coaching active';
-                } else {
-                    listeningHint.textContent = 'Listening for objections';
-                }
-            }
         }
         
         function cancelCall() {
@@ -3856,6 +4165,11 @@
             
             // Re-enable landscape blocker
             document.body.classList.remove('call-active');
+            
+            // Hide end button in header
+            if (dom.endSessionBtn) {
+                dom.endSessionBtn.classList.remove('show');
+            }
             
             // Only tell backend to end call if this wasn't triggered by the server
             // (avoids circular call when server sends call_ended)
@@ -4087,16 +4401,50 @@
         }
         
         function updateScrollFade() {
-            if (dom.transcriptFeed && dom.transcriptSidebar) {
+            // Updated for new floating transcript panel
+            if (dom.transcriptFeed && dom.transcriptPanel) {
                 const hasScroll = dom.transcriptFeed.scrollTop > 10;
-                dom.transcriptSidebar.classList.toggle('has-scroll', hasScroll);
+                dom.transcriptPanel.classList.toggle('has-scroll', hasScroll);
             }
         }
         
         function toggleTranscript() {
-            // Mobile only - toggle collapsed state
-            if (window.innerWidth <= 768 && dom.transcriptSidebar) {
-                dom.transcriptSidebar.classList.toggle('collapsed');
+            const panel = dom.transcriptPanel;
+            const pill = dom.transcriptPill;
+            
+            if (!panel) return;
+            
+            const isExpanded = panel.classList.contains('expanded');
+            
+            if (isExpanded) {
+                // Collapse - show pill, hide panel
+                panel.classList.remove('expanded');
+                if (pill) pill.classList.remove('hidden');
+            } else {
+                // Expand - hide pill, show panel
+                if (pill) pill.classList.add('hidden');
+                panel.classList.add('expanded');
+            }
+            
+            // On mobile, also handle mobile-visible class
+            if (window.innerWidth <= 768) {
+                panel.classList.add('mobile-visible');
+                if (isExpanded) {
+                    panel.classList.remove('expanded');
+                } else {
+                    panel.classList.add('expanded');
+                }
+            }
+        }
+        
+        function collapseTranscript() {
+            // Auto-collapse when guidance shows
+            const panel = dom.transcriptPanel;
+            const pill = dom.transcriptPill;
+            
+            if (panel && panel.classList.contains('expanded')) {
+                panel.classList.remove('expanded');
+                if (pill) pill.classList.remove('hidden');
             }
         }
         
@@ -4112,7 +4460,7 @@
             }
         }
         
-        // Legacy handler - route to transcript sidebar
+        // Legacy handler - route to transcript panel
         function updateCaption(speaker, text, isInterim) {
             if (speaker === 'caller' || speaker === 'client') {
                 updateTranscriptSidebar('client', text, isInterim);
@@ -4122,15 +4470,15 @@
         }
         
         function resetCaptions() {
-            // Clear transcript sidebar
+            // Clear transcript panel
             if (dom.transcriptFeed) {
                 dom.transcriptFeed.innerHTML = '<div class="transcript-empty" id="transcriptEmpty">Waiting for conversation...</div>';
             }
             state.currentClientElement = null;
             state.currentClientText = '';
             state.transcriptUserScrolled = false;
-            if (dom.transcriptSidebar) {
-                dom.transcriptSidebar.classList.remove('has-scroll');
+            if (dom.transcriptPanel) {
+                dom.transcriptPanel.classList.remove('has-scroll');
             }
         }
         
@@ -4363,8 +4711,14 @@
         
         function showGuidance(text, action = 'guide') {
             dom.listeningState.style.display = 'none';
-            dom.guidanceState.classList.remove('active', 'strike', 'exit', 'warn');
+            dom.guidanceState.classList.remove('active', 'strike', 'exit', 'warn', 'show-hint');
             dom.teleprompter.classList.add('has-guidance');
+            
+            // Auto-collapse transcript when guidance shows
+            collapseTranscript();
+            
+            // Clear any existing dismiss hint timer
+            clearTimeout(state.dismissHintTimer);
             
             // Add action-specific class for styling
             if (action === 'strike') {
@@ -4390,6 +4744,11 @@
             requestAnimationFrame(() => {
                 dom.guidanceState.classList.add('active');
             });
+            
+            // Show dismiss hint after 3 seconds
+            state.dismissHintTimer = setTimeout(() => {
+                dom.guidanceState.classList.add('show-hint');
+            }, 3000);
         }
         
         function dismissGuidance() {
@@ -4397,7 +4756,11 @@
             clearTimeout(state.guidanceDismissTimer);
             state.guidanceDismissTimer = null;
             
-            dom.guidanceState.classList.remove('active', 'strike', 'exit', 'warn');
+            // Clear dismiss hint timer
+            clearTimeout(state.dismissHintTimer);
+            state.dismissHintTimer = null;
+            
+            dom.guidanceState.classList.remove('active', 'strike', 'exit', 'warn', 'show-hint');
             dom.listeningState.style.display = 'flex';
             dom.teleprompter.classList.remove('has-guidance');
             dom.guidanceText.innerHTML = '';
@@ -4555,6 +4918,15 @@
                     state.ws = null;
                 }
                 if (dom.clientPhoneInput) dom.clientPhoneInput.value = '';
+                
+                // Hide end button
+                if (dom.endSessionBtn) {
+                    dom.endSessionBtn.classList.remove('show');
+                }
+                
+                // Collapse transcript panel
+                collapseTranscript();
+                
                 dismissGuidance();
                 resetCaptions();
                 resetSentiment();

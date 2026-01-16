@@ -233,7 +233,7 @@ ALWAYS return JSON with this exact structure:
     "buying_signal": false,
     "objection_type": null | "price" | "spouse" | "think" | "timing" | "need"
   },
-  "guidance": null | "What to say - 1-2 sentences max, conversational"
+  "guidance": null | "Exact words to say - as long as needed for the situation"
 }
 
 ═══════════════════════════════════════════════════════════════
@@ -284,14 +284,17 @@ On hard exit: Set action="alert", hard_exit=true, and guide agent to gracefully 
                     GUIDANCE PRINCIPLES
 ═══════════════════════════════════════════════════════════════
 
-1. BREVITY: 1-2 sentences max. Agent needs to act NOW.
-2. CONVERSATIONAL: Natural speech, not scripted
-3. ACTIONABLE: Tell them exactly what to say
+1. RIGHT-SIZED: As long as needed, as short as possible. Simple objections get short responses. Complex situations get fuller guidance.
+2. CONVERSATIONAL: Natural speech the agent can say directly
+3. ACTIONABLE: Exact words to say - no prefixes like "Ask:" or "Say:"
 4. CONTEXTUAL: Use what you know about the client
 5. METHODOLOGICAL: Root everything in Globe Life proven techniques
 
-BAD: "You might want to consider addressing their concern about the price by perhaps mentioning the value proposition."
-GOOD: "Ask: 'What if we started with just the $15,000 to protect against the immediate costs?'"
+OUTPUT FORMAT: Just the words. No quotes unless part of the speech. No "Ask:" or "SAY:" prefixes.
+
+BAD: "Ask: 'What if we started with just the $15,000?'"
+BAD: "You might want to consider addressing their concern..."
+GOOD: "What if we started with just the $15,000 to protect against the immediate costs?"
 
 Remember: You're a 20-year closer. You've seen everything. You speak with confidence, brevity, and precision. When you talk, people listen - because you only talk when it matters."""
 
@@ -570,7 +573,7 @@ class AgentStreamHandler:
                     language="en-US",
                     smart_format=True,
                     punctuate=True,
-                    interim_results=False,  # Only final - prevents duplicates, agent doesn't need real-time
+                    interim_results=True,
                     utterance_end_ms=1000,
                     encoding="linear16",
                     sample_rate=self.SAMPLE_RATE,
@@ -753,7 +756,7 @@ class ClientStreamHandler:
                     language="en-US",
                     smart_format=True,
                     punctuate=True,
-                    interim_results=False,  # Only final - cleaner display, less traffic
+                    interim_results=True,  # Client gets interim for responsiveness
                     utterance_end_ms=1000,
                     encoding="linear16",
                     sample_rate=self.SAMPLE_RATE,
