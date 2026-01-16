@@ -362,8 +362,7 @@ The {trigger_speaker.upper()} just spoke. What's your read? What do you do?"""
                 output_tokens=response.usage.output_tokens,
                 model="claude-sonnet-4-20250514",
                 agency_code=self.agency,
-                session_id=self.session_id,
-                query_type="veteran_analysis"
+                session_id=self.session_id
             )
             
             # Parse response
@@ -519,7 +518,7 @@ class AgentStreamHandler:
     Transcribes via Deepgram, extracts context, tracks presentation stage.
     Does NOT display to agent (they know what they're saying).
     
-    KEY FIX: Uses asynclive and connects on first media packet (lazy init).
+    KEY FIX: Uses asynclive and connects eagerly in start() (same as client).
     """
     
     SAMPLE_RATE = 8000
@@ -530,7 +529,6 @@ class AgentStreamHandler:
         self.connection = None
         self.is_running = False
         self._connection_dead = False
-        self._deepgram_initialized = False
         self.conversation = get_conversation_buffer(session_id)
         
         self._total_audio_bytes = 0
@@ -539,28 +537,17 @@ class AgentStreamHandler:
         logger.info(f"[AgentStream] Created for session {session_id}")
     
     async def start(self) -> bool:
-        """Initialize handler - Deepgram connects lazily on first media"""
+        """Initialize handler and connect Deepgram eagerly (like client)"""
         print(f"[AgentStream] Starting for {self.session_id}", flush=True)
         self._session_start_time = time.time()
-        self.is_running = True
-        self._deepgram_initialized = False
-        return True
-    
-    async def connect_deepgram(self):
-        """Connect to Deepgram - lazy init on first media packet"""
-        if self._deepgram_initialized or not settings.deepgram_api_key:
-            return False
         
-        self._deepgram_initialized = True
-        
-        # Retry logic
+        # Connect to Deepgram with retry (same pattern as client)
         max_retries = 3
         retry_delay = 0.5
         
         for attempt in range(max_retries):
             try:
                 self.deepgram = DeepgramClient(settings.deepgram_api_key)
-                # Use asynclive (the SDK version on Render)
                 self.connection = self.deepgram.listen.asynclive.v("1")
                 
                 self.connection.on(LiveTranscriptionEvents.Open, self._on_open)
@@ -573,17 +560,18 @@ class AgentStreamHandler:
                     language="en-US",
                     smart_format=True,
                     punctuate=True,
-                    interim_results=False,  # Only final for agent (context only)
-                    utterance_end_ms=1500,
-                    encoding="linear16",  # We convert mulaw to linear16
+                    interim_results=True,  # Match client settings
+                    utterance_end_ms=1000,
+                    encoding="linear16",
                     sample_rate=self.SAMPLE_RATE,
                     channels=1
                 )
                 
                 await self.connection.start(options)
+                self.is_running = True
                 print(f"[AgentStream] Deepgram connected (attempt {attempt + 1})", flush=True)
                 return True
-                    
+                
             except Exception as e:
                 print(f"[AgentStream] Deepgram attempt {attempt + 1} failed: {e}", flush=True)
                 self.connection = None
@@ -594,7 +582,12 @@ class AgentStreamHandler:
                     retry_delay *= 2
         
         print(f"[AgentStream] Deepgram failed after {max_retries} attempts - continuing without agent transcription", flush=True)
-        return False
+        self.is_running = True
+        return True
+    
+    async def connect_deepgram(self):
+        """Legacy method - now handled in start()"""
+        return self.connection is not None
     
     async def handle_telnyx_message(self, message: dict):
         """Process Telnyx message with agent audio"""
@@ -614,10 +607,6 @@ class AgentStreamHandler:
                     ulaw_audio = base64.b64decode(payload)
                     self._total_audio_bytes += len(ulaw_audio)
                     pcm_audio = audioop.ulaw2lin(ulaw_audio, 2)
-                    
-                    # Lazy init Deepgram on first actual audio
-                    if not self._deepgram_initialized:
-                        await self.connect_deepgram()
                     
                     # Send to Deepgram if connected
                     if self.connection and self.is_running and not self._connection_dead:
