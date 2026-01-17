@@ -242,7 +242,8 @@ def generate_client_conference_texml(session_id: str) -> str:
         <Conference
             startConferenceOnEnter="false"
             endConferenceOnExit="true"
-            beep="false">
+            beep="false"
+            waitUrl="">
             {conference_name}
         </Conference>
     </Dial>
@@ -316,9 +317,16 @@ def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id
         )
         
         if response.status_code in [200, 201]:
-            data = response.json().get("data", {})
+            response_json = response.json()
+            print(f"[Telnyx] Client dial response: {response_json}", flush=True)
+            data = response_json.get("data", {})
             call_control_id = data.get("call_control_id", "") or data.get("call_sid", "")
             
+            # Also check top level for call_sid (TeXML format)
+            if not call_control_id:
+                call_control_id = response_json.get("call_sid", "") or response_json.get("sid", "")
+            
+            print(f"[Telnyx] Extracted client call_control_id: {call_control_id}", flush=True)
             logger.info(f"Client call initiated: {call_control_id} for session {session_id}")
             
             return {
