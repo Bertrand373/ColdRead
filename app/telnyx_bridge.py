@@ -188,9 +188,10 @@ def generate_agent_conference_texml(session_id: str) -> str:
     - Join conference so they can hear/talk to client
     - startConferenceOnEnter="true" - conference starts when agent joins
     - endConferenceOnExit="true" - conference ends if agent hangs up
-    - No waitUrl - agent hears silence while waiting (cleaner than hold music)
+    - waitUrl points to silence endpoint (no hold music)
     """
     conference_name = f"coachd_{session_id}"
+    silence_url = f"{settings.base_url}/api/telnyx/silence"
     
     print(f"[TeXML] Generating AGENT CONFERENCE TeXML for session {session_id}", flush=True)
     print(f"[TeXML] Conference: {conference_name}", flush=True)
@@ -204,7 +205,7 @@ def generate_agent_conference_texml(session_id: str) -> str:
             startConferenceOnEnter="true"
             endConferenceOnExit="true"
             beep="false"
-            waitUrl="">
+            waitUrl="{silence_url}">
             {conference_name}
         </Conference>
     </Dial>
@@ -223,9 +224,11 @@ def generate_client_conference_texml(session_id: str) -> str:
     - Join same conference as agent
     - startConferenceOnEnter="false" - don't start new conference, join existing
     - endConferenceOnExit="true" - end conference if client hangs up
+    - waitUrl points to silence endpoint (no hold music)
     """
     stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
     conference_name = f"coachd_{session_id}"
+    silence_url = f"{settings.base_url}/api/telnyx/silence"
     # Use separate stream endpoint for client audio
     client_stream_url = f"{stream_url}/ws/telnyx/stream/client/{session_id}"
     
@@ -243,7 +246,7 @@ def generate_client_conference_texml(session_id: str) -> str:
             startConferenceOnEnter="false"
             endConferenceOnExit="true"
             beep="false"
-            waitUrl="">
+            waitUrl="{silence_url}">
             {conference_name}
         </Conference>
     </Dial>
