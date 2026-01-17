@@ -181,25 +181,30 @@ def generate_agent_conference_texml(session_id: str) -> str:
     Generate TeXML to put the agent into a conference.
     Called AFTER agent presses 1 (DTMF gate passed).
     
-    NOTE: Agent audio stream was already started in agent-answered TeXML.
-    This TeXML only handles the conference join and client dial.
+    CRITICAL: Must re-start the audio stream here because the previous stream
+    from DTMF phase gets killed when <Dial> takes over.
     
-    CRITICAL: Agent MUST join the conference so client can hear them!
+    - Re-start streaming agent's audio for transcription
     - Join conference so they can hear/talk to client
     - startConferenceOnEnter="true" - conference starts when agent joins
     - endConferenceOnExit="true" - conference ends if agent hangs up
     - waitUrl points to silence endpoint (no hold music)
     """
+    stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
     conference_name = f"coachd_{session_id}"
     silence_url = f"{settings.base_url}/api/telnyx/silence"
+    agent_stream_url = f"{stream_url}/ws/telnyx/stream/agent/{session_id}"
     
     print(f"[TeXML] Generating AGENT CONFERENCE TeXML for session {session_id}", flush=True)
     print(f"[TeXML] Conference: {conference_name}", flush=True)
-    print(f"[TeXML] Note: Agent stream already started in DTMF phase", flush=True)
+    print(f"[TeXML] Agent stream (re-started): {agent_stream_url}", flush=True)
     
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Say voice="Polly.Joanna" language="en-US">Calling.</Say>
+    <Start>
+        <Stream url="{agent_stream_url}" track="inbound_track" />
+    </Start>
     <Dial>
         <Conference
             startConferenceOnEnter="true"

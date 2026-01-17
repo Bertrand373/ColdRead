@@ -224,10 +224,12 @@ async def get_status():
 
 @router.post("/silence")
 @router.get("/silence")
+@router.head("/silence")
 async def conference_silence():
     """
     Return silent TeXML for conference waitUrl.
     This prevents default hold music without breaking the conference.
+    Supports HEAD for Telnyx pre-flight checks.
     """
     texml = """<?xml version="1.0" encoding="UTF-8"?>
 <Response>
