@@ -143,28 +143,22 @@ def generate_agent_dtmf_texml(session_id: str) -> str:
     Generate TeXML for agent DTMF gate.
     Called when agent answers the call.
     
-    CRITICAL: Stream MUST start here (on call answer) - Telnyx only starts
-    streams from direct answer webhook responses, not from Gather action responses.
+    NOTE: Do NOT start stream here. Stream will be started in conference phase.
+    Starting here causes duplicate streams and out-of-sync transcripts.
     
-    - Start streaming agent audio immediately (before DTMF)
     - Wait for agent to press 1 before dialing client
     - 30 second timeout for DTMF input (gives agent time to get ready)
     - On success (press 1): redirect to /agent-ready endpoint
     - On timeout/no input: hang up with message
     """
-    stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
-    agent_stream_url = f"{stream_url}/ws/telnyx/stream/agent/{session_id}"
     dtmf_action_url = f"{settings.base_url}/api/telnyx/agent-ready?session_id={session_id}"
     
     print(f"[TeXML] Generating AGENT DTMF TeXML for session {session_id}", flush=True)
-    print(f"[TeXML] Agent stream: {agent_stream_url}", flush=True)
     print(f"[TeXML] DTMF action URL: {dtmf_action_url}", flush=True)
+    print(f"[TeXML] Note: Stream will start in conference phase", flush=True)
     
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Start>
-        <Stream url="{agent_stream_url}" track="inbound_track" />
-    </Start>
     <Gather action="{dtmf_action_url}" method="POST" numDigits="1" timeout="30">
         <Say voice="Polly.Joanna" language="en-US">Coachd ready. Press 1 to dial your client.</Say>
     </Gather>
