@@ -143,26 +143,32 @@ def generate_agent_dtmf_texml(session_id: str) -> str:
     Generate TeXML for agent DTMF gate.
     Called when agent answers the call.
     
-    NOTE: Do NOT start stream here. Stream will be started in conference phase.
-    Starting here causes duplicate streams and out-of-sync transcripts.
+    CRITICAL: Stream MUST start here (on call answer) - Telnyx only starts
+    streams from direct answer webhook responses, not from Gather action responses.
     
+    - Start streaming agent audio immediately (before DTMF)
     - Wait for agent to press 1 before dialing client
-    - 30 second timeout for DTMF input (gives agent time to get ready)
+    - 10 second timeout for DTMF input
     - On success (press 1): redirect to /agent-ready endpoint
     - On timeout/no input: hang up with message
     """
+    stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
+    agent_stream_url = f"{stream_url}/ws/telnyx/stream/agent/{session_id}"
     dtmf_action_url = f"{settings.base_url}/api/telnyx/agent-ready?session_id={session_id}"
     
     print(f"[TeXML] Generating AGENT DTMF TeXML for session {session_id}", flush=True)
+    print(f"[TeXML] Agent stream: {agent_stream_url}", flush=True)
     print(f"[TeXML] DTMF action URL: {dtmf_action_url}", flush=True)
-    print(f"[TeXML] Note: Stream will start in conference phase", flush=True)
     
     texml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Gather action="{dtmf_action_url}" method="POST" numDigits="1" timeout="30">
-        <Say voice="Polly.Joanna" language="en-US">Coachd ready. Press 1 to dial your client.</Say>
+    <Start>
+        <Stream url="{agent_stream_url}" track="inbound_track" />
+    </Start>
+    <Gather action="{dtmf_action_url}" method="POST" numDigits="1" timeout="10">
+        <Say voice="Polly.Matthew" language="en-US">Press 1 when ready.</Say>
     </Gather>
-    <Say voice="Polly.Joanna" language="en-US">No response received. Goodbye.</Say>
+    <Say voice="Polly.Matthew" language="en-US">No response received. Goodbye.</Say>
     <Hangup />
 </Response>"""
     
@@ -175,13 +181,8 @@ def generate_agent_conference_texml(session_id: str) -> str:
     Generate TeXML to put the agent into a conference.
     Called AFTER agent presses 1 (DTMF gate passed).
     
-    CRITICAL: Must start the audio stream here for transcription.
-    
-    - Start streaming agent's audio for transcription
-    - Join conference so they can hear/talk to client
-    - startConferenceOnEnter="true" - conference starts when agent joins
-    - endConferenceOnExit="true" - conference ends if agent hangs up
-    - No waitUrl needed - agent starts the conference, no waiting period
+    CRITICAL: Stream MUST start here for agent transcription.
+    NO waitUrl - agent starts conference immediately, no hold music needed.
     """
     stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
     conference_name = f"coachd_{session_id}"
@@ -218,9 +219,8 @@ def generate_client_conference_texml(session_id: str) -> str:
     
     - Start streaming client's audio (inbound_track = client speaking)
     - Join same conference as agent
-    - startConferenceOnEnter="false" - join existing conference, don't start new
+    - startConferenceOnEnter="false" - don't start new conference, join existing
     - endConferenceOnExit="true" - end conference if client hangs up
-    - No waitUrl needed - conference is already running when client joins
     """
     stream_url = settings.base_url.replace("https://", "wss://").replace("http://", "ws://")
     conference_name = f"coachd_{session_id}"
@@ -314,16 +314,9 @@ def add_client_to_conference(client_phone: str, session_id: str, agent_caller_id
         )
         
         if response.status_code in [200, 201]:
-            response_json = response.json()
-            print(f"[Telnyx] Client dial response: {response_json}", flush=True)
-            data = response_json.get("data", {})
+            data = response.json().get("data", {})
             call_control_id = data.get("call_control_id", "") or data.get("call_sid", "")
             
-            # Also check top level for call_sid (TeXML format)
-            if not call_control_id:
-                call_control_id = response_json.get("call_sid", "") or response_json.get("sid", "")
-            
-            print(f"[Telnyx] Extracted client call_control_id: {call_control_id}", flush=True)
             logger.info(f"Client call initiated: {call_control_id} for session {session_id}")
             
             return {

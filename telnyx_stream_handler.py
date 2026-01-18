@@ -616,7 +616,7 @@ class AgentStreamHandler:
                     language="en-US",
                     smart_format=True,
                     punctuate=True,
-                    interim_results=False,  # Only final transcripts - reduces noise
+                    interim_results=False,
                     utterance_end_ms=1000,
                     encoding="linear16",
                     sample_rate=self.SAMPLE_RATE,
@@ -646,7 +646,7 @@ class AgentStreamHandler:
         if event == "connected":
             print(f"[AgentStream] Telnyx connected", flush=True)
         elif event == "start":
-            print(f"[AgentStream] Stream started", flush=True)
+            print(f"[AgentStream] Stream started - waiting for client to answer", flush=True)
         elif event == "media":
             media = message.get("media", {})
             payload = media.get("payload")
@@ -688,8 +688,7 @@ class AgentStreamHandler:
             if not transcript:
                 return
             
-            # Only broadcast FINAL agent transcripts to avoid duplicate entries
-            # Agent doesn't need progressive display - they know what they're saying
+            # Only broadcast FINAL transcripts to avoid duplicates
             if is_final:
                 await self._broadcast({
                     "type": "agent_transcript",
@@ -800,7 +799,7 @@ class ClientStreamHandler:
                     language="en-US",
                     smart_format=True,
                     punctuate=True,
-                    interim_results=False,  # Only final transcripts - cleaner display
+                    interim_results=False,
                     utterance_end_ms=1000,
                     encoding="linear16",
                     sample_rate=self.SAMPLE_RATE,
@@ -896,7 +895,7 @@ class ClientStreamHandler:
             if not transcript:
                 return
             
-            # Only broadcast FINAL transcripts to avoid duplicate entries
+            # Only broadcast FINAL transcripts to avoid duplicates
             if is_final:
                 await self._broadcast({
                     "type": "client_transcript",
