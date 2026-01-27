@@ -54,6 +54,18 @@
             --sidebar-width: 72px;
         }
         
+        /* ========== HIDE OLD FLOATING PANELS (replaced by sidebar slide panels) ========== */
+        .transcript-pill,
+        .transcript-panel,
+        .history-pill,
+        .history-panel,
+        .mobile-history-badge,
+        .mobile-history-sheet,
+        .history-sheet-backdrop,
+        .sentiment-indicator {
+            display: none !important;
+        }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body {
@@ -581,11 +593,13 @@
             -webkit-backdrop-filter: blur(2px);
             z-index: 500;
             opacity: 0;
+            pointer-events: none;
             transition: opacity 0.3s;
         }
         
         .bottom-sheet-backdrop.visible {
             opacity: 1;
+            pointer-events: auto;
         }
         
         .bottom-sheet {
@@ -3759,8 +3773,8 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
             </div>
-            <div class="slide-panel-content" id="transcriptSlideFeed">
-                <div class="transcript-empty">Waiting for conversation...</div>
+            <div class="slide-panel-content transcript-panel-feed" id="transcriptFeed">
+                <div class="transcript-empty" id="transcriptEmpty">Waiting for conversation...</div>
             </div>
         </div>
         
@@ -3774,8 +3788,8 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                 </button>
             </div>
-            <div class="slide-panel-content" id="historySlideFeed">
-                <div class="history-empty">No guidance yet</div>
+            <div class="slide-panel-content history-panel-feed" id="historyFeed">
+                <div class="history-empty" id="historyEmpty">No guidance yet</div>
             </div>
         </div>
         
@@ -3914,88 +3928,6 @@
         <!-- Call Screen -->
         <div class="screen call-screen" id="callScreen">
             <div class="call-content-wrapper">
-                <!-- Transcript Pill (Collapsed state) -->
-                <div class="transcript-pill" id="transcriptPill" onclick="Coachd.toggleTranscript()">
-                    <div class="pill-dot"></div>
-                    <span class="pill-label">Live</span>
-                </div>
-                
-                <!-- Transcript Panel (Expanded state) -->
-                <div class="transcript-panel" id="transcriptPanel">
-                    <div class="transcript-panel-header" onclick="Coachd.toggleTranscript()">
-                        <div class="transcript-panel-header-left">
-                            <div class="panel-dot"></div>
-                            <span class="panel-title">Live Transcript</span>
-                        </div>
-                        <button class="transcript-panel-close" onclick="event.stopPropagation(); Coachd.toggleTranscript()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                <path d="M18 6L6 18M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="transcript-panel-feed" id="transcriptFeed">
-                        <div class="transcript-empty" id="transcriptEmpty">Waiting for conversation...</div>
-                    </div>
-                </div>
-                
-                <!-- History Pill (Collapsed state - Right side) -->
-                <div class="history-pill" id="historyPill" onclick="Coachd.toggleHistory()">
-                    <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12 6 12 12 16 14"/>
-                    </svg>
-                    <span class="pill-count empty" id="historyCount">0</span>
-                </div>
-                
-                <!-- History Panel (Expanded state - Right side) -->
-                <div class="history-panel" id="historyPanel">
-                    <div class="history-panel-header">
-                        <div class="history-panel-header-left">
-                            <div class="panel-dot"></div>
-                            <span class="panel-title">Guidance History</span>
-                        </div>
-                        <button class="history-panel-close" onclick="Coachd.toggleHistory()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                <path d="M18 6L6 18M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="history-panel-feed" id="historyFeed">
-                        <div class="history-empty" id="historyEmpty">No guidance yet</div>
-                    </div>
-                </div>
-                
-                <!-- Mobile History Badge -->
-                <div class="mobile-history-badge" id="mobileHistoryBadge" onclick="Coachd.toggleMobileHistory()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12 6 12 12 16 14"/>
-                    </svg>
-                    <span class="badge-count empty" id="mobileHistoryCount">0</span>
-                </div>
-                
-                <!-- Mobile History Bottom Sheet Backdrop -->
-                <div class="history-sheet-backdrop" id="historySheetBackdrop" onclick="Coachd.toggleMobileHistory()"></div>
-                
-                <!-- Mobile History Bottom Sheet -->
-                <div class="mobile-history-sheet" id="mobileHistorySheet">
-                    <div class="sheet-handle"></div>
-                    <div class="history-panel-header">
-                        <div class="history-panel-header-left">
-                            <div class="panel-dot"></div>
-                            <span class="panel-title">Guidance History</span>
-                        </div>
-                        <button class="history-panel-close" onclick="Coachd.toggleMobileHistory()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                <path d="M18 6L6 18M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="history-panel-feed" id="mobileHistoryFeed">
-                        <div class="history-empty">No guidance yet</div>
-                    </div>
-                </div>
-                
                 <!-- Main Guidance Area -->
                 <div class="call-main">
                     <div class="guidance-area">
@@ -4367,17 +4299,19 @@
             get errorModal() { return document.getElementById('errorModal'); },
             get errorModalTitle() { return document.getElementById('errorModalTitle'); },
             get errorModalMessage() { return document.getElementById('errorModalMessage'); },
-            // Transcript panel (new floating design)
-            get transcriptPill() { return document.getElementById('transcriptPill'); },
-            get transcriptPanel() { return document.getElementById('transcriptPanel'); },
+            // Slide panels (desktop)
+            get transcriptSlidePanel() { return document.getElementById('transcriptSlidePanel'); },
+            get historySlidePanel() { return document.getElementById('historySlidePanel'); },
             get transcriptFeed() { return document.getElementById('transcriptFeed'); },
+            get historyFeed() { return document.getElementById('historyFeed'); },
             get transcriptEmpty() { return document.getElementById('transcriptEmpty'); },
-            // Sentiment indicator
-            get sentimentIndicator() { return document.getElementById('sentimentIndicator'); },
-            get sentimentEmoji() { return document.getElementById('sentimentEmoji'); },
-            get sentimentLabel() { return document.getElementById('sentimentLabel'); },
-            get sentimentTrajectory() { return document.getElementById('sentimentTrajectory'); },
-            get sentimentTip() { return document.getElementById('sentimentTip'); },
+            get historyEmpty() { return document.getElementById('historyEmpty'); },
+            // Bottom sheets (mobile)
+            get transcriptBottomSheet() { return document.getElementById('transcriptBottomSheet'); },
+            get historyBottomSheet() { return document.getElementById('historyBottomSheet'); },
+            get transcriptSheetFeed() { return document.getElementById('transcriptSheetFeed'); },
+            get historySheetFeed() { return document.getElementById('historySheetFeed'); },
+            get bottomSheetBackdrop() { return document.getElementById('bottomSheetBackdrop'); },
             // Verification modal
             get verifyModal() { return document.getElementById('verifyModal'); },
             get verifyCodeInput() { return document.getElementById('verifyCodeInput'); },
@@ -4385,18 +4319,6 @@
             get verifyError() { return document.getElementById('verifyError'); },
             get resendBtn() { return document.getElementById('resendBtn'); },
             get verifyCodeDesc() { return document.getElementById('verifyCodeDesc'); },
-            // History panel (desktop)
-            get historyPill() { return document.getElementById('historyPill'); },
-            get historyPanel() { return document.getElementById('historyPanel'); },
-            get historyFeed() { return document.getElementById('historyFeed'); },
-            get historyCount() { return document.getElementById('historyCount'); },
-            get historyEmpty() { return document.getElementById('historyEmpty'); },
-            // History panel (mobile)
-            get mobileHistoryBadge() { return document.getElementById('mobileHistoryBadge'); },
-            get mobileHistorySheet() { return document.getElementById('mobileHistorySheet'); },
-            get mobileHistoryFeed() { return document.getElementById('mobileHistoryFeed'); },
-            get mobileHistoryCount() { return document.getElementById('mobileHistoryCount'); },
-            get historySheetBackdrop() { return document.getElementById('historySheetBackdrop'); },
             // Guidance area (for has-guidance class)
             get guidanceArea() { return document.querySelector('.guidance-area'); }
         };
@@ -5798,96 +5720,45 @@
         }
         
         function toggleTranscript() {
-            const panel = dom.transcriptPanel;
-            const pill = dom.transcriptPill;
-            
-            if (!panel) return;
-            
-            const isExpanded = panel.classList.contains('expanded');
-            
-            if (isExpanded) {
-                // Collapse - show pill, hide panel
-                panel.classList.remove('expanded');
-                if (pill) pill.classList.remove('hidden');
+            // Redirect to slide panel toggle (desktop) or bottom sheet (mobile)
+            if (window.innerWidth <= 767) {
+                toggleBottomSheet('transcript');
             } else {
-                // Expand - hide pill, show panel
-                if (pill) pill.classList.add('hidden');
-                panel.classList.add('expanded');
-            }
-            
-            // On mobile, also handle mobile-visible class
-            if (window.innerWidth <= 768) {
-                panel.classList.add('mobile-visible');
-                if (isExpanded) {
-                    panel.classList.remove('expanded');
-                } else {
-                    panel.classList.add('expanded');
-                }
+                toggleSlidePanel('transcript');
             }
         }
         
         function collapseTranscript() {
-            // Auto-collapse when guidance shows
-            const panel = dom.transcriptPanel;
-            const pill = dom.transcriptPill;
-            
-            if (panel && panel.classList.contains('expanded')) {
-                panel.classList.remove('expanded');
-                if (pill) pill.classList.remove('hidden');
-            }
+            // Auto-collapse panels when guidance shows
+            const transcriptPanel = dom.transcriptSlidePanel;
+            if (transcriptPanel) transcriptPanel.classList.remove('open');
+            // Also close bottom sheet on mobile
+            closeBottomSheet();
         }
         
         // ==================== HISTORY PANEL ====================
         function toggleHistory() {
-            const panel = dom.historyPanel;
-            const pill = dom.historyPill;
-            
-            if (!panel) return;
-            
-            state.historyExpanded = !state.historyExpanded;
-            
-            if (state.historyExpanded) {
-                // Expand - hide pill, show panel
-                if (pill) pill.classList.add('hidden');
-                panel.classList.add('expanded');
-                // Collapse transcript if open
-                collapseTranscript();
-                // Render latest history
-                renderHistoryPanel();
+            // Redirect to slide panel toggle (desktop) or bottom sheet (mobile)
+            if (window.innerWidth <= 767) {
+                toggleBottomSheet('history');
             } else {
-                // Collapse - show pill, hide panel
-                panel.classList.remove('expanded');
-                if (pill) pill.classList.remove('hidden');
+                toggleSlidePanel('history');
             }
+            // Render latest history when opening
+            renderHistoryPanel();
         }
         
         function collapseHistory() {
-            // Auto-collapse when guidance shows
-            const panel = dom.historyPanel;
-            const pill = dom.historyPill;
-            
-            if (panel && panel.classList.contains('expanded')) {
-                panel.classList.remove('expanded');
-                if (pill) pill.classList.remove('hidden');
-                state.historyExpanded = false;
-            }
+            // Auto-collapse panels when guidance shows
+            const historyPanel = dom.historySlidePanel;
+            if (historyPanel) historyPanel.classList.remove('open');
+            state.historyExpanded = false;
         }
         
         function toggleMobileHistory() {
-            state.mobileHistoryExpanded = !state.mobileHistoryExpanded;
-            
-            const sheet = dom.mobileHistorySheet;
-            const backdrop = dom.historySheetBackdrop;
-            
-            if (state.mobileHistoryExpanded) {
-                if (sheet) sheet.classList.add('expanded');
-                if (backdrop) backdrop.classList.add('visible');
-                // Render latest history
-                renderMobileHistoryPanel();
-            } else {
-                if (sheet) sheet.classList.remove('expanded');
-                if (backdrop) backdrop.classList.remove('visible');
-            }
+            // Redirect to bottom sheet
+            toggleBottomSheet('history');
+            renderHistoryPanel();
         }
         
         function renderHistoryPanel() {
@@ -5896,6 +5767,7 @@
             
             if (state.guidanceHistory.length === 0) {
                 feed.innerHTML = '<div class="history-empty">No guidance yet</div>';
+                syncHistoryToNav();
                 return;
             }
             
@@ -5913,54 +5785,25 @@
                     </div>
                 `;
             }).join('');
+            
+            // Sync to mobile sheet
+            syncHistoryToNav();
         }
         
         function renderMobileHistoryPanel() {
-            const feed = dom.mobileHistoryFeed;
-            if (!feed) return;
-            
-            if (state.guidanceHistory.length === 0) {
-                feed.innerHTML = '<div class="history-empty">No guidance yet</div>';
-                return;
-            }
-            
-            // Render in reverse order (newest first)
-            const items = [...state.guidanceHistory].reverse();
-            feed.innerHTML = items.map(item => {
-                const time = item.relativeTime || '0:00';
-                const text = formatGuidanceText(item.text || '');
-                return `
-                    <div class="history-item">
-                        <div class="history-item-header">
-                            <span class="history-time">${time}</span>
-                        </div>
-                        <div class="history-text">${text}</div>
-                    </div>
-                `;
-            }).join('');
+            // Just calls renderHistoryPanel which syncs everywhere
+            renderHistoryPanel();
         }
         
         function updateHistoryCount() {
             const count = state.guidanceHistory.length;
             
-            // Desktop count (old panels)
-            if (dom.historyCount) {
-                dom.historyCount.textContent = count;
-                dom.historyCount.classList.toggle('empty', count === 0);
-            }
-            
-            // Mobile count (old panels)
-            if (dom.mobileHistoryCount) {
-                dom.mobileHistoryCount.textContent = count;
-                dom.mobileHistoryCount.classList.toggle('empty', count === 0);
-            }
-            
-            // Update nav badges (new sidebar/pill)
+            // Update nav badges (sidebar/pill)
             const transcriptCount = dom.transcriptFeed ? 
                 dom.transcriptFeed.querySelectorAll('.transcript-msg').length : 0;
             updateNavBadges(transcriptCount, count);
             
-            // Sync history to slide panel and bottom sheet
+            // Sync history to mobile bottom sheet
             syncHistoryToNav();
         }
         
@@ -5990,12 +5833,13 @@
             if (dom.transcriptFeed) {
                 dom.transcriptFeed.innerHTML = '<div class="transcript-empty" id="transcriptEmpty">Waiting for conversation...</div>';
             }
+            // Also clear mobile sheet
+            if (dom.transcriptSheetFeed) {
+                dom.transcriptSheetFeed.innerHTML = '<div class="transcript-empty">Waiting for conversation...</div>';
+            }
             state.currentClientElement = null;
             state.currentClientText = '';
             state.transcriptUserScrolled = false;
-            if (dom.transcriptPanel) {
-                dom.transcriptPanel.classList.remove('has-scroll');
-            }
         }
         
         // ==================== GUIDANCE ====================
@@ -6640,15 +6484,11 @@
             }
         }
         
-        // Sync transcript content to slide panel and bottom sheet
+        // Sync transcript content to mobile bottom sheet
         function syncTranscriptToNav() {
-            const mainFeed = document.getElementById('transcriptFeed');
-            const slideFeed = document.getElementById('transcriptSlideFeed');
-            const sheetFeed = document.getElementById('transcriptSheetFeed');
+            const mainFeed = dom.transcriptFeed;
+            const sheetFeed = dom.transcriptSheetFeed;
             
-            if (mainFeed && slideFeed) {
-                slideFeed.innerHTML = mainFeed.innerHTML;
-            }
             if (mainFeed && sheetFeed) {
                 sheetFeed.innerHTML = mainFeed.innerHTML;
             }
@@ -6660,15 +6500,11 @@
             updateNavBadges(transcriptCount, historyCount);
         }
         
-        // Sync history content to slide panel and bottom sheet
+        // Sync history content to mobile bottom sheet
         function syncHistoryToNav() {
-            const mainFeed = document.getElementById('historyFeed');
-            const slideFeed = document.getElementById('historySlideFeed');
-            const sheetFeed = document.getElementById('historySheetFeed');
+            const mainFeed = dom.historyFeed;
+            const sheetFeed = dom.historySheetFeed;
             
-            if (mainFeed && slideFeed) {
-                slideFeed.innerHTML = mainFeed.innerHTML;
-            }
             if (mainFeed && sheetFeed) {
                 sheetFeed.innerHTML = mainFeed.innerHTML;
             }
