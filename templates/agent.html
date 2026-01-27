@@ -15,7 +15,7 @@
         .screen{display:none;min-height:100%;flex-direction:column}.screen.active{display:flex}
 
         /* ===== LANDING SCREEN ===== */
-        .landing-screen{align-items:center;justify-content:center;padding:40px 24px;position:relative}
+        .landing-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;position:relative}
         .landing-content{display:flex;flex-direction:column;align-items:center;text-align:center}
         .landing-content img{margin-bottom:16px}
         .landing-content p{font-size:1.1rem;color:var(--color-text-secondary);margin-bottom:48px}
@@ -107,7 +107,7 @@
         .chat-fab{position:fixed;bottom:32px;right:32px;width:56px;height:56px;border-radius:50%;background:var(--color-text);color:white;border:none;cursor:pointer;display:none;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,0.2);z-index:500;transition:all 0.2s}
         .chat-fab:hover{transform:scale(1.05);box-shadow:0 6px 28px rgba(0,0,0,0.25)}
         .chat-fab svg{width:24px;height:24px}
-        .chat-fab.visible{display:flex}
+        .app-wrapper .chat-fab{display:flex}
 
         /* ===== CHAT MODAL ===== */
         .chat-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(4px);z-index:1000;opacity:0;visibility:hidden;transition:all 0.3s}
@@ -159,7 +159,7 @@
         .chat-send:disabled{opacity:0.4;cursor:not-allowed}
         .chat-send svg{width:16px;height:16px}
 
-        /* ===== FLOATING GLASS PILL NAV (Mobile) ===== */
+        /* ===== FLOATING GLASS PILL NAV (Mobile) - Only in app-wrapper ===== */
         .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:400;padding:12px 16px calc(12px + var(--safe-bottom))}
         .bottom-nav-pill{background:var(--color-glass-strong);backdrop-filter:var(--blur-strong);border:1px solid var(--color-glass-border);border-radius:var(--radius-full);padding:8px 12px;box-shadow:0 4px 24px rgba(0,0,0,0.1)}
         .bottom-nav-items{display:flex;justify-content:space-around}
@@ -177,20 +177,20 @@
         @media(max-width:1024px){.progress-grid{grid-template-columns:repeat(2,1fr)}.content-grid{grid-template-columns:1fr}}
         @media(max-width:768px){
             .sidebar{display:none}
-            .bottom-nav{display:block}
+            .app-wrapper .bottom-nav{display:block}
             .main-content{margin-left:0;padding:24px 20px calc(100px + var(--safe-bottom))}
             .page-header{flex-direction:column;gap:16px}
             .page-title{font-size:1.6rem}
             .progress-grid{grid-template-columns:1fr;gap:16px}
-            .chat-fab.visible{bottom:calc(100px + var(--safe-bottom));right:20px;width:52px;height:52px}
-            .chat-fab svg{width:22px;height:22px}
+            .app-wrapper .chat-fab{bottom:calc(100px + var(--safe-bottom));right:20px;width:52px;height:52px}
+            .app-wrapper .chat-fab svg{width:22px;height:22px}
             .chat-modal{width:100%;height:90vh;max-height:none;border-radius:var(--radius-lg) var(--radius-lg) 0 0}
         }
         @media(orientation:landscape) and (max-height:500px){.app-wrapper{display:none!important}}
     </style>
 </head>
 <body>
-    <!-- Landing Screen (No sidebar, no nav) -->
+    <!-- Landing Screen (No sidebar, no nav, no FAB) -->
     <div class="screen active" id="landingScreen">
         <div class="landing-screen">
             <div class="landing-content">
@@ -249,7 +249,7 @@
         </div></div></nav>
 
         <!-- Chat FAB -->
-        <button class="chat-fab visible" id="chatFab" onclick="openChat()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button>
+        <button class="chat-fab" id="chatFab" onclick="openChat()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button>
     </div>
 
     <!-- Chat Modal -->
