@@ -13,7 +13,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
     <link rel="shortcut icon" href="/static/favicon.ico">
     <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#FFFFFF">
+    <meta name="theme-color" content="#F5F5F7">
     
     <!-- SEO -->
     <meta name="description" content="AI-powered sales coaching for life insurance agents.">
@@ -23,21 +23,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #FFFFFF;
-            --surface: #F5F5F5;
-            --border: #E5E5E5;
+            /* Aligned with agent.html Shop.app design system */
+            --bg: #F5F5F7;
+            --surface: #FFFFFF;
+            --glass: rgba(255,255,255,0.65);
+            --glass-strong: rgba(255,255,255,0.85);
+            --glass-border: rgba(255,255,255,0.4);
+            --border: rgba(0,0,0,0.06);
+            --border-solid: #E5E5E5;
             --text: #1A1A1A;
-            --text-secondary: #666666;
-            --text-muted: #999999;
-            --accent: #60A5FA;
-            --accent-dark: #3B82F6;
-            --accent-soft: rgba(96, 165, 250, 0.1);
+            --text-secondary: #6B7280;
+            --text-muted: #9CA3AF;
+            --accent: #3B82F6;
+            --accent-dark: #2563EB;
+            --accent-soft: rgba(59,130,246,0.12);
             --success: #10B981;
             --success-soft: rgba(16, 185, 129, 0.1);
             --danger: #EF4444;
             --danger-soft: rgba(239, 68, 68, 0.1);
+            --blur: blur(24px);
+            --blur-strong: blur(40px);
+            --shadow-glass: 0 8px 32px rgba(0,0,0,0.06);
+            --radius-sm: 12px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 32px;
+            --radius-full: 9999px;
             --safe-top: env(safe-area-inset-top, 0px);
             --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --sidebar-width: 72px;
         }
         
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -158,21 +172,178 @@
         
         .app {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             height: 100vh;
             height: 100dvh;
             padding-top: var(--safe-top);
+        }
+        
+        /* ========== SIDEBAR (Desktop) ========== */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--glass);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 100;
+        }
+        
+        .sidebar-logo {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 32px;
+        }
+        
+        .sidebar-logo img {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 0 12px;
+        }
+        
+        .sidebar-nav-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Normal nav (hidden during call) */
+        .sidebar-nav-normal { display: flex; flex-direction: column; gap: 8px; }
+        body.in-call .sidebar-nav-normal { display: none; }
+        
+        /* Call nav (hidden when not in call) */
+        .sidebar-nav-call { display: none; flex-direction: column; gap: 8px; }
+        body.in-call .sidebar-nav-call { display: flex; }
+        
+        .nav-item {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s;
+            text-decoration: none;
+            position: relative;
+        }
+        
+        .nav-item:hover { background: rgba(255,255,255,0.5); color: var(--text); }
+        .nav-item.active { background: var(--accent-soft); color: var(--accent); }
+        .nav-item.danger { color: var(--danger); }
+        .nav-item.danger:hover { background: var(--danger-soft); }
+        .nav-item svg { width: 22px; height: 22px; }
+        
+        /* Tooltip */
+        .nav-item::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: calc(100% + 12px);
+            padding: 8px 12px;
+            background: var(--text);
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border-radius: 8px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.15s;
+            pointer-events: none;
+        }
+        .nav-item:hover::after { opacity: 1; visibility: visible; }
+        
+        /* Badge on nav item */
+        .nav-item .nav-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            background: var(--accent);
+            color: white;
+            border-radius: 9px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .nav-item .nav-badge.empty { display: none; }
+        
+        .sidebar-footer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 0 12px;
+        }
+        
+        /* Normal footer (hidden during call) */
+        .sidebar-footer-normal { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+        body.in-call .sidebar-footer-normal { display: none; }
+        
+        /* Call footer (hidden when not in call) */
+        .sidebar-footer-call { display: none; flex-direction: column; gap: 8px; align-items: center; }
+        body.in-call .sidebar-footer-call { display: flex; }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent-soft);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        
+        /* ========== MAIN AREA ========== */
+        .main-area {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
             padding-bottom: var(--safe-bottom);
         }
         
-        /* ========== HEADER ========== */
+        /* ========== HEADER (Minimal - just timer during call) ========== */
         .header {
-            display: flex;
-            justify-content: space-between;
+            display: none;
+            justify-content: flex-end;
             align-items: center;
-            padding: 16px 20px;
+            padding: 12px 20px;
+            background: var(--glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-bottom: 1px solid var(--border);
             flex-shrink: 0;
         }
+        
+        body.in-call .header { display: flex; }
         
         .header-left {
             display: flex;
@@ -186,29 +357,49 @@
             justify-content: center;
             width: 40px;
             height: 40px;
-            background: var(--surface);
+            background: rgba(255,255,255,0.5);
             border: none;
-            border-radius: 12px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
             transition: all 0.15s ease;
             -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            user-select: none;
-            -webkit-user-select: none;
         }
         
-        .back-btn:hover { background: var(--border); }
+        .back-btn:hover { background: rgba(255,255,255,0.8); }
         .back-btn:active { transform: scale(0.95); }
         .back-btn svg { width: 20px; height: 20px; color: var(--text); }
         
-        .logo {
-            display: block;
-        }
+        .logo { display: none; }
         
         .header-right {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
+        }
+        
+        .timer {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            min-width: 50px;
+            text-align: center;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.5);
+            border-radius: var(--radius-full);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
         
         .agent-badge {
@@ -216,8 +407,8 @@
             align-items: center;
             gap: 6px;
             padding: 6px 12px;
-            background: var(--surface);
-            border-radius: 20px;
+            background: rgba(255,255,255,0.5);
+            border-radius: var(--radius-full);
             font-size: 0.8rem;
             font-weight: 500;
             color: var(--text-secondary);
@@ -227,35 +418,225 @@
         
         .agent-badge.show { display: flex; }
         
-        /* End Session Button - Header version (during calls) */
-        .end-session-btn {
+        /* Hide old end session button - now in sidebar */
+        .end-session-btn { display: none !important; }
+        
+        /* ========== MOBILE BOTTOM PILL ========== */
+        .bottom-pill {
             display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 8px 14px;
-            background: var(--surface);
-            color: var(--text-secondary);
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.8rem;
-            font-weight: 500;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            -webkit-tap-highlight-color: transparent;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 400;
+            padding: 8px 16px calc(8px + var(--safe-bottom));
         }
         
-        .end-session-btn:hover {
-            background: var(--border);
+        .bottom-pill-inner {
+            background: var(--glass-strong);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-full);
+            padding: 6px 8px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+        }
+        
+        .bottom-pill-items {
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        /* Normal nav items (hidden during call) */
+        .pill-nav-normal { display: contents; }
+        body.in-call .pill-nav-normal { display: none; }
+        
+        /* Call nav items (hidden when not in call) */
+        .pill-nav-call { display: none; }
+        body.in-call .pill-nav-call { display: contents; }
+        
+        .pill-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            text-decoration: none;
+            position: relative;
+        }
+        
+        .pill-item.active { color: var(--accent); }
+        .pill-item.danger { color: var(--danger); }
+        .pill-item svg { width: 20px; height: 20px; }
+        .pill-item-label { font-size: 0.6rem; font-weight: 600; }
+        
+        .pill-item .pill-badge {
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            min-width: 16px;
+            height: 16px;
+            padding: 0 4px;
+            background: var(--accent);
+            color: white;
+            border-radius: 8px;
+            font-size: 0.55rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pill-item .pill-badge.empty { display: none; }
+        
+        /* ========== SLIDE-OUT PANEL (Desktop) ========== */
+        .slide-panel {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            width: 320px;
+            height: 100vh;
+            background: var(--glass-strong);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border-right: 1px solid var(--border);
+            z-index: 99;
+            transform: translateX(-100%);
+            opacity: 0;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .slide-panel.open {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .slide-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .slide-panel-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .panel-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+        
+        .panel-title {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        
+        .slide-panel-close {
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: all 0.15s;
+        }
+        
+        .slide-panel-close:hover {
+            background: rgba(0,0,0,0.05);
             color: var(--text);
         }
         
-        .end-session-btn:active {
-            transform: scale(0.98);
+        .slide-panel-close svg { width: 20px; height: 20px; }
+        
+        .slide-panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
         }
         
-        .end-session-btn.show {
+        /* ========== MOBILE BOTTOM SHEET ========== */
+        .bottom-sheet-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            z-index: 500;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .bottom-sheet-backdrop.visible {
+            opacity: 1;
+        }
+        
+        .bottom-sheet {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60vh;
+            background: var(--glass-strong);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            border: 1px solid var(--glass-border);
+            border-bottom: none;
+            z-index: 600;
+            flex-direction: column;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+        
+        .bottom-sheet.open {
+            transform: translateY(0);
+        }
+        
+        .sheet-handle {
             display: flex;
+            justify-content: center;
+            padding: 12px;
+        }
+        
+        .sheet-handle::after {
+            content: '';
+            width: 40px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+        }
+        
+        .bottom-sheet-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 20px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .bottom-sheet-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
         }
         
         .agent-badge svg {
@@ -368,7 +749,15 @@
         
         .identify-card {
             width: 100%;
-            max-width: 300px;
+            max-width: 400px;
+            /* Glass "monitor" treatment */
+            background: var(--glass-strong);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-glass);
+            padding: 48px 40px;
         }
         
         .identify-header {
@@ -513,7 +902,7 @@
             font-size: 1rem;
             font-weight: 600;
             border: none;
-            border-radius: 14px;
+            border-radius: var(--radius-full);
             cursor: pointer;
             transition: all 0.2s ease;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -559,10 +948,24 @@
             align-items: center;
         }
         
+        /* Glass card wrapper for start screen content */
+        .start-card {
+            background: var(--glass-strong);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-glass);
+            padding: 48px 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        
         .start-icon {
             width: 80px;
             height: 80px;
-            margin-bottom: 24px;
+            margin: 0 auto 24px;
             background: var(--accent-soft);
             border-radius: 20px;
             display: flex;
@@ -573,7 +976,7 @@
         .start-icon svg {
             width: 40px;
             height: 40px;
-            color: var(--accent-dark);
+            color: var(--accent);
         }
         
         .start-title {
@@ -588,7 +991,6 @@
             font-size: 0.9rem;
             color: var(--text-secondary);
             margin-bottom: 32px;
-            max-width: 280px;
             line-height: 1.5;
         }
         
@@ -598,8 +1000,8 @@
             justify-content: center;
             gap: 10px;
             padding: 12px 20px;
-            background: var(--surface);
-            border-radius: 12px;
+            background: rgba(255,255,255,0.5);
+            border-radius: var(--radius-sm);
             margin-bottom: 24px;
             font-size: 1rem;
             font-weight: 500;
@@ -611,7 +1013,7 @@
             height: 18px;
             min-width: 18px;
             flex-shrink: 0;
-            color: var(--accent-dark);
+            color: var(--accent);
         }
         
         .start-btn {
@@ -626,11 +1028,10 @@
             font-size: 1rem;
             font-weight: 600;
             border: none;
-            border-radius: 14px;
+            border-radius: var(--radius-full);
             cursor: pointer;
             transition: all 0.2s ease;
             width: 100%;
-            max-width: 300px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
         }
         
@@ -707,7 +1108,6 @@
         /* ========== CLIENT PHONE INPUT ========== */
         .client-phone-section {
             width: 100%;
-            max-width: 300px;
             margin-bottom: 24px;
         }
         
@@ -794,6 +1194,20 @@
             align-items: center;
         }
         
+        /* Glass card wrapper */
+        .connecting-card {
+            background: var(--glass-strong);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-glass);
+            padding: 48px 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        
         .connecting-title {
             font-family: 'Outfit', sans-serif;
             font-size: 1.5rem;
@@ -806,7 +1220,6 @@
             font-size: 0.9rem;
             color: var(--text-secondary);
             margin-bottom: 32px;
-            max-width: 260px;
             line-height: 1.5;
         }
         
@@ -817,7 +1230,6 @@
             gap: 0;
             margin-bottom: 32px;
             width: 100%;
-            max-width: 280px;
             position: relative;
         }
 
@@ -852,7 +1264,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--surface);
+            background: rgba(255,255,255,0.5);
             border: 1.5px solid var(--border);
             flex-shrink: 0;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -955,20 +1367,21 @@
         }
         
         .connecting-cancel {
+            width: 100%;
             padding: 12px 24px;
-            background: transparent;
-            color: var(--text-muted);
+            background: rgba(255,255,255,0.5);
+            color: var(--text-secondary);
             font-family: 'Outfit', sans-serif;
             font-size: 0.9rem;
             font-weight: 500;
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
             transition: all 0.15s ease;
         }
         
         .connecting-cancel:hover {
-            background: var(--surface);
+            background: rgba(255,255,255,0.8);
             color: var(--text);
         }
         
@@ -2571,20 +2984,35 @@
             align-items: center;
         }
         
+        /* Glass card wrapper */
+        .complete-card {
+            background: var(--glass-strong);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-glass);
+            padding: 48px 40px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        
         .complete-icon {
-            width: 72px;
-            height: 72px;
+            width: 80px;
+            height: 80px;
             background: var(--success-soft);
-            border-radius: 50%;
+            border: 2px solid var(--success);
+            border-radius: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 24px;
+            margin: 0 auto 24px;
         }
         
         .complete-icon svg {
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             color: var(--success);
         }
         
@@ -2626,7 +3054,6 @@
             flex-direction: column;
             gap: 12px;
             width: 100%;
-            max-width: 280px;
         }
         
         .complete-btn {
@@ -2634,13 +3061,10 @@
             font-family: 'Outfit', sans-serif;
             font-size: 1rem;
             font-weight: 600;
-            border-radius: 14px;
+            border-radius: var(--radius-full);
             cursor: pointer;
             transition: all 0.2s ease;
             -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            user-select: none;
-            -webkit-user-select: none;
         }
         
         .complete-btn:active {
@@ -2651,23 +3075,26 @@
             background: var(--text);
             color: white;
             border: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
         }
         
         .complete-btn.secondary {
-            background: var(--surface);
+            background: rgba(255,255,255,0.5);
             color: var(--text-secondary);
             border: 1px solid var(--border);
         }
         
         .complete-btn.primary:hover { transform: translateY(-2px); }
         .complete-btn.primary:active { transform: scale(0.98); }
-        .complete-btn.secondary:hover { background: var(--bg); }
+        .complete-btn.secondary:hover { background: rgba(255,255,255,0.8); }
 
         /* ========== ERROR MODAL ========== */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2686,12 +3113,15 @@
         }
         
         .modal {
-            background: var(--bg);
-            border-radius: 16px;
-            padding: 24px;
+            background: var(--glass-strong);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-glass);
+            padding: 28px;
             width: 100%;
-            max-width: 340px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+            max-width: 360px;
             transform: scale(0.95);
             transition: transform 0.2s ease;
         }
@@ -2711,7 +3141,7 @@
             width: 36px;
             height: 36px;
             background: var(--danger-soft);
-            border-radius: 10px;
+            border-radius: var(--radius-sm);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -2746,7 +3176,7 @@
         .modal-btn {
             flex: 1;
             padding: 12px 16px;
-            border-radius: 10px;
+            border-radius: var(--radius-full);
             font-family: 'Inter', sans-serif;
             font-size: 0.875rem;
             font-weight: 500;
@@ -2755,13 +3185,13 @@
         }
         
         .modal-btn-cancel {
-            background: transparent;
+            background: rgba(255,255,255,0.5);
             border: 1px solid var(--border);
             color: var(--text-secondary);
         }
         
         .modal-btn-cancel:hover {
-            background: var(--surface);
+            background: rgba(255,255,255,0.8);
             color: var(--text);
         }
         
@@ -2975,12 +3405,53 @@
         
         /* ========== RESPONSIVE ========== */
         @media (min-width: 768px) {
-            .header { padding: 20px 32px; }
             .teleprompter { padding: 40px; }
-            .review-screen, .outcome-screen, .noclose-screen, .identify-screen, .start-screen, .connecting-screen, .connected-screen {
-                max-width: 500px;
-                margin: 0 auto;
+            .identify-screen, .start-screen, .connecting-screen, .connected-screen, .complete-screen {
+                max-width: none;
+                margin: 0;
             }
+        }
+        
+        /* Mobile: Hide sidebar, show bottom pill */
+        @media (max-width: 767px) {
+            .sidebar { display: none; }
+            .main-area { margin-left: 0; }
+            .bottom-pill { display: block; }
+            .slide-panel { display: none; }
+            .bottom-sheet { display: flex; }
+            .bottom-sheet-backdrop { display: block; }
+            
+            /* Add padding for bottom pill */
+            .identify-screen,
+            .start-screen,
+            .connecting-screen,
+            .connected-screen,
+            .complete-screen {
+                padding-bottom: 100px;
+            }
+            
+            .call-screen {
+                padding-bottom: 80px;
+            }
+            
+            /* Cards are full-width on mobile */
+            .identify-card,
+            .start-card,
+            .connecting-card,
+            .complete-card {
+                padding: 32px 24px;
+                border-radius: var(--radius-lg);
+            }
+        }
+        
+        /* Desktop: Show sidebar, hide bottom pill */
+        @media (min-width: 768px) {
+            .sidebar { display: flex; }
+            .main-area { margin-left: var(--sidebar-width); }
+            .bottom-pill { display: none; }
+            .slide-panel { display: flex; }
+            .bottom-sheet { display: none; }
+            .bottom-sheet-backdrop { display: none; }
         }
         
         /* ========== PAGE LOADER ========== */
@@ -3226,27 +3697,103 @@
     </div>
     
     <div class="app" id="app">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-left">
-                <button class="back-btn" onclick="handleBack()" aria-label="Go back">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <path d="M15 18l-6-6 6-6"/>
-                    </svg>
-                </button>
-                <img src="/static/logo.png" alt="Coachd" height="24" class="logo">
+        <!-- ========== DESKTOP SIDEBAR ========== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo">
+                <img src="/static/favicon.svg" alt="Coachd">
             </div>
-            <div class="header-right">
-                <span class="timer" id="timer">0:00</span>
-                <button class="end-session-btn" id="endSessionBtn" onclick="Coachd.endCall()">End</button>
+            
+            <nav class="sidebar-nav">
+                <!-- Normal nav (shown when NOT in call) -->
+                <div class="sidebar-nav-normal">
+                    <a href="/" class="nav-item" data-tooltip="Dashboard">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                    </a>
+                    <a href="/call" class="nav-item active" data-tooltip="Live Call">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                    </a>
+                    <a href="#" class="nav-item" data-tooltip="Resources">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                    </a>
+                </div>
+                
+                <!-- Call nav (shown DURING call) -->
+                <div class="sidebar-nav-call">
+                    <button class="nav-item" id="sidebarTranscriptBtn" data-tooltip="Transcript" onclick="Coachd.toggleSlidePanel('transcript')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                        <span class="nav-badge empty" id="sidebarTranscriptBadge">0</span>
+                    </button>
+                    <button class="nav-item" id="sidebarHistoryBtn" data-tooltip="History" onclick="Coachd.toggleSlidePanel('history')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span class="nav-badge empty" id="sidebarHistoryBadge">0</span>
+                    </button>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <!-- Normal footer (shown when NOT in call) -->
+                <div class="sidebar-footer-normal">
+                    <a href="#" class="nav-item" data-tooltip="Settings">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                    </a>
+                    <div class="user-avatar" id="userAvatar">A</div>
+                </div>
+                
+                <!-- Call footer (shown DURING call) -->
+                <div class="sidebar-footer-call">
+                    <button class="nav-item danger" data-tooltip="End Call" onclick="Coachd.endCall()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.68 13.31a16 16 0 003.41 2.6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7 2 2 0 011.72 2v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 002.59 3.4z"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                    </button>
+                </div>
             </div>
-        </header>
+        </aside>
         
-        <!-- Identify Screen -->
-        <div class="screen identify-screen active" id="identifyScreen">
-            <div class="identify-card">
-                <div class="identify-header">
-                    <h1 class="identify-title">Agent Setup</h1>
+        <!-- ========== SLIDE-OUT PANELS (Desktop) ========== -->
+        <div class="slide-panel" id="transcriptSlidePanel">
+            <div class="slide-panel-header">
+                <div class="slide-panel-header-left">
+                    <div class="panel-dot"></div>
+                    <span class="panel-title">Live Transcript</span>
+                </div>
+                <button class="slide-panel-close" onclick="Coachd.toggleSlidePanel('transcript')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="slide-panel-content" id="transcriptSlideFeed">
+                <div class="transcript-empty">Waiting for conversation...</div>
+            </div>
+        </div>
+        
+        <div class="slide-panel" id="historySlidePanel">
+            <div class="slide-panel-header">
+                <div class="slide-panel-header-left">
+                    <div class="panel-dot"></div>
+                    <span class="panel-title">Guidance History</span>
+                </div>
+                <button class="slide-panel-close" onclick="Coachd.toggleSlidePanel('history')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="slide-panel-content" id="historySlideFeed">
+                <div class="history-empty">No guidance yet</div>
+            </div>
+        </div>
+        
+        <!-- ========== MAIN AREA ========== -->
+        <div class="main-area">
+            <!-- Timer Header (only visible during active call) -->
+            <header class="header">
+                <div class="header-right">
+                    <div class="status-dot"></div>
+                    <span class="timer" id="timer">0:00</span>
+                </div>
+            </header>
+        
+            <!-- Identify Screen -->
+            <div class="screen identify-screen active" id="identifyScreen">
+                <div class="identify-card">
+                    <div class="identify-header">
+                        <h1 class="identify-title">Agent Setup</h1>
                     <p class="identify-subtitle">One-time setup to get started</p>
                 </div>
                 
@@ -3269,84 +3816,88 @@
         
         <!-- Start Screen -->
         <div class="screen start-screen" id="startScreen">
-            <h1 class="start-title">Ready to close?</h1>
-            <p class="start-subtitle">Your coach is on standby</p>
-            
-            <div class="start-phone-display" id="phoneDisplay">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                </svg>
-                <span id="phoneDisplayNumber">(404) 555-1234</span>
+            <div class="start-card">
+                <h1 class="start-title">Ready to close?</h1>
+                <p class="start-subtitle">Your coach is on standby</p>
+                
+                <div class="start-phone-display" id="phoneDisplay">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                    <span id="phoneDisplayNumber">(404) 555-1234</span>
+                </div>
+                
+                <!-- Client Phone Input for Click-to-Call -->
+                <div class="client-phone-section">
+                    <label class="form-label">CLIENT PHONE NUMBER</label>
+                    <input type="tel" 
+                           id="clientPhoneInput" 
+                           class="form-input"
+                           placeholder="(555) 123-4567"
+                           autocomplete="tel">
+                    <p class="client-phone-error" id="clientPhoneError">Please enter a valid phone number</p>
+                    <div class="client-phone-hint">We'll dial your client after you answer</div>
+                </div>
+                
+                <button class="start-btn" id="startBtn" onclick="Coachd.startCall()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                    </svg>
+                    Start Coaching
+                </button>
+                <button class="change-agent" onclick="Coachd.changeAgent()">Not you? Change settings</button>
             </div>
-            
-            <!-- Client Phone Input for Click-to-Call -->
-            <div class="client-phone-section">
-                <label class="form-label">CLIENT PHONE NUMBER</label>
-                <input type="tel" 
-                       id="clientPhoneInput" 
-                       class="form-input"
-                       placeholder="(555) 123-4567"
-                       autocomplete="tel">
-                <p class="client-phone-error" id="clientPhoneError">Please enter a valid phone number</p>
-                <div class="client-phone-hint">We'll dial your client after you answer</div>
-            </div>
-            
-            <button class="start-btn" id="startBtn" onclick="Coachd.startCall()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                </svg>
-                Start Coaching
-            </button>
-            <button class="change-agent" onclick="Coachd.changeAgent()">Not you? Change settings</button>
         </div>
         
         <!-- Connecting Screen -->
         <div class="screen connecting-screen" id="connectingScreen">
-            <h1 class="connecting-title" id="connectingTitle">Calling Your Phone...</h1>
-            <p class="connecting-subtitle" id="connectingSubtitle">Answer, then we'll dial your client</p>
-            
-            <div class="connection-steps">
-                <div class="connection-step active" id="stepAgent" data-step="agent">
-                    <div class="step-indicator" id="stepAgentIndicator">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
-                        </svg>
+            <div class="connecting-card">
+                <h1 class="connecting-title" id="connectingTitle">Calling Your Phone...</h1>
+                <p class="connecting-subtitle" id="connectingSubtitle">Answer, then we'll dial your client</p>
+                
+                <div class="connection-steps">
+                    <div class="connection-step active" id="stepAgent" data-step="agent">
+                        <div class="step-indicator" id="stepAgentIndicator">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+                            </svg>
+                        </div>
+                        <div class="step-content">
+                            <span class="step-text">Your phone</span>
+                            <span class="step-subtext" id="stepAgentSubtext">Ringing...</span>
+                        </div>
                     </div>
-                    <div class="step-content">
-                        <span class="step-text">Your phone</span>
-                        <span class="step-subtext" id="stepAgentSubtext">Ringing...</span>
+                    
+                    <div class="connection-step waiting" id="stepClient" data-step="client">
+                        <div class="step-indicator" id="stepClientIndicator">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div class="step-content">
+                            <span class="step-text">Client</span>
+                            <span class="step-subtext" id="stepClientSubtext">Waiting...</span>
+                        </div>
+                    </div>
+                    
+                    <div class="connection-step waiting" id="stepReady" data-step="ready">
+                        <div class="step-indicator" id="stepReadyIndicator">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                <rect x="4" y="8" width="3" height="8" rx="1.5"/>
+                                <rect x="10.5" y="4" width="3" height="16" rx="1.5"/>
+                                <rect x="17" y="6" width="3" height="12" rx="1.5"/>
+                            </svg>
+                        </div>
+                        <div class="step-content">
+                            <span class="step-text">Coach</span>
+                            <span class="step-subtext" id="stepReadySubtext">Ready to guide</span>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="connection-step waiting" id="stepClient" data-step="client">
-                    <div class="step-indicator" id="stepClientIndicator">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                    </div>
-                    <div class="step-content">
-                        <span class="step-text">Client</span>
-                        <span class="step-subtext" id="stepClientSubtext">Waiting...</span>
-                    </div>
-                </div>
-                
-                <div class="connection-step waiting" id="stepReady" data-step="ready">
-                    <div class="step-indicator" id="stepReadyIndicator">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                            <rect x="4" y="8" width="3" height="8" rx="1.5"/>
-                            <rect x="10.5" y="4" width="3" height="16" rx="1.5"/>
-                            <rect x="17" y="6" width="3" height="12" rx="1.5"/>
-                        </svg>
-                    </div>
-                    <div class="step-content">
-                        <span class="step-text">Coach</span>
-                        <span class="step-subtext" id="stepReadySubtext">Ready to guide</span>
-                    </div>
-                </div>
+                <button class="connecting-cancel" onclick="Coachd.cancelCall()">Cancel</button>
             </div>
-            
-            <button class="connecting-cancel" onclick="Coachd.cancelCall()">Cancel</button>
         </div>
         
         <!-- Connected Screen (shows briefly when client picks up) -->
@@ -3483,15 +4034,22 @@
         
         <!-- Session Complete Screen -->
         <div class="screen complete-screen" id="completeScreen">
-            <h1 class="complete-title">Session Complete</h1>
-            <div class="complete-stats">
-                <div class="complete-stat">
-                    <span class="complete-stat-value" id="completeDuration">0:00</span>
-                    <span class="complete-stat-label">Duration</span>
+            <div class="complete-card">
+                <div class="complete-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
                 </div>
-            </div>
-            <div class="complete-actions">
-                <button class="complete-btn primary" onclick="Coachd.startNewCall()">New Call</button>
+                <h1 class="complete-title">Session Complete</h1>
+                <div class="complete-stats">
+                    <div class="complete-stat">
+                        <span class="complete-stat-value" id="completeDuration">0:00</span>
+                        <span class="complete-stat-label">Duration</span>
+                    </div>
+                </div>
+                <div class="complete-actions">
+                    <button class="complete-btn primary" onclick="Coachd.startNewCall()">New Call</button>
+                </div>
             </div>
         </div>
         
@@ -3613,7 +4171,89 @@
                 </div>
             </div>
         </div>
-    </div>
+        
+        </div><!-- End .main-area -->
+        
+        <!-- ========== MOBILE BOTTOM PILL ========== -->
+        <nav class="bottom-pill" id="bottomPill">
+            <div class="bottom-pill-inner">
+                <div class="bottom-pill-items">
+                    <!-- Normal nav (shown when NOT in call) -->
+                    <div class="pill-nav-normal">
+                        <a href="/" class="pill-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                            <span class="pill-item-label">Home</span>
+                        </a>
+                        <a href="/call" class="pill-item active">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                            <span class="pill-item-label">Call</span>
+                        </a>
+                        <a href="#" class="pill-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                            <span class="pill-item-label">Resources</span>
+                        </a>
+                        <a href="#" class="pill-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                            <span class="pill-item-label">Settings</span>
+                        </a>
+                    </div>
+                    
+                    <!-- Call nav (shown DURING call) -->
+                    <div class="pill-nav-call">
+                        <button class="pill-item" id="pillTranscriptBtn" onclick="Coachd.toggleBottomSheet('transcript')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                            <span class="pill-badge empty" id="pillTranscriptBadge">0</span>
+                            <span class="pill-item-label">Transcript</span>
+                        </button>
+                        <button class="pill-item" id="pillHistoryBtn" onclick="Coachd.toggleBottomSheet('history')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span class="pill-badge empty" id="pillHistoryBadge">0</span>
+                            <span class="pill-item-label">History</span>
+                        </button>
+                        <button class="pill-item danger" onclick="Coachd.endCall()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.68 13.31a16 16 0 003.41 2.6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7 2 2 0 011.72 2v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 002.59 3.4z"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                            <span class="pill-item-label">End</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        
+        <!-- ========== MOBILE BOTTOM SHEETS ========== -->
+        <div class="bottom-sheet-backdrop" id="bottomSheetBackdrop" onclick="Coachd.closeBottomSheet()"></div>
+        
+        <div class="bottom-sheet" id="transcriptBottomSheet">
+            <div class="sheet-handle"></div>
+            <div class="bottom-sheet-header">
+                <div class="slide-panel-header-left">
+                    <div class="panel-dot"></div>
+                    <span class="panel-title">Live Transcript</span>
+                </div>
+                <button class="slide-panel-close" onclick="Coachd.closeBottomSheet()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="bottom-sheet-content" id="transcriptSheetFeed">
+                <div class="transcript-empty">Waiting for conversation...</div>
+            </div>
+        </div>
+        
+        <div class="bottom-sheet" id="historyBottomSheet">
+            <div class="sheet-handle"></div>
+            <div class="bottom-sheet-header">
+                <div class="slide-panel-header-left">
+                    <div class="panel-dot"></div>
+                    <span class="panel-title">Guidance History</span>
+                </div>
+                <button class="slide-panel-close" onclick="Coachd.closeBottomSheet()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="bottom-sheet-content" id="historySheetFeed">
+                <div class="history-empty">No guidance yet</div>
+            </div>
+        </div>
+    </div><!-- End .app -->
     
     <!-- Page Loader -->
     <div class="page-loader" id="pageLoader">
@@ -4060,6 +4700,19 @@
             // Timer visible during connected and call screens
             if (dom.timer) {
                 dom.timer.style.display = (screenId === 'callScreen' || screenId === 'connectedScreen') ? 'block' : 'none';
+            }
+            
+            // Manage in-call state for nav transformation
+            const isInCall = (screenId === 'callScreen' || screenId === 'connectedScreen');
+            setInCallState(isInCall);
+            
+            // Close any open panels/sheets when leaving call screen
+            if (!isInCall) {
+                const transcriptPanel = document.getElementById('transcriptSlidePanel');
+                const historyPanel = document.getElementById('historySlidePanel');
+                if (transcriptPanel) transcriptPanel.classList.remove('open');
+                if (historyPanel) historyPanel.classList.remove('open');
+                closeBottomSheet();
             }
         }
         
@@ -5117,6 +5770,9 @@
             
             // Update scroll fade indicator
             updateScrollFade();
+            
+            // Sync to slide panel and bottom sheet
+            syncTranscriptToNav();
         }
         
         function createTranscriptMessage(speaker, text) {
@@ -5287,17 +5943,25 @@
         function updateHistoryCount() {
             const count = state.guidanceHistory.length;
             
-            // Desktop count
+            // Desktop count (old panels)
             if (dom.historyCount) {
                 dom.historyCount.textContent = count;
                 dom.historyCount.classList.toggle('empty', count === 0);
             }
             
-            // Mobile count
+            // Mobile count (old panels)
             if (dom.mobileHistoryCount) {
                 dom.mobileHistoryCount.textContent = count;
                 dom.mobileHistoryCount.classList.toggle('empty', count === 0);
             }
+            
+            // Update nav badges (new sidebar/pill)
+            const transcriptCount = dom.transcriptFeed ? 
+                dom.transcriptFeed.querySelectorAll('.transcript-msg').length : 0;
+            updateNavBadges(transcriptCount, count);
+            
+            // Sync history to slide panel and bottom sheet
+            syncHistoryToNav();
         }
         
         function initTranscriptScroll() {
@@ -5886,6 +6550,130 @@
             setTimeout(hidePageLoader, 300);
         });
         
+        // ==================== SIDEBAR & MOBILE NAV ====================
+        
+        // Toggle body class for in-call state (controls nav transformation)
+        function setInCallState(isInCall) {
+            if (isInCall) {
+                document.body.classList.add('in-call');
+            } else {
+                document.body.classList.remove('in-call');
+            }
+        }
+        
+        // Desktop slide panel toggle
+        function toggleSlidePanel(type) {
+            const transcriptPanel = document.getElementById('transcriptSlidePanel');
+            const historyPanel = document.getElementById('historySlidePanel');
+            const transcriptBtn = document.getElementById('sidebarTranscriptBtn');
+            const historyBtn = document.getElementById('sidebarHistoryBtn');
+            
+            if (type === 'transcript') {
+                const isOpen = transcriptPanel.classList.contains('open');
+                transcriptPanel.classList.toggle('open');
+                historyPanel.classList.remove('open');
+                if (transcriptBtn) transcriptBtn.classList.toggle('active', !isOpen);
+                if (historyBtn) historyBtn.classList.remove('active');
+            } else if (type === 'history') {
+                const isOpen = historyPanel.classList.contains('open');
+                historyPanel.classList.toggle('open');
+                transcriptPanel.classList.remove('open');
+                if (historyBtn) historyBtn.classList.toggle('active', !isOpen);
+                if (transcriptBtn) transcriptBtn.classList.remove('active');
+            }
+        }
+        
+        // Mobile bottom sheet toggle
+        function toggleBottomSheet(type) {
+            const backdrop = document.getElementById('bottomSheetBackdrop');
+            const transcriptSheet = document.getElementById('transcriptBottomSheet');
+            const historySheet = document.getElementById('historyBottomSheet');
+            
+            const transcriptOpen = transcriptSheet.classList.contains('open');
+            const historyOpen = historySheet.classList.contains('open');
+            
+            // Close all first
+            transcriptSheet.classList.remove('open');
+            historySheet.classList.remove('open');
+            
+            if (type === 'transcript' && !transcriptOpen) {
+                transcriptSheet.classList.add('open');
+                backdrop.classList.add('visible');
+            } else if (type === 'history' && !historyOpen) {
+                historySheet.classList.add('open');
+                backdrop.classList.add('visible');
+            } else {
+                backdrop.classList.remove('visible');
+            }
+        }
+        
+        function closeBottomSheet() {
+            document.getElementById('bottomSheetBackdrop').classList.remove('visible');
+            document.getElementById('transcriptBottomSheet').classList.remove('open');
+            document.getElementById('historyBottomSheet').classList.remove('open');
+        }
+        
+        // Update badges on sidebar and mobile pill
+        function updateNavBadges(transcriptCount, historyCount) {
+            // Desktop sidebar
+            const sidebarTranscript = document.getElementById('sidebarTranscriptBadge');
+            const sidebarHistory = document.getElementById('sidebarHistoryBadge');
+            if (sidebarTranscript) {
+                sidebarTranscript.textContent = transcriptCount;
+                sidebarTranscript.classList.toggle('empty', transcriptCount === 0);
+            }
+            if (sidebarHistory) {
+                sidebarHistory.textContent = historyCount;
+                sidebarHistory.classList.toggle('empty', historyCount === 0);
+            }
+            
+            // Mobile pill
+            const pillTranscript = document.getElementById('pillTranscriptBadge');
+            const pillHistory = document.getElementById('pillHistoryBadge');
+            if (pillTranscript) {
+                pillTranscript.textContent = transcriptCount;
+                pillTranscript.classList.toggle('empty', transcriptCount === 0);
+            }
+            if (pillHistory) {
+                pillHistory.textContent = historyCount;
+                pillHistory.classList.toggle('empty', historyCount === 0);
+            }
+        }
+        
+        // Sync transcript content to slide panel and bottom sheet
+        function syncTranscriptToNav() {
+            const mainFeed = document.getElementById('transcriptFeed');
+            const slideFeed = document.getElementById('transcriptSlideFeed');
+            const sheetFeed = document.getElementById('transcriptSheetFeed');
+            
+            if (mainFeed && slideFeed) {
+                slideFeed.innerHTML = mainFeed.innerHTML;
+            }
+            if (mainFeed && sheetFeed) {
+                sheetFeed.innerHTML = mainFeed.innerHTML;
+            }
+            
+            // Update badges
+            const transcriptCount = mainFeed ? 
+                mainFeed.querySelectorAll('.transcript-msg').length : 0;
+            const historyCount = state.guidanceHistory.length;
+            updateNavBadges(transcriptCount, historyCount);
+        }
+        
+        // Sync history content to slide panel and bottom sheet
+        function syncHistoryToNav() {
+            const mainFeed = document.getElementById('historyFeed');
+            const slideFeed = document.getElementById('historySlideFeed');
+            const sheetFeed = document.getElementById('historySheetFeed');
+            
+            if (mainFeed && slideFeed) {
+                slideFeed.innerHTML = mainFeed.innerHTML;
+            }
+            if (mainFeed && sheetFeed) {
+                sheetFeed.innerHTML = mainFeed.innerHTML;
+            }
+        }
+        
         // Initialize
         init();
         
@@ -5914,6 +6702,10 @@
             resendCode,
             showVerifyState,
             closeVerifyModal,
+            // New nav methods
+            toggleSlidePanel,
+            toggleBottomSheet,
+            closeBottomSheet,
             getState: () => state
         };
     })();
