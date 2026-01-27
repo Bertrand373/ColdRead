@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Coachd | Real-Time Sales Coaching</title>
     
-        <!-- Favicon -->
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="icon" type="image/png" sizes="96x96" href="/static/favicon-96x96.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
@@ -31,8 +31,11 @@
             --color-text-secondary: #6B7280;
             --color-text-muted: #9CA3AF;
             --color-accent: #60A5FA;
+            --color-accent-dark: #3B82F6;
             --color-accent-soft: rgba(96, 165, 250, 0.1);
             --color-ready: #10B981;
+            --color-ready-soft: rgba(16, 185, 129, 0.1);
+            --color-warning: #F59E0B;
             --color-error: #EF4444;
             --color-error-soft: rgba(239, 68, 68, 0.1);
             
@@ -50,6 +53,9 @@
             
             --safe-top: env(safe-area-inset-top, 0px);
             --safe-bottom: env(safe-area-inset-bottom, 0px);
+            
+            --sidebar-width: 260px;
+            --sidebar-collapsed: 72px;
         }
         
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -63,7 +69,7 @@
             -webkit-font-smoothing: antialiased;
         }
         
-        /* ========== LANDSCAPE BLOCKER (PREMIUM) ========== */
+        /* ========== LANDSCAPE BLOCKER ========== */
         .landscape-blocker {
             display: none;
             position: fixed;
@@ -78,75 +84,9 @@
             gap: 28px;
         }
         
-        .landscape-blocker::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-            opacity: 0.025;
-            pointer-events: none;
-        }
-
-        .landscape-logo {
-            height: 22px;
-            opacity: 0.9;
-        }
-
-        .phone-wrapper {
-            width: 160px;
-            height: 160px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        .phone-shadow {
-            position: absolute;
-            width: 40px;
-            height: 10px;
-            background: radial-gradient(ellipse, rgba(0,0,0,0.18) 0%, transparent 70%);
-            bottom: 4px;
-            border-radius: 50%;
-            animation: shadowPulse 7s ease-in-out infinite;
-        }
-        
-        @keyframes shadowPulse {
-            0%, 7%, 43%, 50%, 57%, 93%, 100% {
-                transform: scaleX(2);
-                opacity: 0.2;
-            }
-            25%, 75% {
-                transform: scaleX(1);
-                opacity: 0.6;
-            }
-        }
-
-        .phone-device {
-            position: absolute;
-            width: 48px;
-            height: 100px;
-            animation: rotatePhone 7s cubic-bezier(0.33, 1, 0.68, 1) infinite;
-            filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.2)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
-        }
-        
-        @keyframes rotatePhone {
-            0%, 7% { transform: rotate(90deg); }
-            25%, 43% { transform: rotate(0deg); }
-            50%, 57% { transform: rotate(-90deg); }
-            75%, 93% { transform: rotate(0deg); }
-            100% { transform: rotate(90deg); }
-        }
-
-        .phone-device svg {
-            width: 100%;
-            height: 100%;
-        }
-
-        .landscape-text {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
+        @media (orientation: landscape) and (max-height: 500px) {
+            .landscape-blocker { display: flex; }
+            .app { display: none !important; }
         }
 
         .landscape-title {
@@ -154,112 +94,23 @@
             font-size: 1.5rem;
             font-weight: 600;
             color: #1A1A1A;
-            letter-spacing: -0.02em;
         }
         
         .landscape-subtitle {
             font-size: 0.85rem;
             color: #9CA3AF;
         }
-
-        @media (orientation: landscape) and (max-height: 500px) {
-            .landscape-blocker { display: flex; }
-            .app { display: none !important; }
-        }
         
-        /* ========== APP LAYOUT ========== */
-        .app {
-            display: flex;
-            flex-direction: column;
-            min-height: 100%;
-            padding-top: var(--safe-top);
-        }
-        
-        .header {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            flex-shrink: 0;
-            display: none;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 32px;
-            height: 60px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-        }
-        
-        .header.visible {
-            display: flex;
-        }
-        
-        .logo {
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-        }
-        
-        .logo img {
-            display: block;
-        }
-        
-        .logo-wordmark {
-            font-family: var(--font-display);
-            font-weight: 600;
-            font-size: 1.25rem;
-            letter-spacing: -0.02em;
-        }
-        
-        .logo-wordmark .name { color: var(--color-text); }
-        .logo-wordmark .suffix { color: var(--color-accent); }
-        
-        .agency-badge {
-            display: none;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: var(--color-surface);
-            border-radius: var(--radius-full);
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: var(--color-text-secondary);
-        }
-        
-        .agency-badge.visible { display: flex; }
-        
-        .agency-badge svg {
-            width: 14px;
-            height: 14px;
-            color: var(--color-ready);
-        }
-        
-        /* ========== MAIN CONTENT ========== */
-        .main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 24px 20px;
-            padding-bottom: calc(24px + var(--safe-bottom));
-            overflow-y: auto;
-        }
-        
+        /* ========== SCREENS ========== */
         .screen {
             display: none;
-            flex: 1;
-            flex-direction: column;
-            animation: fadeIn 0.3s ease;
+            min-height: 100%;
         }
         
         .screen.active { display: flex; }
         
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* ========== AGENCY CODE SCREEN ========== */
-        .code-screen {
+        /* ========== CODE SCREEN (Login) ========== */
+        .code-screen-wrapper {
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -270,8 +121,7 @@
             position: relative;
         }
         
-        /* Subtle radial gradient for depth */
-        .code-screen::before {
+        .code-screen-wrapper::before {
             content: '';
             position: absolute;
             top: -20%;
@@ -283,20 +133,7 @@
             pointer-events: none;
         }
         
-        .landing-logo {
-            font-family: var(--font-display);
-            font-weight: 600;
-            font-size: 2rem;
-            letter-spacing: -0.03em;
-            margin-bottom: 16px;
-        }
-        
-        .landing-logo .name { color: var(--color-text); }
-        .landing-logo .suffix { color: var(--color-accent); }
-        
-        .landing-logo-img {
-            margin-bottom: 12px;
-        }
+        .landing-logo-img { margin-bottom: 12px; }
         
         .welcome-subtitle {
             font-size: 1.05rem;
@@ -362,7 +199,28 @@
         
         .code-error.visible { display: block; }
         
-        /* ========== LANDING FOOTER ========== */
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px 40px;
+            background: var(--color-text);
+            color: white;
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        }
+        
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+        .btn-primary:active { transform: translateY(0); }
+        .btn-primary svg { width: 18px; height: 18px; }
+        
         .landing-footer {
             position: absolute;
             bottom: 24px;
@@ -374,7 +232,6 @@
         .landing-footer-text {
             font-size: 0.75rem;
             color: var(--color-text-muted);
-            font-weight: 400;
         }
         
         .landing-footer-links {
@@ -388,168 +245,529 @@
             font-size: 0.7rem;
             color: var(--color-text-muted);
             text-decoration: none;
-            transition: color 0.15s ease;
         }
         
-        .landing-footer-link:hover {
-            color: var(--color-text-secondary);
+        .landing-footer-link:hover { color: var(--color-text-secondary); }
+        
+        /* ========== DASHBOARD SCREEN ========== */
+        .dashboard-screen {
+            flex-direction: row;
+            background: var(--color-surface);
         }
         
-        .btn-primary {
-            display: inline-flex;
+        /* ========== SIDEBAR ========== */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--color-bg);
+            border-right: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 100;
+            transition: width 0.2s ease;
+        }
+        
+        .sidebar.collapsed { width: var(--sidebar-collapsed); }
+        
+        .sidebar-header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--color-border);
+        }
+        
+        .sidebar.collapsed .sidebar-header {
+            padding: 20px 16px;
+            justify-content: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        
+        .logo-wordmark {
+            height: 24px;
+            display: block;
+        }
+        
+        .logo-icon {
+            height: 32px;
+            width: 32px;
+            display: none;
+        }
+        
+        .sidebar.collapsed .logo-wordmark { display: none; }
+        .sidebar.collapsed .logo-icon { display: block; }
+        
+        .collapse-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            background: var(--color-bg);
+            cursor: pointer;
+            display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            padding: 16px 40px;
-            background: var(--color-text);
-            color: white;
-            font-family: var(--font-display);
-            font-size: 0.95rem;
-            font-weight: 600;
-            letter-spacing: 0.01em;
+            color: var(--color-text-muted);
+        }
+        
+        .collapse-btn:hover { background: var(--color-surface); color: var(--color-text); }
+        .sidebar.collapsed .collapse-btn { display: none; }
+        
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .sidebar.collapsed .sidebar-nav {
+            padding: 16px 8px;
+            align-items: center;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
             border: none;
             border-radius: var(--radius-md);
+            background: transparent;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--color-text-secondary);
             cursor: pointer;
-            transition: all 0.2s ease;
-            min-height: 54px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: all 0.15s ease;
+            width: 100%;
+            text-align: left;
+            text-decoration: none;
         }
         
-        .btn-primary:hover { 
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .btn-primary:active { 
-            transform: translateY(0);
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-        }
-        .btn-primary:disabled { 
-            opacity: 0.5; 
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
+        .nav-item:hover { background: var(--color-surface); color: var(--color-text); }
+        .nav-item.active { background: var(--color-accent-soft); color: var(--color-accent-dark); }
+        
+        .nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+        
+        .sidebar.collapsed .nav-item {
+            width: 48px;
+            height: 48px;
+            padding: 0;
+            justify-content: center;
         }
         
-        .btn-primary svg {
-            width: 18px;
-            height: 18px;
-            opacity: 0.9;
+        .sidebar.collapsed .nav-item span { display: none; }
+        
+        .sidebar-footer {
+            padding: 16px 12px;
+            border-top: 1px solid var(--color-border);
         }
         
-        /* ========== CONTEXT SCREEN ========== */
-        .context-screen {
+        .sidebar.collapsed .sidebar-footer {
+            padding: 16px 8px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            flex: 1;
-            width: 100%;
-            max-width: 460px;
-            margin: 0 auto;
-            padding: 0 20px;
         }
         
-        /* ========== WELCOME SECTION ========== */
-        .welcome-section {
-            text-align: center;
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin-top: 12px;
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+        }
+        
+        .sidebar.collapsed .user-card { padding: 8px; justify-content: center; }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 50%;
+            background: var(--color-accent-soft);
+            color: var(--color-accent-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        
+        .user-info { display: flex; flex-direction: column; overflow: hidden; }
+        .user-name { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-meta { font-size: 0.75rem; color: var(--color-text-muted); }
+        .sidebar.collapsed .user-info { display: none; }
+        
+        /* ========== MAIN CONTENT ========== */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 32px;
+            min-height: 100vh;
+            overflow-y: auto;
+            transition: margin-left 0.2s ease;
+        }
+        
+        .sidebar.collapsed ~ .main-content { margin-left: var(--sidebar-collapsed); }
+        
+        .dashboard { max-width: 1000px; }
+        
+        /* ========== PAGE HEADER ========== */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
             margin-bottom: 32px;
         }
         
-        .welcome-title {
+        .page-title {
             font-family: var(--font-display);
-            font-size: 1.5rem;
+            font-size: 1.75rem;
             font-weight: 600;
             letter-spacing: -0.02em;
-            margin-bottom: 6px;
-        }
-        
-        .welcome-desc {
-            font-size: 0.85rem;
-            color: var(--color-text-muted);
-        }
-        
-        /* ========== MODE SELECTION ========== */
-        .mode-selection {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            width: 100%;
-        }
-        
-        .mode-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 28px 20px;
-            background: transparent;
-            border: 1.5px solid var(--color-border);
-            border-radius: var(--radius-lg);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            color: inherit;
-            font-family: inherit;
-            width: 100%;
-        }
-        
-        .mode-card:hover {
-            border-color: var(--color-accent);
-            box-shadow: 0 4px 20px rgba(96, 165, 250, 0.12);
-        }
-        
-        .mode-card.primary {
-            border-color: var(--color-accent);
-            background: var(--color-accent-soft);
-        }
-        
-        .mode-card.primary:hover {
-            box-shadow: 0 4px 20px rgba(96, 165, 250, 0.2);
-        }
-        
-        .mode-card:active { transform: scale(0.98); }
-        
-        .mode-icon {
-            width: 44px;
-            height: 44px;
-            background: var(--color-accent-soft);
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 14px;
-        }
-        
-        .mode-icon svg {
-            width: 22px;
-            height: 22px;
-            color: var(--color-accent);
-        }
-        
-        .mode-title {
-            font-family: var(--font-display);
-            font-size: 0.95rem;
-            font-weight: 600;
-            letter-spacing: -0.01em;
             margin-bottom: 4px;
         }
         
-        .mode-desc {
-            font-size: 0.75rem;
-            color: var(--color-text-muted);
-            text-align: center;
+        .page-subtitle {
+            font-size: 0.95rem;
+            color: var(--color-text-secondary);
         }
         
-        /* ========== RESPONSIVE ========== */
-        @media (max-width: 400px) {
-            .mode-selection {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-            
-            .mode-card {
-                padding: 24px 20px;
-            }
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        
+        .day-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--color-accent-soft);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--color-accent-dark);
         }
+        
+        .day-indicator svg { width: 14px; height: 14px; }
+        
+        /* ========== PROGRESS CARDS ========== */
+        .progress-section {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        
+        .progress-card {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+        }
+        
+        .progress-card.accent {
+            border-color: var(--color-ready);
+            background: var(--color-ready-soft);
+        }
+        
+        .progress-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .progress-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+        }
+        
+        .progress-icon-wrap {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-muted);
+        }
+        
+        .progress-icon-wrap svg { width: 16px; height: 16px; }
+        
+        .progress-numbers { margin-bottom: 12px; }
+        
+        .progress-current {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        
+        .progress-total {
+            font-size: 1rem;
+            color: var(--color-text-muted);
+        }
+        
+        .progress-track {
+            height: 6px;
+            background: var(--color-border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            border-radius: 3px;
+            background: var(--color-accent);
+            transition: width 0.3s ease;
+        }
+        
+        .progress-bar.complete { background: var(--color-ready); }
+        
+        /* ========== CONTENT GRID ========== */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .card {
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--color-border);
+        }
+        
+        .card-title {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .time-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+        }
+        
+        .time-badge svg { width: 12px; height: 12px; }
+        
+        /* ========== SCHEDULE ========== */
+        .schedule-list {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .schedule-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid transparent;
+            transition: all 0.15s ease;
+        }
+        
+        .schedule-item.active {
+            background: var(--color-accent-soft);
+            border-color: rgba(96, 165, 250, 0.2);
+        }
+        
+        .schedule-icon {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            border-radius: var(--radius-md);
+            background: var(--color-surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-muted);
+        }
+        
+        .schedule-icon svg { width: 20px; height: 20px; }
+        
+        .schedule-item.active .schedule-icon {
+            background: var(--color-accent);
+            color: white;
+        }
+        
+        .schedule-content { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        
+        .schedule-time {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        
+        .schedule-label {
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        
+        .schedule-item.active .schedule-label { color: var(--color-accent-dark); }
+        
+        .schedule-desc {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+        }
+        
+        .schedule-action {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            background: var(--color-accent-dark);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .schedule-action:hover { background: #2563EB; }
+        .schedule-action svg { width: 14px; height: 14px; }
+        
+        /* ========== ASK SECTION ========== */
+        .ask-container {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .ask-input-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 4px 4px 4px 16px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+        }
+        
+        .ask-input-group:focus-within {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px var(--color-accent-soft);
+        }
+        
+        .ask-search-icon { color: var(--color-text-muted); flex-shrink: 0; width: 18px; height: 18px; }
+        
+        .ask-input {
+            flex: 1;
+            padding: 12px 0;
+            border: none;
+            background: transparent;
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            color: var(--color-text);
+            outline: none;
+        }
+        
+        .ask-input::placeholder { color: var(--color-text-muted); }
+        
+        .ask-btn {
+            padding: 10px 20px;
+            background: var(--color-text);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .ask-btn:hover { background: #000; }
+        
+        .ask-response {
+            padding: 16px;
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+            border-left: 3px solid var(--color-accent);
+            display: none;
+        }
+        
+        .ask-response.visible { display: block; }
+        
+        .ask-response p {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        
+        .response-source {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            font-weight: 500;
+        }
+        
+        .quick-prompts { display: flex; flex-wrap: wrap; gap: 8px; }
+        
+        .prompt-chip {
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            border-radius: 20px;
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+        }
+        
+        .prompt-chip:hover { background: var(--color-surface); border-color: var(--color-border-hover); }
+        
+        /* ========== CTA ========== */
+        .cta-section { display: flex; justify-content: center; }
+        
+        .cta-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 16px 32px;
+            background: var(--color-ready);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+            transition: all 0.15s ease;
+        }
+        
+        .cta-btn:hover { background: #059669; transform: translateY(-1px); }
+        .cta-btn svg { width: 20px; height: 20px; }
         
         /* ========== TOAST ========== */
         .toast {
@@ -568,11 +786,7 @@
             z-index: 1000;
         }
         
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-        
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
         .toast.error { background: var(--color-error); }
         
         /* ========== PAGE LOADER ========== */
@@ -581,7 +795,6 @@
             inset: 0;
             background: var(--color-bg);
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 10000;
@@ -590,10 +803,7 @@
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
         
-        .page-loader.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
+        .page-loader.hidden { opacity: 0; visibility: hidden; }
         
         .page-loader-waveform {
             display: flex;
@@ -619,204 +829,326 @@
             0%, 100% { transform: scaleY(1); opacity: 0.7; }
             50% { transform: scaleY(0.5); opacity: 0.4; }
         }
+        
+        /* ========== MOBILE RESPONSIVE ========== */
+        @media (max-width: 900px) {
+            .progress-section { grid-template-columns: 1fr; }
+            .content-grid { grid-template-columns: 1fr; }
         }
         
-        /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
-            .header { padding: 0 20px; }
+            .sidebar { 
+                transform: translateX(-100%);
+                width: var(--sidebar-width);
+            }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 20px; }
+            .mobile-header { display: flex; }
+            .page-header { flex-direction: column; gap: 16px; }
+            .header-actions { width: 100%; justify-content: space-between; }
+        }
+        
+        /* Mobile Header (shown on small screens) */
+        .mobile-header {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--color-bg);
+            border-bottom: 1px solid var(--color-border);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        
+        .mobile-menu-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text);
+        }
+        
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 99;
+        }
+        
+        .mobile-overlay.visible { display: block; }
+        
+        @media (max-width: 768px) {
+            .mobile-header { display: flex; }
         }
     </style>
 </head>
 <body>
     <!-- Landscape Blocker -->
     <div class="landscape-blocker">
-        <img src="/static/logo.png" alt="Coachd" class="landscape-logo">
-        
-        <div class="phone-wrapper">
-            <div class="phone-shadow"></div>
-            <div class="phone-device">
-                <svg viewBox="0 0 48 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="titaniumFrame" x1="0" y1="0" x2="48" y2="0" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#4A4A4C"/>
-                            <stop offset="15%" stop-color="#2C2C2E"/>
-                            <stop offset="50%" stop-color="#1F1F21"/>
-                            <stop offset="85%" stop-color="#2C2C2E"/>
-                            <stop offset="100%" stop-color="#4A4A4C"/>
-                        </linearGradient>
-                        <linearGradient id="frameDepth" x1="24" y1="0" x2="24" y2="100" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.08"/>
-                            <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0"/>
-                            <stop offset="100%" stop-color="#000000" stop-opacity="0.1"/>
-                        </linearGradient>
-                        <linearGradient id="edgeHighlight" x1="0" y1="50" x2="48" y2="50" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#5A5A5C"/>
-                            <stop offset="3%" stop-color="#3A3A3C"/>
-                            <stop offset="97%" stop-color="#3A3A3C"/>
-                            <stop offset="100%" stop-color="#5A5A5C"/>
-                        </linearGradient>
-                        <linearGradient id="screenOLED" x1="24" y1="3" x2="24" y2="97" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#0A0A0A"/>
-                            <stop offset="100%" stop-color="#000000"/>
-                        </linearGradient>
-                        <linearGradient id="glassReflectTop" x1="24" y1="3" x2="24" y2="20" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.06"/>
-                            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
-                        </linearGradient>
-                        <linearGradient id="glassReflectDiag" x1="5" y1="10" x2="40" y2="45" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.04"/>
-                            <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.01"/>
-                            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
-                        </linearGradient>
-                        <linearGradient id="buttonMetal" x1="0" y1="0" x2="2" y2="0" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#5A5A5C"/>
-                            <stop offset="30%" stop-color="#3A3A3C"/>
-                            <stop offset="70%" stop-color="#2A2A2C"/>
-                            <stop offset="100%" stop-color="#1A1A1C"/>
-                        </linearGradient>
-                        <linearGradient id="islandDepth" x1="24" y1="6" x2="24" y2="13" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#000000"/>
-                            <stop offset="100%" stop-color="#0A0A0A"/>
-                        </linearGradient>
-                        <linearGradient id="homeIndicator" x1="14" y1="93" x2="34" y2="93" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#3A3A3C"/>
-                            <stop offset="50%" stop-color="#4A4A4C"/>
-                            <stop offset="100%" stop-color="#3A3A3C"/>
-                        </linearGradient>
-                        <linearGradient id="antennaBand" x1="0" y1="0" x2="0" y2="4" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#1A1A1C"/>
-                            <stop offset="50%" stop-color="#252527"/>
-                            <stop offset="100%" stop-color="#1A1A1C"/>
-                        </linearGradient>
-                    </defs>
-                    <rect x="0.5" y="0.5" width="47" height="99" rx="10.5" fill="url(#titaniumFrame)"/>
-                    <rect x="0.5" y="0.5" width="47" height="99" rx="10.5" fill="url(#frameDepth)"/>
-                    <rect x="0.5" y="0.5" width="47" height="99" rx="10.5" fill="none" stroke="url(#edgeHighlight)" stroke-width="0.5"/>
-                    <rect x="0" y="18" width="1" height="3" fill="url(#antennaBand)"/>
-                    <rect x="47" y="18" width="1" height="3" fill="url(#antennaBand)"/>
-                    <rect x="0" y="79" width="1" height="3" fill="url(#antennaBand)"/>
-                    <rect x="47" y="79" width="1" height="3" fill="url(#antennaBand)"/>
-                    <rect x="1.5" y="1.5" width="45" height="97" rx="9.5" fill="#050505"/>
-                    <rect x="2.5" y="2.5" width="43" height="95" rx="8.5" fill="url(#screenOLED)"/>
-                    <rect x="2.5" y="2.5" width="43" height="20" rx="8.5" fill="url(#glassReflectTop)"/>
-                    <rect x="2.5" y="2.5" width="43" height="50" rx="8.5" fill="url(#glassReflectDiag)"/>
-                    <rect x="13" y="6.5" width="22" height="7" rx="3.5" fill="url(#islandDepth)"/>
-                    <rect x="13.5" y="7" width="21" height="6" rx="3" fill="none" stroke="#1A1A1A" stroke-width="0.5"/>
-                    <circle cx="29" cy="9.5" r="2" fill="#0D0D0D"/>
-                    <circle cx="29" cy="9.5" r="1.3" fill="#1A1A1A"/>
-                    <circle cx="29" cy="9.5" r="0.8" fill="#0A0A0A"/>
-                    <circle cx="28.5" cy="9" r="0.3" fill="#3A3A3A"/>
-                    <circle cx="19" cy="9.5" r="1.2" fill="#0D0D0D"/>
-                    <circle cx="22" cy="9.5" r="0.6" fill="#0D0D0D"/>
-                    <rect x="46.5" y="26" width="1.5" height="13" rx="0.75" fill="url(#buttonMetal)"/>
-                    <rect x="47.3" y="26.5" width="0.3" height="12" rx="0.15" fill="#5A5A5C" opacity="0.5"/>
-                    <rect x="0" y="14" width="1.5" height="5" rx="0.75" fill="url(#buttonMetal)"/>
-                    <rect x="0.3" y="14.5" width="0.3" height="4" rx="0.15" fill="#5A5A5C" opacity="0.5"/>
-                    <rect x="0" y="23" width="1.5" height="9" rx="0.75" fill="url(#buttonMetal)"/>
-                    <rect x="0.3" y="23.5" width="0.3" height="8" rx="0.15" fill="#5A5A5C" opacity="0.5"/>
-                    <rect x="0" y="35" width="1.5" height="9" rx="0.75" fill="url(#buttonMetal)"/>
-                    <rect x="0.3" y="35.5" width="0.3" height="8" rx="0.15" fill="#5A5A5C" opacity="0.5"/>
-                    <rect x="14" y="92" width="20" height="4" rx="2" fill="url(#homeIndicator)"/>
-                    <circle cx="14" cy="96.5" r="0.6" fill="#2A2A2C"/>
-                    <circle cx="16" cy="96.5" r="0.6" fill="#2A2A2C"/>
-                    <circle cx="18" cy="96.5" r="0.6" fill="#2A2A2C"/>
-                    <rect x="21" y="95.5" width="6" height="2" rx="1" fill="#1A1A1C"/>
-                    <circle cx="30" cy="96.5" r="0.6" fill="#2A2A2C"/>
-                    <circle cx="32" cy="96.5" r="0.6" fill="#2A2A2C"/>
-                    <circle cx="34" cy="96.5" r="0.6" fill="#2A2A2C"/>
-                    <rect x="10" y="0.25" width="28" height="0.5" rx="0.25" fill="#5A5A5C" opacity="0.3"/>
-                    <circle cx="10.5" cy="10.5" r="0.3" fill="#6A6A6C" opacity="0.2"/>
-                    <circle cx="37.5" cy="10.5" r="0.3" fill="#6A6A6C" opacity="0.2"/>
-                </svg>
-            </div>
-        </div>
-        
+        <img src="/static/logo.png" alt="Coachd" height="22">
         <div class="landscape-text">
             <h2 class="landscape-title">Rotate to portrait</h2>
             <p class="landscape-subtitle">For the best experience</p>
         </div>
     </div>
 
-    <div class="app">
-        <header class="header">
-            <a href="/" class="logo">
-                <img src="/static/logo.png" alt="Coachd" height="24">
-            </a>
-            <div class="agency-badge" id="agencyBadge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-                    <path d="M22 4L12 14.01l-3-3"/>
-                </svg>
-                <span id="agencyName">Agency</span>
-            </div>
-        </header>
-        
-        <main class="main">
-            <!-- SCREEN 1: Agency Code Entry -->
-            <div class="screen active" id="codeScreen">
-                <div class="code-screen">
-                    <img src="/static/logo.png" alt="Coachd" height="48" class="landing-logo-img">
-                    <p class="welcome-subtitle">Coaching on call.</p>
-                    
-                    <div class="code-input-wrapper">
-                        <input 
-                            type="text" 
-                            class="code-input" 
-                            id="agencyCode" 
-                            placeholder="AGENCY CODE"
-                            autocomplete="off"
-                            autocapitalize="characters"
-                            spellcheck="false"
-                        >
-                        <p class="code-error" id="codeError">Invalid agency code. Please try again.</p>
-                    </div>
-                    
-                    <button class="btn-primary" onclick="validateAgencyCode()">
-                        Continue
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                    </button>
-                    
-                    <footer class="landing-footer">
-                        <p class="landing-footer-text">© 2026 Coachd.ai · v1.0</p>
-                        <div class="landing-footer-links">
-                            <a href="/privacy" class="landing-footer-link">Privacy</a>
-                            <a href="/terms" class="landing-footer-link">Terms</a>
-                        </div>
-                    </footer>
-                </div>
+    <!-- SCREEN 1: Agency Code Entry -->
+    <div class="screen active" id="codeScreen">
+        <div class="code-screen-wrapper">
+            <img src="/static/logo.png" alt="Coachd" height="48" class="landing-logo-img">
+            <p class="welcome-subtitle">Coaching on call.</p>
+            
+            <div class="code-input-wrapper">
+                <input 
+                    type="text" 
+                    class="code-input" 
+                    id="agencyCode" 
+                    placeholder="AGENCY CODE"
+                    autocomplete="off"
+                    autocapitalize="characters"
+                    spellcheck="false"
+                >
+                <p class="code-error" id="codeError">Invalid agency code. Please try again.</p>
             </div>
             
-                        <!-- SCREEN 2: Mode Selection -->
-            <div class="screen" id="contextScreen">
-                <div class="context-screen">
-                    <div class="welcome-section">
-                        <h2 class="welcome-title">Ready to close?</h2>
-                        <p class="welcome-desc">Your coach is standing by</p>
+            <button class="btn-primary" onclick="validateAgencyCode()">
+                Continue
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+            </button>
+            
+            <footer class="landing-footer">
+                <p class="landing-footer-text">© 2026 Coachd.ai · v2.0</p>
+                <div class="landing-footer-links">
+                    <a href="/privacy" class="landing-footer-link">Privacy</a>
+                    <a href="/terms" class="landing-footer-link">Terms</a>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: Dashboard with Sidebar -->
+    <div class="screen dashboard-screen" id="dashboardScreen">
+        <!-- Mobile Header -->
+        <div class="mobile-header">
+            <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12h18M3 6h18M3 18h18"/>
+                </svg>
+            </button>
+            <img src="/static/logo.png" alt="Coachd" height="24">
+            <div style="width: 40px;"></div>
+        </div>
+        
+        <!-- Mobile Overlay -->
+        <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileSidebar()"></div>
+        
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="/" class="logo">
+                    <img src="/static/logo.png" alt="Coachd" class="logo-wordmark">
+                    <img src="/static/favicon.svg" alt="Coachd" class="logo-icon">
+                </a>
+                <button class="collapse-btn" onclick="toggleSidebar()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-view="dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/call" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                    </svg>
+                    <span>Live Call</span>
+                </a>
+                <a href="/chat" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                    </svg>
+                    <span>Chat</span>
+                </a>
+                <a href="#" class="nav-item" data-view="resources">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                    </svg>
+                    <span>Resources</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <a href="#" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                    </svg>
+                    <span>Settings</span>
+                </a>
+                <div class="user-card">
+                    <div class="user-avatar" id="userInitials">--</div>
+                    <div class="user-info">
+                        <span class="user-name" id="userName">Agent</span>
+                        <span class="user-meta" id="userMeta">Day 1 of 14</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="dashboard">
+                <!-- Page Header -->
+                <header class="page-header">
+                    <div>
+                        <h1 class="page-title" id="greeting">Good morning</h1>
+                        <p class="page-subtitle">Week 1 · Focus on training & observation</p>
+                    </div>
+                    <div class="header-actions">
+                        <div class="day-indicator">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            <span id="dayIndicator">Day 1 of 14</span>
+                        </div>
+                    </div>
+                </header>
+                
+                <!-- Progress Cards -->
+                <section class="progress-section">
+                    <div class="progress-card">
+                        <div class="progress-card-top">
+                            <span class="progress-label">Modules</span>
+                            <div class="progress-icon-wrap">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
+                                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="progress-numbers">
+                            <span class="progress-current" id="modulesComplete">0</span>
+                            <span class="progress-total">/5</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-bar" id="modulesBar" style="width: 0%"></div>
+                        </div>
                     </div>
                     
-                    <div class="mode-selection">
-                        <button class="mode-card primary" id="callMode" onclick="startCall()">
-                            <div class="mode-icon">
+                    <div class="progress-card">
+                        <div class="progress-card-top">
+                            <span class="progress-label">Calls Today</span>
+                            <div class="progress-icon-wrap">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+                                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
                                 </svg>
                             </div>
-                            <div class="mode-title">Live Call</div>
-                            <div class="mode-desc">Real-time guidance</div>
-                        </button>
-                        
-                        <button class="mode-card" id="chatMode" onclick="startChat()">
-                            <div class="mode-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-                                </svg>
-                            </div>
-                            <div class="mode-title">Chat</div>
-                            <div class="mode-desc">Practice & prep</div>
-                        </button>
+                        </div>
+                        <div class="progress-numbers">
+                            <span class="progress-current" id="callsToday">0</span>
+                            <span class="progress-total">/15</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-bar" id="callsBar" style="width: 0%"></div>
+                        </div>
                     </div>
+                    
+                    <div class="progress-card" id="appointmentsCard">
+                        <div class="progress-card-top">
+                            <span class="progress-label">Appointments</span>
+                            <div class="progress-icon-wrap">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="progress-numbers">
+                            <span class="progress-current" id="appointmentsToday">0</span>
+                            <span class="progress-total">/3</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-bar" id="appointmentsBar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Content Grid -->
+                <div class="content-grid">
+                    <!-- Schedule -->
+                    <section class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Today's Schedule</h2>
+                            <span class="time-badge">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
+                                </svg>
+                                <span id="currentTime">--:--</span>
+                            </span>
+                        </div>
+                        <div class="schedule-list" id="scheduleList">
+                            <!-- Schedule items populated by JS -->
+                        </div>
+                    </section>
+                    
+                    <!-- Ask Coachd -->
+                    <section class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Ask Coachd</h2>
+                        </div>
+                        <div class="ask-container">
+                            <div class="ask-input-group">
+                                <svg class="ask-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <path d="M21 21l-4.35-4.35"/>
+                                </svg>
+                                <input type="text" class="ask-input" id="askInput" placeholder="How do I handle objections?">
+                                <button class="ask-btn" onclick="handleAsk()">Ask</button>
+                            </div>
+                            <div class="ask-response" id="askResponse">
+                                <p id="responseText"></p>
+                                <span class="response-source" id="responseSource"></span>
+                            </div>
+                            <div class="quick-prompts">
+                                <button class="prompt-chip" onclick="setPrompt('Down-close sequence')">Down-close sequence</button>
+                                <button class="prompt-chip" onclick="setPrompt('Handle think about it')">Handle "think about it"</button>
+                                <button class="prompt-chip" onclick="setPrompt('F.O.R.M. technique')">F.O.R.M. technique</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                
+                <!-- CTA -->
+                <div class="cta-section">
+                    <button class="cta-btn" onclick="startCall()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                        </svg>
+                        Start Coachd-Assisted Calling
+                    </button>
                 </div>
             </div>
         </main>
@@ -838,14 +1170,43 @@
     <script>
         // State
         let currentAgency = null;
-        let clientContext = {};
+        let sidebarCollapsed = false;
+        
+        // Demo agent data (will come from backend)
+        const agentData = {
+            name: 'Agent',
+            day: 4,
+            week: 1,
+            modulesCompleted: 3,
+            modulesTotal: 5,
+            callsToday: 8,
+            callsGoal: 15,
+            appointmentsToday: 1,
+            appointmentsGoal: 3
+        };
+        
+        // Schedule
+        const schedule = [
+            { id: 'training', time: '11 AM – 1 PM', label: 'Training Block', desc: 'Complete TopNotch Module 4', icon: 'book', hours: [11, 13] },
+            { id: 'lunch', time: '1 – 3 PM', label: 'Lunch / Flex', desc: 'Break or ExamFX study', icon: 'coffee', hours: [13, 15] },
+            { id: 'observation', time: '3 – 4 PM', label: 'Observation', desc: 'Join Advanced Training VC', icon: 'users', hours: [15, 16] },
+            { id: 'calling', time: '4 – 7 PM', label: 'Calling Block', desc: 'Goal: 15 dials, 3 appointments', icon: 'phone', hours: [16, 19] }
+        ];
+        
+        const icons = {
+            book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>',
+            coffee: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>',
+            users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>',
+            phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>',
+            play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+        };
         
         // Check for saved agency code
         const savedAgency = localStorage.getItem('coachd_agency');
         if (savedAgency) {
             try {
                 currentAgency = JSON.parse(savedAgency);
-                showContextScreen();
+                showDashboard();
             } catch (e) {
                 localStorage.removeItem('coachd_agency');
             }
@@ -865,7 +1226,6 @@
                 return;
             }
             
-            // Show loader while validating
             showPageLoader();
             
             try {
@@ -881,7 +1241,7 @@
                     currentAgency = { code: data.code, name: data.name };
                     localStorage.setItem('coachd_agency', JSON.stringify(currentAgency));
                     errorEl.classList.remove('visible');
-                    showContextScreen();
+                    showDashboard();
                     setTimeout(hidePageLoader, 300);
                 } else {
                     hidePageLoader();
@@ -891,43 +1251,171 @@
                     setTimeout(() => codeInput.classList.remove('error'), 400);
                 }
             } catch (e) {
-                // For now, accept any code (demo mode)
+                // Demo mode - accept any code
                 currentAgency = { code: code, name: code.replace(/-/g, ' ').replace(/\d+/g, '').trim() || 'Demo Agency' };
                 localStorage.setItem('coachd_agency', JSON.stringify(currentAgency));
-                showContextScreen();
+                showDashboard();
                 setTimeout(hidePageLoader, 300);
             }
         }
         
-        function showContextScreen() {
+        function showDashboard() {
             document.getElementById('codeScreen').classList.remove('active');
-            document.getElementById('contextScreen').classList.add('active');
-            document.querySelector('.header').classList.add('visible');
-            document.getElementById('agencyBadge').classList.add('visible');
-            document.getElementById('agencyName').textContent = currentAgency.name;
+            document.getElementById('dashboardScreen').classList.add('active');
+            initDashboard();
         }
         
-        // Gather context (minimal - Claude listens to calls)
-        function gatherContext() {
-            return { agency: currentAgency?.code };
+        function initDashboard() {
+            // Set greeting
+            const hour = new Date().getHours();
+            const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+            document.getElementById('greeting').textContent = `${greeting}, ${agentData.name}`;
+            
+            // Set day indicator
+            document.getElementById('dayIndicator').textContent = `Day ${agentData.day} of 14`;
+            document.getElementById('userMeta').textContent = `Day ${agentData.day} of 14`;
+            
+            // Set user info
+            const initials = agentData.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || '--';
+            document.getElementById('userInitials').textContent = initials;
+            document.getElementById('userName').textContent = agentData.name;
+            
+            // Set progress
+            updateProgress('modules', agentData.modulesCompleted, agentData.modulesTotal);
+            updateProgress('calls', agentData.callsToday, agentData.callsGoal);
+            updateProgress('appointments', agentData.appointmentsToday, agentData.appointmentsGoal);
+            
+            // Check if appointments goal met
+            if (agentData.appointmentsToday >= agentData.appointmentsGoal) {
+                document.getElementById('appointmentsCard').classList.add('accent');
+                document.getElementById('appointmentsBar').classList.add('complete');
+            }
+            
+            // Render schedule
+            renderSchedule();
+            
+            // Update time
+            updateTime();
+            setInterval(updateTime, 60000);
         }
         
-        // Start Chat
+        function updateProgress(type, current, total) {
+            const percent = Math.min((current / total) * 100, 100);
+            document.getElementById(`${type}Complete`) && (document.getElementById(`${type}Complete`).textContent = current);
+            document.getElementById(`${type}Today`) && (document.getElementById(`${type}Today`).textContent = current);
+            document.getElementById(`${type}Bar`) && (document.getElementById(`${type}Bar`).style.width = `${percent}%`);
+            
+            if (current >= total && document.getElementById(`${type}Bar`)) {
+                document.getElementById(`${type}Bar`).classList.add('complete');
+            }
+        }
+        
+        function renderSchedule() {
+            const hour = new Date().getHours();
+            const list = document.getElementById('scheduleList');
+            
+            list.innerHTML = schedule.map(item => {
+                const isActive = hour >= item.hours[0] && hour < item.hours[1];
+                return `
+                    <div class="schedule-item ${isActive ? 'active' : ''}">
+                        <div class="schedule-icon">${icons[item.icon]}</div>
+                        <div class="schedule-content">
+                            <span class="schedule-time">${item.time}</span>
+                            <span class="schedule-label">${item.label}</span>
+                            <span class="schedule-desc">${item.desc}</span>
+                        </div>
+                        ${isActive ? `<button class="schedule-action" onclick="handleScheduleAction('${item.id}')">${icons.play} Start</button>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function handleScheduleAction(id) {
+            if (id === 'calling') {
+                startCall();
+            } else {
+                showToast(`Starting ${id}...`);
+            }
+        }
+        
+        function updateTime() {
+            document.getElementById('currentTime').textContent = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        }
+        
+        // Ask Coachd
+        function handleAsk() {
+            const input = document.getElementById('askInput').value.toLowerCase();
+            const responseEl = document.getElementById('askResponse');
+            const textEl = document.getElementById('responseText');
+            const sourceEl = document.getElementById('responseSource');
+            
+            if (!input.trim()) return;
+            
+            let response = { text: '', source: '' };
+            
+            if (input.includes('down-close') || input.includes('down close')) {
+                response = {
+                    text: 'The down-close sequence starts at $30K Final Expense, then drops to $15K if needed, and finally to $10K. Always emphasize: "Let\'s get something in place today so your family has protection."',
+                    source: 'Presentation Script, Phase 12'
+                };
+            } else if (input.includes('think about it')) {
+                response = {
+                    text: '"I totally understand wanting to think it over. But let me ask you—what specifically do you need to think about? Is it the coverage amount or the price? Because we can adjust both right now."',
+                    source: 'Phone Scripts, Objection Handling'
+                };
+            } else if (input.includes('f.o.r.m') || input.includes('form')) {
+                response = {
+                    text: 'F.O.R.M. stands for Family, Occupation, Recreation, Message/Money. Use these topics to build rapport before the presentation.',
+                    source: 'Virtual Binder, Rapport Building'
+                };
+            } else {
+                response = {
+                    text: 'I can help with objection handling, presentation phases, product details, or processes. Try asking about the down-close sequence or common objections.',
+                    source: 'Coachd Knowledge Base'
+                };
+            }
+            
+            textEl.textContent = response.text;
+            sourceEl.textContent = response.source;
+            responseEl.classList.add('visible');
+        }
+        
+        function setPrompt(text) {
+            document.getElementById('askInput').value = text;
+            document.getElementById('askResponse').classList.remove('visible');
+        }
+        
+        document.getElementById('askInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleAsk();
+        });
+        
+        // Navigation
+        function startCall() {
+            sessionStorage.setItem('coachd_context', JSON.stringify({ agency: currentAgency?.code }));
+            sessionStorage.setItem('coachd_agency', JSON.stringify(currentAgency));
+            showPageLoader();
+            window.location.href = '/call';
+        }
+        
         function startChat() {
-            const context = gatherContext();
-            sessionStorage.setItem('coachd_context', JSON.stringify(context));
+            sessionStorage.setItem('coachd_context', JSON.stringify({ agency: currentAgency?.code }));
             sessionStorage.setItem('coachd_agency', JSON.stringify(currentAgency));
             showPageLoader();
             window.location.href = '/chat';
         }
         
-        // Start Call
-        function startCall() {
-            const context = gatherContext();
-            sessionStorage.setItem('coachd_context', JSON.stringify(context));
-            sessionStorage.setItem('coachd_agency', JSON.stringify(currentAgency));
-            showPageLoader();
-            window.location.href = '/call';
+        // Sidebar
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            sidebarCollapsed = sidebar.classList.contains('collapsed');
+        }
+        
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('visible');
         }
         
         // Enter key on code input
@@ -935,7 +1423,7 @@
             if (e.key === 'Enter') validateAgencyCode();
         });
         
-        // Toast function
+        // Toast
         function showToast(message, type = 'info') {
             const toast = document.getElementById('toast');
             toast.textContent = message;
@@ -943,7 +1431,7 @@
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
         
-        // Page loader functions
+        // Page loader
         function showPageLoader() {
             document.getElementById('pageLoader').classList.remove('hidden');
         }
@@ -957,7 +1445,7 @@
             setTimeout(hidePageLoader, 300);
         });
         
-        // Register service worker for PWA
+        // Service worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js')
                 .then((reg) => console.log('SW registered:', reg.scope))

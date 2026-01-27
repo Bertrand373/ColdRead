@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Chat | Coachd</title>
     
-        <!-- Favicon -->
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="icon" type="image/png" sizes="96x96" href="/static/favicon-96x96.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
@@ -33,6 +33,7 @@
             --color-text-secondary: #666666;
             --color-text-muted: #999999;
             --color-accent: #60A5FA;
+            --color-accent-dark: #3B82F6;
             --color-accent-soft: rgba(96, 165, 250, 0.1);
             --color-accent-blue: #60A5FA;
             --color-error: #EF4444;
@@ -46,6 +47,10 @@
             --safe-bottom: env(safe-area-inset-bottom, 0px);
             
             --keyboard-height: 0px;
+            
+            /* Sidebar dimensions */
+            --sidebar-width: 260px;
+            --sidebar-collapsed: 72px;
         }
         
         * {
@@ -57,7 +62,7 @@
         
         html {
             height: 100%;
-            height: 100dvh; /* Dynamic viewport height for mobile */
+            height: 100dvh;
         }
         
         body {
@@ -72,7 +77,7 @@
             -webkit-font-smoothing: antialiased;
         }
         
-        /* ========== LANDSCAPE BLOCKER (PREMIUM) ========== */
+        /* ========== LANDSCAPE BLOCKER ========== */
         .landscape-blocker {
             display: none;
             position: fixed;
@@ -87,75 +92,9 @@
             gap: 28px;
         }
         
-        .landscape-blocker::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-            opacity: 0.025;
-            pointer-events: none;
-        }
-
-        .landscape-logo {
-            height: 22px;
-            opacity: 0.9;
-        }
-
-        .phone-wrapper {
-            width: 160px;
-            height: 160px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        .phone-shadow {
-            position: absolute;
-            width: 40px;
-            height: 10px;
-            background: radial-gradient(ellipse, rgba(0,0,0,0.18) 0%, transparent 70%);
-            bottom: 4px;
-            border-radius: 50%;
-            animation: shadowPulse 7s ease-in-out infinite;
-        }
-        
-        @keyframes shadowPulse {
-            0%, 7%, 43%, 50%, 57%, 93%, 100% {
-                transform: scaleX(2);
-                opacity: 0.2;
-            }
-            25%, 75% {
-                transform: scaleX(1);
-                opacity: 0.6;
-            }
-        }
-
-        .phone-device {
-            position: absolute;
-            width: 48px;
-            height: 100px;
-            animation: rotatePhone 7s cubic-bezier(0.33, 1, 0.68, 1) infinite;
-            filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.2)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
-        }
-        
-        @keyframes rotatePhone {
-            0%, 7% { transform: rotate(90deg); }
-            25%, 43% { transform: rotate(0deg); }
-            50%, 57% { transform: rotate(-90deg); }
-            75%, 93% { transform: rotate(0deg); }
-            100% { transform: rotate(90deg); }
-        }
-
-        .phone-device svg {
-            width: 100%;
-            height: 100%;
-        }
-
-        .landscape-text {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
+        @media (orientation: landscape) and (max-height: 500px) {
+            .landscape-blocker { display: flex; }
+            .app-wrapper { display: none !important; }
         }
 
         .landscape-title {
@@ -163,23 +102,182 @@
             font-size: 1.5rem;
             font-weight: 600;
             color: #1A1A1A;
-            letter-spacing: -0.02em;
         }
         
         .landscape-subtitle {
             font-size: 0.85rem;
             color: #9CA3AF;
         }
-
-        @media (orientation: landscape) and (max-height: 500px) {
-            .landscape-blocker { display: flex; }
-            .app { display: none !important; }
+        
+        /* ========== NEW: APP WRAPPER WITH SIDEBAR ========== */
+        .app-wrapper {
+            display: flex;
+            height: 100%;
+            height: 100dvh;
         }
         
-        /* ========== APP LAYOUT ========== */
+        /* ========== SIDEBAR ========== */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--color-bg);
+            border-right: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            height: 100%;
+            z-index: 200;
+            transition: width 0.2s ease;
+        }
+        
+        .sidebar.collapsed { width: var(--sidebar-collapsed); }
+        
+        .sidebar-header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--color-border);
+            flex-shrink: 0;
+        }
+        
+        .sidebar.collapsed .sidebar-header {
+            padding: 20px 16px;
+            justify-content: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        
+        .logo-wordmark {
+            height: 24px;
+            display: block;
+        }
+        
+        .logo-icon {
+            height: 32px;
+            width: 32px;
+            display: none;
+        }
+        
+        .sidebar.collapsed .logo-wordmark { display: none; }
+        .sidebar.collapsed .logo-icon { display: block; }
+        
+        .collapse-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            background: var(--color-bg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-muted);
+            transition: all 0.15s ease;
+        }
+        
+        .collapse-btn:hover { background: var(--color-surface); color: var(--color-text); }
+        .sidebar.collapsed .collapse-btn { display: none; }
+        
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow-y: auto;
+        }
+        
+        .sidebar.collapsed .sidebar-nav {
+            padding: 16px 8px;
+            align-items: center;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border: none;
+            border-radius: var(--radius-md);
+            background: transparent;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            width: 100%;
+            text-align: left;
+            text-decoration: none;
+        }
+        
+        .nav-item:hover { background: var(--color-surface); color: var(--color-text); }
+        .nav-item.active { background: var(--color-accent-soft); color: var(--color-accent-dark); }
+        
+        .nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+        
+        .sidebar.collapsed .nav-item {
+            width: 48px;
+            height: 48px;
+            padding: 0;
+            justify-content: center;
+        }
+        
+        .sidebar.collapsed .nav-item span { display: none; }
+        
+        .sidebar-footer {
+            padding: 16px 12px;
+            border-top: 1px solid var(--color-border);
+            flex-shrink: 0;
+        }
+        
+        .sidebar.collapsed .sidebar-footer {
+            padding: 16px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin-top: 12px;
+            background: var(--color-surface);
+            border-radius: var(--radius-md);
+        }
+        
+        .sidebar.collapsed .user-card { padding: 8px; justify-content: center; }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 50%;
+            background: var(--color-accent-soft);
+            color: var(--color-accent-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        
+        .user-info { display: flex; flex-direction: column; overflow: hidden; }
+        .user-name { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--color-text); }
+        .user-meta { font-size: 0.75rem; color: var(--color-text-muted); }
+        .sidebar.collapsed .user-info { display: none; }
+        
+        /* ========== MAIN CHAT AREA ========== */
         .app {
             display: flex;
             flex-direction: column;
+            flex: 1;
             height: 100%;
             height: 100dvh;
             padding-top: var(--safe-top);
@@ -188,44 +286,35 @@
             transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        /* ========== HEADER ========== */
+        /* ========== CHAT HEADER ========== */
         .header {
             flex-shrink: 0;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            padding: 0 32px;
+            padding: 0 24px;
             height: 60px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            border-bottom: 1px solid var(--color-border);
             z-index: 100;
         }
         
-        .header-left { display: flex; align-items: center; gap: 16px; }
-        .header-left img { display: block; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
         
-        .back-btn {
+        .chat-title-group { display: flex; flex-direction: column; }
+        .chat-title { 
+            font-family: var(--font-display); 
+            font-size: 1.1rem; 
+            font-weight: 600; 
+            color: var(--color-text);
             display: flex;
             align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            background: var(--color-surface);
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            color: var(--color-text);
+            gap: 8px;
         }
-        
-        .back-btn:hover { background: var(--color-border); }
-        .back-btn:active { transform: scale(0.95); }
-        .back-btn svg { width: 20px; height: 20px; }
-        
-        .logo-wordmark { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; }
-        .logo-wordmark .name { color: var(--color-text); }
-        .logo-wordmark .suffix { color: var(--color-accent-blue); }
+        .chat-title svg { width: 18px; height: 18px; color: var(--color-accent); }
+        .chat-subtitle { font-size: 0.8rem; color: var(--color-text-muted); }
         
         .context-pill {
             display: flex;
@@ -250,26 +339,17 @@
             flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            padding: 20px;
+            padding: 20px 24px;
             display: flex;
             flex-direction: column;
         }
         
         /* Custom scrollbar for desktop */
         @media (min-width: 768px) {
-            .chat-container::-webkit-scrollbar {
-                width: 6px;
-            }
-            .chat-container::-webkit-scrollbar-track {
-                background: transparent;
-            }
-            .chat-container::-webkit-scrollbar-thumb {
-                background: var(--color-border);
-                border-radius: 3px;
-            }
-            .chat-container::-webkit-scrollbar-thumb:hover {
-                background: var(--color-text-muted);
-            }
+            .chat-container::-webkit-scrollbar { width: 6px; }
+            .chat-container::-webkit-scrollbar-track { background: transparent; }
+            .chat-container::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+            .chat-container::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
         }
         
         .empty-state {
@@ -283,8 +363,8 @@
         }
         
         .empty-icon {
-            width: 52px;
-            height: 52px;
+            width: 56px;
+            height: 56px;
             background: var(--color-accent-soft);
             border-radius: var(--radius-md);
             display: flex;
@@ -293,9 +373,9 @@
             margin-bottom: 20px;
         }
         
-        .empty-icon svg { width: 26px; height: 26px; color: var(--color-accent); }
+        .empty-icon svg { width: 28px; height: 28px; color: var(--color-accent); }
         .empty-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px; }
-        .empty-text { font-size: 0.875rem; color: var(--color-text-muted); max-width: 280px; margin-bottom: 28px; }
+        .empty-text { font-size: 0.9rem; color: var(--color-text-muted); max-width: 300px; margin-bottom: 28px; line-height: 1.5; }
         
         .suggestions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
         
@@ -304,11 +384,12 @@
             background: transparent;
             border: 1.5px solid var(--color-border);
             border-radius: var(--radius-md);
-            font-size: 0.8125rem;
+            font-size: 0.85rem;
             font-weight: 500;
             color: var(--color-text-secondary);
             cursor: pointer;
             transition: all 0.15s ease;
+            font-family: var(--font-body);
         }
         
         .suggestion:hover { 
@@ -330,30 +411,24 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
-        /* User messages - subtle gray pill, right aligned */
-        .message.user {
-            align-items: flex-end;
-        }
+        .message.user { align-items: flex-end; }
         
         .message.user .message-content {
             background: var(--color-surface);
             color: var(--color-text-secondary);
             padding: 10px 16px;
             border-radius: 20px;
-            font-size: 0.875rem;
+            font-size: 0.9rem;
             line-height: 1.5;
             max-width: 85%;
         }
         
-        /* AI messages - clean text, no container */
-        .message.ai {
-            align-items: flex-start;
-        }
+        .message.ai { align-items: flex-start; }
         
         .message.ai .ai-indicator {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
             margin-bottom: 6px;
             font-size: 0.75rem;
             color: var(--color-text-muted);
@@ -370,16 +445,14 @@
             font-size: 1rem;
             line-height: 1.65;
             color: var(--color-text);
-            /* No background, no padding - clean text */
         }
         
         .message-content strong { font-weight: 600; }
         .message-content p { margin-bottom: 12px; }
         .message-content p:last-child { margin-bottom: 0; }
-        
         .message-content.streaming { min-height: 24px; }
         
-        /* Thinking waveform animation */
+        /* Thinking waveform */
         .thinking-waveform {
             display: inline-flex;
             align-items: center;
@@ -399,359 +472,295 @@
         .thinking-waveform .bar:nth-child(2) { height: 12px; animation-delay: 0.1s; }
         .thinking-waveform .bar:nth-child(3) { height: 8px; animation-delay: 0.2s; }
         .thinking-waveform .bar:nth-child(4) { height: 14px; animation-delay: 0.3s; }
-        .thinking-waveform .bar:nth-child(5) { height: 7px; animation-delay: 0.4s; }
+        .thinking-waveform .bar:nth-child(5) { height: 6px; animation-delay: 0.4s; }
         
         @keyframes waveformThink {
-            0%, 100% { 
-                transform: scaleY(1);
-                opacity: 0.5;
-            }
-            50% { 
-                transform: scaleY(0.4);
-                opacity: 0.3;
-            }
+            0%, 100% { transform: scaleY(1); opacity: 0.6; }
+            50% { transform: scaleY(0.5); opacity: 0.3; }
         }
         
-        /* Legacy cursor support during streaming text */
-        .message-content .cursor {
+        /* Streaming cursor */
+        .cursor {
             display: inline-block;
             width: 2px;
-            height: 1em;
+            height: 1.1em;
             background: var(--color-accent);
             margin-left: 2px;
-            animation: blink 0.8s ease-in-out infinite;
+            animation: cursorBlink 0.8s step-end infinite;
             vertical-align: text-bottom;
         }
         
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
+        @keyframes cursorBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
         }
         
         /* ========== INPUT AREA ========== */
         .input-area {
             flex-shrink: 0;
-            padding: 16px 20px;
+            padding: 16px 24px;
             padding-bottom: calc(16px + var(--safe-bottom));
             background: var(--color-bg);
             border-top: 1px solid var(--color-border);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .input-wrapper {
             display: flex;
             align-items: flex-end;
             gap: 12px;
-            background: transparent;
-            border: 1.5px solid var(--color-border);
-            border-radius: var(--radius-lg);
-            padding: 10px 10px 10px 18px;
-            transition: all 0.2s ease;
+            padding: 8px 8px 8px 20px;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            transition: all 0.15s ease;
         }
         
-        .input-wrapper:focus-within { border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent-soft); }
-        .input-wrapper.disabled { opacity: 0.6; pointer-events: none; }
+        .input-wrapper:focus-within {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px var(--color-accent-soft);
+        }
+        
+        .input-wrapper.disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
         
         .chat-input {
             flex: 1;
             border: none;
             background: transparent;
             font-family: var(--font-body);
-            font-size: 16px; /* Prevent iOS zoom */
+            font-size: 0.95rem;
             line-height: 1.5;
             color: var(--color-text);
             resize: none;
-            max-height: 120px;
+            outline: none;
             padding: 6px 0;
+            min-height: 24px;
+            max-height: 120px;
         }
         
-        .chat-input:focus { outline: none; }
         .chat-input::placeholder { color: var(--color-text-muted); }
         
         .send-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 12px;
+            background: var(--color-text);
+            color: white;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 42px;
-            height: 42px;
-            background: var(--color-text);
-            border: none;
-            border-radius: var(--radius-md);
-            cursor: pointer;
             transition: all 0.15s ease;
             flex-shrink: 0;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         
-        .send-btn:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); }
-        .send-btn:active { transform: scale(0.95); }
-        .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
-        .send-btn svg { width: 20px; height: 20px; color: white; }
+        .send-btn:hover { background: #000; }
+        .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .send-btn svg { width: 18px; height: 18px; }
         
-        /* ========== CONTEXT OVERLAY ========== */
+        /* ========== CONTEXT PANEL ========== */
         .context-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            z-index: 200;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1000;
             opacity: 0;
             visibility: hidden;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
         
         .context-overlay.visible { opacity: 1; visibility: visible; }
         
         .context-panel {
-            width: 100%;
-            max-width: 480px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            width: calc(100% - 40px);
+            max-width: 360px;
             background: var(--color-bg);
-            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-            padding: 24px;
-            padding-bottom: calc(24px + var(--safe-bottom));
-            transform: translateY(100%);
-            transition: transform 0.3s ease;
+            border-radius: var(--radius-lg);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease;
         }
         
-        .context-overlay.visible .context-panel { transform: translateY(0); }
+        .context-overlay.visible .context-panel { transform: translate(-50%, -50%) scale(1); }
         
-        .context-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-        .context-title { font-family: var(--font-display); font-size: 1.125rem; font-weight: 600; letter-spacing: -0.02em; }
+        .context-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--color-border);
+        }
+        
+        .context-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; }
         
         .close-btn {
-            width: 34px;
-            height: 34px;
-            background: var(--color-surface);
+            width: 32px;
+            height: 32px;
             border: none;
             border-radius: var(--radius-sm);
+            background: var(--color-surface);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--color-text-secondary);
-            transition: all 0.15s ease;
-        }
-        
-        .close-btn:hover { background: var(--color-border); }
-        
-        .context-body { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 24px; }
-        
-        .context-item {
-            display: flex;
-            flex-direction: column;
-            padding: 14px;
-            background: var(--color-surface);
-            border-radius: var(--radius-md);
-        }
-        
-        .context-label { font-size: 0.7rem; font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
-        .context-value { font-size: 0.9375rem; font-weight: 500; color: var(--color-text); }
-        
-        .btn-secondary {
-            flex: 1;
-            padding: 14px;
-            background: transparent;
-            border: 1.5px solid var(--color-border);
-            border-radius: var(--radius-md);
-            font-family: var(--font-display);
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--color-text-secondary);
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-        
-        .btn-secondary:hover { 
-            background: var(--color-surface);
-            color: var(--color-text);
-        }
-        
-        .btn-primary {
-            flex: 1;
-            padding: 14px;
-            background: var(--color-text);
-            border: none;
-            border-radius: var(--radius-md);
-            font-family: var(--font-display);
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
-        }
-        
-        .btn-primary:hover { 
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        .btn-primary:active {
-            transform: translateY(0);
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        .context-footer {
-            display: flex;
-            gap: 12px;
-        }
-        
-        /* Edit Mode Inputs */
-        .context-input {
-            width: 100%;
-            padding: 10px 12px;
-            background: var(--color-bg);
-            border: 1.5px solid var(--color-border);
-            border-radius: var(--radius-sm);
-            font-family: var(--font-body);
-            font-size: 0.9375rem;
-            font-weight: 500;
-            color: var(--color-text);
-            transition: border-color 0.15s ease;
-        }
-        
-        .context-input:focus {
-            outline: none;
-            border-color: var(--color-accent);
-        }
-        
-        .context-input::placeholder {
             color: var(--color-text-muted);
         }
         
-        /* Toggle Options for Edit Mode */
+        .close-btn:hover { background: var(--color-border); color: var(--color-text); }
+        
+        .context-body { padding: 20px; }
+        
+        .context-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+        
+        .context-item:last-child { border-bottom: none; }
+        
+        .context-label { font-size: 0.85rem; color: var(--color-text-muted); }
+        .context-value { font-size: 0.9rem; font-weight: 500; color: var(--color-text); }
+        
+        .context-input {
+            padding: 8px 12px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            width: 120px;
+            text-align: right;
+        }
+        
+        .context-input:focus { outline: none; border-color: var(--color-accent); }
+        
+        .context-select {
+            padding: 8px 12px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            background: var(--color-bg);
+        }
+        
         .context-toggle {
             display: flex;
-            gap: 8px;
+            gap: 4px;
+            background: var(--color-surface);
+            border-radius: var(--radius-sm);
+            padding: 3px;
         }
         
         .toggle-option {
-            flex: 1;
-            padding: 10px 12px;
-            background: var(--color-bg);
-            border: 1.5px solid var(--color-border);
-            border-radius: var(--radius-sm);
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
             font-family: var(--font-body);
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             font-weight: 500;
-            color: var(--color-text-secondary);
+            color: var(--color-text-muted);
             cursor: pointer;
             transition: all 0.15s ease;
-            text-align: center;
-        }
-        
-        .toggle-option:hover {
-            border-color: var(--color-text-muted);
         }
         
         .toggle-option.selected {
-            background: var(--color-text);
-            border-color: var(--color-text);
-            color: white;
+            background: var(--color-bg);
+            color: var(--color-text);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         
-        /* Product Select */
-        .context-select {
-            width: 100%;
-            padding: 10px 12px;
-            background: var(--color-bg);
-            border: 1.5px solid var(--color-border);
+        .context-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        
+        .btn-primary {
+            padding: 10px 20px;
+            background: var(--color-text);
+            color: white;
+            border: none;
             border-radius: var(--radius-sm);
             font-family: var(--font-body);
-            font-size: 0.9375rem;
+            font-size: 0.9rem;
             font-weight: 500;
-            color: var(--color-text);
             cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
+            transition: all 0.15s ease;
         }
         
-        .context-select:focus {
-            outline: none;
-            border-color: var(--color-accent);
+        .btn-primary:hover { background: #000; }
+        
+        .btn-secondary {
+            padding: 10px 20px;
+            background: transparent;
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
         }
         
-        /* Confirmation Modal */
+        .btn-secondary:hover { background: var(--color-surface); }
+        
+        /* ========== CONFIRM MODAL ========== */
         .confirm-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 300;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1001;
             opacity: 0;
             visibility: hidden;
             transition: all 0.2s ease;
-            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
-        .confirm-overlay.visible {
-            opacity: 1;
-            visibility: visible;
-        }
+        .confirm-overlay.visible { opacity: 1; visibility: visible; }
         
         .confirm-modal {
-            width: 100%;
+            width: calc(100% - 40px);
             max-width: 320px;
             background: var(--color-bg);
             border-radius: var(--radius-lg);
             padding: 24px;
-            transform: scale(0.95);
-            transition: transform 0.2s ease;
+            text-align: center;
         }
         
-        .confirm-overlay.visible .confirm-modal {
-            transform: scale(1);
-        }
+        .confirm-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; }
+        .confirm-text { font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 20px; }
+        .confirm-actions { display: flex; gap: 12px; justify-content: center; }
         
-        .confirm-title {
-            font-family: var(--font-display);
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        
-        .confirm-text {
-            font-size: 0.875rem;
-            color: var(--color-text-secondary);
-            margin-bottom: 24px;
-            line-height: 1.5;
-        }
-        
-        .confirm-actions {
-            display: flex;
-            gap: 12px;
-        }
-        
-        .confirm-actions .btn-secondary,
-        .confirm-actions .btn-primary {
-            padding: 12px 16px;
-        }
-
         /* ========== TOAST ========== */
         .toast {
             position: fixed;
-            bottom: calc(100px + var(--safe-bottom));
+            bottom: 24px;
             left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            padding: 12px 20px;
+            transform: translateX(-50%) translateY(100px);
+            padding: 12px 24px;
             background: var(--color-text);
             color: white;
             border-radius: var(--radius-full);
             font-size: 0.875rem;
             font-weight: 500;
             opacity: 0;
-            visibility: hidden;
             transition: all 0.3s ease;
-            z-index: 300;
+            z-index: 1002;
         }
         
-        .toast.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
         .toast.error { background: var(--color-error); }
         
         /* ========== PAGE LOADER ========== */
@@ -760,7 +769,6 @@
             inset: 0;
             background: var(--color-bg);
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 10000;
@@ -769,10 +777,7 @@
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
         
-        .page-loader.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
+        .page-loader.hidden { opacity: 0; visibility: hidden; }
         
         .page-loader-waveform {
             display: flex;
@@ -799,191 +804,229 @@
             50% { transform: scaleY(0.5); opacity: 0.4; }
         }
         
-        /* ========== RESPONSIVE ========== */
+        /* ========== MOBILE RESPONSIVE ========== */
+        .mobile-header {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--color-bg);
+            border-bottom: 1px solid var(--color-border);
+        }
+        
+        .mobile-menu-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: var(--color-surface);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text);
+        }
+        
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 150;
+        }
+        
+        .mobile-overlay.visible { display: block; }
+        
         @media (max-width: 768px) {
-            .header { padding: 0 20px; }
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100%;
+                transform: translateX(-100%);
+                z-index: 200;
+            }
+            
+            .sidebar.mobile-open { transform: translateX(0); }
+            
+            .mobile-header { display: flex; }
+            
+            .header { display: none; }
+            
+            .app { height: calc(100dvh - 73px); }
+            
+            .chat-container { padding: 20px; }
+            
+            .input-area { padding: 16px 20px; padding-bottom: calc(16px + var(--safe-bottom)); }
         }
         
-        @media (min-width: 768px) {
-            .chat-container { 
-                padding: 24px 40px;
-            }
-            .input-area { 
-                padding: 20px 40px; 
-                padding-bottom: calc(20px + var(--safe-bottom));
-            }
-            .message { max-width: 85%; }
-        }
-        
-        /* Large screens - create centered content lane */
-        @media (min-width: 1200px) {
-            .chat-container { 
-                padding: 24px calc(50% - 500px);
-            }
-            .input-area { 
-                padding: 20px calc(50% - 500px); 
-                padding-bottom: calc(20px + var(--safe-bottom));
-            }
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .sidebar { width: var(--sidebar-collapsed); }
+            .sidebar .logo-wordmark { display: none; }
+            .sidebar .logo-icon { display: block; }
+            .sidebar .sidebar-header { justify-content: center; padding: 20px 16px; }
+            .sidebar .collapse-btn { display: none; }
+            .sidebar .sidebar-nav { padding: 16px 8px; align-items: center; }
+            .sidebar .nav-item { width: 48px; height: 48px; padding: 0; justify-content: center; }
+            .sidebar .nav-item span { display: none; }
+            .sidebar .sidebar-footer { padding: 16px 8px; display: flex; flex-direction: column; align-items: center; }
+            .sidebar .user-card { padding: 8px; justify-content: center; }
+            .sidebar .user-info { display: none; }
         }
     </style>
 </head>
 <body>
     <!-- Landscape Blocker -->
     <div class="landscape-blocker">
-        <img src="/static/logo.png" alt="Coachd" class="landscape-logo">
-        
-        <div class="phone-wrapper">
-            <div class="phone-shadow"></div>
-            <div class="phone-device">
-                <svg viewBox="0 0 48 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="titaniumFrame" x1="0" y1="0" x2="48" y2="0" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#4A4A4C"/>
-                            <stop offset="15%" stop-color="#2C2C2E"/>
-                            <stop offset="50%" stop-color="#1F1F21"/>
-                            <stop offset="85%" stop-color="#2C2C2E"/>
-                            <stop offset="100%" stop-color="#4A4A4C"/>
-                        </linearGradient>
-                        <linearGradient id="frameDepth" x1="24" y1="0" x2="24" y2="100" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.08"/>
-                            <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0"/>
-                            <stop offset="100%" stop-color="#000000" stop-opacity="0.1"/>
-                        </linearGradient>
-                        <linearGradient id="edgeHighlight" x1="0" y1="50" x2="48" y2="50" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#5A5A5C"/>
-                            <stop offset="3%" stop-color="#3A3A3C"/>
-                            <stop offset="97%" stop-color="#3A3A3C"/>
-                            <stop offset="100%" stop-color="#5A5A5C"/>
-                        </linearGradient>
-                        <linearGradient id="screenOLED" x1="24" y1="3" x2="24" y2="97" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#0A0A0A"/>
-                            <stop offset="100%" stop-color="#000000"/>
-                        </linearGradient>
-                        <linearGradient id="glassReflectTop" x1="24" y1="3" x2="24" y2="20" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.06"/>
-                            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
-                        </linearGradient>
-                        <linearGradient id="glassReflectDiag" x1="5" y1="10" x2="40" y2="45" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.04"/>
-                            <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.01"/>
-                            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
-                        </linearGradient>
-                        <linearGradient id="buttonMetal" x1="0" y1="0" x2="2" y2="0" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#5A5A5C"/>
-                            <stop offset="30%" stop-color="#3A3A3C"/>
-                            <stop offset="70%" stop-color="#2A2A2C"/>
-                            <stop offset="100%" stop-color="#1A1A1C"/>
-                        </linearGradient>
-                        <linearGradient id="islandDepth" x1="24" y1="6" x2="24" y2="13" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#000000"/>
-                            <stop offset="100%" stop-color="#0A0A0A"/>
-                        </linearGradient>
-                        <linearGradient id="homeIndicator" x1="14" y1="93" x2="34" y2="93" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#3A3A3C"/>
-                            <stop offset="50%" stop-color="#4A4A4C"/>
-                            <stop offset="100%" stop-color="#3A3A3C"/>
-                        </linearGradient>
-                        <linearGradient id="antennaBand" x1="0" y1="0" x2="0" y2="4" gradientUnits="userSpaceOnUse">
-                            <stop offset="0%" stop-color="#1A1A1C"/>
-                            <stop offset="50%" stop-color="#252527"/>
-                            <stop offset="100%" stop-color="#1A1A1C"/>
-                        </linearGradient>
-                    </defs>
-                    <rect x="0.5" y="0.5" width="47" height="99" rx="10.5" fill="url(#titaniumFrame)"/>
-                    <rect x="0.5" y="0.5" width="47" height="99" rx="10.5" fill="url(#frameDepth)"/>
-                    <rect x="0.5" y="0.5" width="47" height="99" rx="10.5" fill="none" stroke="url(#edgeHighlight)" stroke-width="0.5"/>
-                    <rect x="0" y="18" width="1" height="3" fill="url(#antennaBand)"/>
-                    <rect x="47" y="18" width="1" height="3" fill="url(#antennaBand)"/>
-                    <rect x="0" y="79" width="1" height="3" fill="url(#antennaBand)"/>
-                    <rect x="47" y="79" width="1" height="3" fill="url(#antennaBand)"/>
-                    <rect x="1.5" y="1.5" width="45" height="97" rx="9.5" fill="#050505"/>
-                    <rect x="2.5" y="2.5" width="43" height="95" rx="8.5" fill="url(#screenOLED)"/>
-                    <rect x="2.5" y="2.5" width="43" height="20" rx="8.5" fill="url(#glassReflectTop)"/>
-                    <rect x="2.5" y="2.5" width="43" height="50" rx="8.5" fill="url(#glassReflectDiag)"/>
-                    <rect x="13" y="6.5" width="22" height="7" rx="3.5" fill="url(#islandDepth)"/>
-                    <rect x="13.5" y="7" width="21" height="6" rx="3" fill="none" stroke="#1A1A1A" stroke-width="0.5"/>
-                    <circle cx="29" cy="9.5" r="2" fill="#0D0D0D"/>
-                    <circle cx="29" cy="9.5" r="1.3" fill="#1A1A1A"/>
-                    <circle cx="29" cy="9.5" r="0.8" fill="#0A0A0A"/>
-                    <circle cx="28.5" cy="9" r="0.3" fill="#3A3A3A"/>
-                    <circle cx="19" cy="9.5" r="1.2" fill="#0D0D0D"/>
-                    <circle cx="22" cy="9.5" r="0.6" fill="#0D0D0D"/>
-                    <rect x="46.5" y="26" width="1.5" height="13" rx="0.75" fill="url(#buttonMetal)"/>
-                    <rect x="47.3" y="26.5" width="0.3" height="12" rx="0.15" fill="#5A5A5C" opacity="0.5"/>
-                    <rect x="0" y="14" width="1.5" height="5" rx="0.75" fill="url(#buttonMetal)"/>
-                    <rect x="0.3" y="14.5" width="0.3" height="4" rx="0.15" fill="#5A5A5C" opacity="0.5"/>
-                    <rect x="0" y="23" width="1.5" height="9" rx="0.75" fill="url(#buttonMetal)"/>
-                    <rect x="0.3" y="23.5" width="0.3" height="8" rx="0.15" fill="#5A5A5C" opacity="0.5"/>
-                    <rect x="0" y="35" width="1.5" height="9" rx="0.75" fill="url(#buttonMetal)"/>
-                    <rect x="0.3" y="35.5" width="0.3" height="8" rx="0.15" fill="#5A5A5C" opacity="0.5"/>
-                    <rect x="14" y="92" width="20" height="4" rx="2" fill="url(#homeIndicator)"/>
-                    <circle cx="14" cy="96.5" r="0.6" fill="#2A2A2C"/>
-                    <circle cx="16" cy="96.5" r="0.6" fill="#2A2A2C"/>
-                    <circle cx="18" cy="96.5" r="0.6" fill="#2A2A2C"/>
-                    <rect x="21" y="95.5" width="6" height="2" rx="1" fill="#1A1A1C"/>
-                    <circle cx="30" cy="96.5" r="0.6" fill="#2A2A2C"/>
-                    <circle cx="32" cy="96.5" r="0.6" fill="#2A2A2C"/>
-                    <circle cx="34" cy="96.5" r="0.6" fill="#2A2A2C"/>
-                    <rect x="10" y="0.25" width="28" height="0.5" rx="0.25" fill="#5A5A5C" opacity="0.3"/>
-                    <circle cx="10.5" cy="10.5" r="0.3" fill="#6A6A6C" opacity="0.2"/>
-                    <circle cx="37.5" cy="10.5" r="0.3" fill="#6A6A6C" opacity="0.2"/>
-                </svg>
-            </div>
-        </div>
-        
+        <img src="/static/logo.png" alt="Coachd" height="22">
         <div class="landscape-text">
             <h2 class="landscape-title">Rotate to portrait</h2>
             <p class="landscape-subtitle">For the best experience</p>
         </div>
     </div>
 
-    <div class="app" id="app">
-        <header class="header">
-            <div class="header-left">
-                <button class="back-btn" onclick="goBack()" aria-label="Go back">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <!-- App Wrapper with Sidebar -->
+    <div class="app-wrapper">
+        <!-- Mobile Overlay -->
+        <div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileSidebar()"></div>
+        
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="/" class="logo">
+                    <img src="/static/logo.png" alt="Coachd" class="logo-wordmark">
+                    <img src="/static/favicon.svg" alt="Coachd" class="logo-icon">
+                </a>
+                <button class="collapse-btn" onclick="toggleSidebar()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M15 18l-6-6 6-6"/>
                     </svg>
                 </button>
-                <img src="/static/logo.png" alt="Coachd" height="24">
             </div>
-            <div class="header-right">
-                <button class="context-pill" onclick="toggleContextPanel()">
+            
+            <nav class="sidebar-nav">
+                <a href="/" class="nav-item">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/call" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+                    </svg>
+                    <span>Live Call</span>
+                </a>
+                <a href="/chat" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                    </svg>
+                    <span>Chat</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                    </svg>
+                    <span>Resources</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <a href="#" class="nav-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                    </svg>
+                    <span>Settings</span>
+                </a>
+                <div class="user-card">
+                    <div class="user-avatar" id="sidebarUserInitials">--</div>
+                    <div class="user-info">
+                        <span class="user-name" id="sidebarUserName">Agent</span>
+                        <span class="user-meta" id="sidebarUserMeta">Day 1</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main Chat Area -->
+        <div class="app" id="app">
+            <!-- Mobile Header -->
+            <div class="mobile-header">
+                <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12h18M3 6h18M3 18h18"/>
+                    </svg>
+                </button>
+                <span style="font-family: var(--font-display); font-size: 1.1rem; font-weight: 600;">Chat</span>
+                <button class="mobile-menu-btn" onclick="toggleContextPanel()" style="background: transparent;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
                         <circle cx="12" cy="7" r="4"/>
                     </svg>
-                    <span id="contextPillText">Client Info</span>
                 </button>
             </div>
-        </header>
-        
-        <div class="chat-container" id="chatContainer">
-            <div class="empty-state" id="emptyState">
-                <h2 class="empty-title">Ask Coachd</h2>
-                <p class="empty-text">Get tailored guidance based on your client's situation.</p>
-                <div class="suggestions">
-                    <button class="suggestion" onclick="useSuggestion('Client says they cannot afford it - how do I respond?')">Can't afford it</button>
-                    <button class="suggestion" onclick="useSuggestion('Best approach for this client profile?')">Best approach</button>
-                    <button class="suggestion" onclick="useSuggestion('How to transition to term if they reject whole life?')">Term fallback</button>
+            
+            <!-- Desktop Header -->
+            <header class="header">
+                <div class="header-left">
+                    <div class="chat-title-group">
+                        <h1 class="chat-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                            </svg>
+                            Ask Coachd
+                        </h1>
+                        <p class="chat-subtitle">Get tailored guidance for your sales calls</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="context-pill" onclick="toggleContextPanel()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        <span id="contextPillText">Client Info</span>
+                    </button>
+                </div>
+            </header>
+            
+            <div class="chat-container" id="chatContainer">
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                        </svg>
+                    </div>
+                    <h2 class="empty-title">How can I help?</h2>
+                    <p class="empty-text">Ask about objections, scripts, products, or get advice for specific client situations.</p>
+                    <div class="suggestions">
+                        <button class="suggestion" onclick="useSuggestion('Client says they cannot afford it - how do I respond?')">Can't afford it</button>
+                        <button class="suggestion" onclick="useSuggestion('Best approach for this client profile?')">Best approach</button>
+                        <button class="suggestion" onclick="useSuggestion('How to transition to term if they reject whole life?')">Term fallback</button>
+                    </div>
                 </div>
             </div>
-        </div>
-        
-        <div class="input-area" id="inputArea">
-            <div class="input-wrapper" id="inputWrapper">
-                <textarea 
-                    class="chat-input" 
-                    id="chatInput" 
-                    placeholder="Ask about objections, scripts, products..." 
-                    rows="1"
-                ></textarea>
-                <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="22" y1="2" x2="11" y2="13"/>
-                        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                    </svg>
-                </button>
+            
+            <div class="input-area" id="inputArea">
+                <div class="input-wrapper" id="inputWrapper">
+                    <textarea 
+                        class="chat-input" 
+                        id="chatInput" 
+                        placeholder="Ask about objections, scripts, products..." 
+                        rows="1"
+                    ></textarea>
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1033,6 +1076,30 @@
     </div>
     
     <script>
+        // ============ SIDEBAR FUNCTIONS ============
+        let sidebarCollapsed = false;
+        
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+            sidebarCollapsed = sidebar.classList.contains('collapsed');
+        }
+        
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('visible');
+        }
+        
+        function updateSidebarUser() {
+            const name = agencyInfo.name || 'Agent';
+            const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || '--';
+            document.getElementById('sidebarUserInitials').textContent = initials;
+            document.getElementById('sidebarUserName').textContent = name;
+            document.getElementById('sidebarUserMeta').textContent = 'Day 4';
+        }
+        
         // ============ GLOBAL ERROR HANDLER ============
         window.onerror = function(msg, url, line) {
             console.error('Error:', msg);
@@ -1041,8 +1108,7 @@
             return true;
         };
         
-        // ============ MOBILE KEYBOARD HANDLING ============
-        // Handle iOS visual viewport changes when keyboard opens/closes
+        // ============ KEYBOARD HANDLING ============
         if (window.visualViewport) {
             const app = document.getElementById('app');
             let pendingUpdate = false;
@@ -1053,7 +1119,6 @@
                 
                 requestAnimationFrame(() => {
                     const viewport = window.visualViewport;
-                    // Adjust app height to visible viewport - CSS transition handles the smoothness
                     app.style.height = `${viewport.height}px`;
                     pendingUpdate = false;
                 });
@@ -1063,29 +1128,12 @@
             window.visualViewport.addEventListener('scroll', handleViewportResize);
         }
         
-        // Also handle focus/blur for older browsers (without visualViewport)
-        if (!window.visualViewport) {
-            document.addEventListener('DOMContentLoaded', function() {
-                const chatInput = document.getElementById('chatInput');
-                if (chatInput) {
-                    chatInput.addEventListener('focus', function() {
-                        setTimeout(() => {
-                            this.scrollIntoView({ block: 'center', behavior: 'smooth' });
-                        }, 300);
-                    });
-                }
-            });
-        }
-        
         // ============ STATE ============
         let isWaiting = false;
         let messages = [];
         let currentAbortController = null;
         let requestTimeout = null;
-        let streamInterval = null;
         const REQUEST_TIMEOUT_MS = 45000;
-        // REMOVED: Character-by-character animation - now streams text instantly as it arrives
-        // const STREAM_SPEED_MS = 12;
         
         // ============ CONTEXT & AGENCY ============
         let clientContext = {};
@@ -1100,6 +1148,9 @@
             window.location.href = '/';
         }
         
+        // Update sidebar user info
+        updateSidebarUser();
+        
         // ============ DOM ============
         const chatContainer = document.getElementById('chatContainer');
         const chatInput = document.getElementById('chatInput');
@@ -1107,92 +1158,6 @@
         const inputWrapper = document.getElementById('inputWrapper');
         const inputArea = document.getElementById('inputArea');
         const emptyState = document.getElementById('emptyState');
-        
-        // ============ KEYBOARD HANDLING (Cross-Device) ============
-        // Works for iPhone, iPhone Max, Android, etc.
-        // Uses visualViewport API which reports actual visible area regardless of keyboard size
-        
-        function initKeyboardHandling() {
-            const app = document.getElementById('app');
-            const initialHeight = window.innerHeight;
-            let keyboardVisible = false;
-            
-            // Add smooth transition for height changes
-            app.style.transition = 'height 0.15s ease-out';
-            
-            if (window.visualViewport) {
-                // Modern approach - works on iOS 13+, Android Chrome 61+, most modern browsers
-                const viewport = window.visualViewport;
-                
-                const onViewportChange = () => {
-                    const viewportHeight = viewport.height;
-                    const windowHeight = window.innerHeight;
-                    
-                    // Keyboard is open if viewport is significantly smaller than window
-                    const isKeyboardOpen = (windowHeight - viewportHeight) > 100;
-                    
-                    if (isKeyboardOpen) {
-                        keyboardVisible = true;
-                        app.style.height = `${viewportHeight}px`;
-                    } else if (keyboardVisible) {
-                        keyboardVisible = false;
-                        app.style.height = '100dvh';
-                    }
-                    
-                    // Prevent page scroll on iOS
-                    window.scrollTo(0, 0);
-                };
-                
-                viewport.addEventListener('resize', onViewportChange);
-                viewport.addEventListener('scroll', () => window.scrollTo(0, 0));
-                
-            } else {
-                // Fallback for older browsers - detect keyboard via height change
-                let resizeTimeout;
-                
-                window.addEventListener('resize', () => {
-                    clearTimeout(resizeTimeout);
-                    resizeTimeout = setTimeout(() => {
-                        const currentHeight = window.innerHeight;
-                        const heightDiff = initialHeight - currentHeight;
-                        
-                        if (heightDiff > 150) {
-                            // Keyboard likely open
-                            keyboardVisible = true;
-                            app.style.height = `${currentHeight}px`;
-                        } else if (keyboardVisible) {
-                            keyboardVisible = false;
-                            app.style.height = '100dvh';
-                        }
-                    }, 100);
-                });
-            }
-            
-            // Handle input blur - ensure clean reset
-            chatInput.addEventListener('blur', () => {
-                setTimeout(() => {
-                    if (!document.activeElement || document.activeElement.tagName !== 'TEXTAREA') {
-                        keyboardVisible = false;
-                        app.style.height = '100dvh';
-                        window.scrollTo(0, 0);
-                    }
-                }, 150);
-            });
-            
-            // Android-specific: handle focusout for better keyboard dismiss detection
-            if (/android/i.test(navigator.userAgent)) {
-                document.addEventListener('focusout', () => {
-                    setTimeout(() => {
-                        if (!document.activeElement || document.activeElement === document.body) {
-                            app.style.height = '100dvh';
-                            window.scrollTo(0, 0);
-                        }
-                    }, 150);
-                });
-            }
-        }
-        
-        initKeyboardHandling();
         
         // ============ HELPERS ============
         function showToast(message, type = 'info') {
@@ -1253,12 +1218,9 @@
         
         // ============ NAVIGATION ============
         function goBack() {
-            // Check if there are any messages in the chat
             if (messages.length > 0) {
-                // Show confirmation modal
                 document.getElementById('confirmOverlay').classList.add('visible');
             } else {
-                // No chat history, go straight to agent page
                 navigateToNewClient();
             }
         }
@@ -1274,15 +1236,11 @@
         
         function navigateToNewClient() {
             resetState();
-            // Clear client context so agent.html shows fresh form
             sessionStorage.removeItem('coachd_context');
             showPageLoader();
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 150);
+            setTimeout(() => { window.location.href = '/'; }, 150);
         }
         
-        // Page loader
         function showPageLoader() {
             document.getElementById('pageLoader').classList.remove('hidden');
         }
@@ -1291,7 +1249,6 @@
             document.getElementById('pageLoader').classList.add('hidden');
         }
         
-        // Hide loader once page is ready
         window.addEventListener('load', () => {
             setTimeout(hidePageLoader, 300);
         });
@@ -1301,7 +1258,6 @@
             const isOpening = !overlay.classList.contains('visible');
             
             if (isOpening) {
-                // Reset to view mode when opening
                 updateContextDisplay();
                 updateContextFooter(false);
             }
@@ -1406,17 +1362,13 @@
         }
         
         function selectToggle(btn, inputId, value) {
-            // Update hidden input
             document.getElementById(inputId).value = value;
-            
-            // Update button states
             const toggle = btn.parentElement;
             toggle.querySelectorAll('.toggle-option').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
         }
         
         function saveContext() {
-            // Gather values from form
             clientContext.age = document.getElementById('editAge').value || '';
             clientContext.weight = document.getElementById('editWeight').value || '';
             clientContext.sex = document.getElementById('editSex').value || 'M';
@@ -1426,15 +1378,12 @@
             clientContext.income = document.getElementById('editIncome').value || '';
             clientContext.product = document.getElementById('editProduct').value || 'whole_life';
             
-            // Save to sessionStorage
             sessionStorage.setItem('coachd_context', JSON.stringify(clientContext));
             
-            // Exit edit mode
             isEditMode = false;
             updateContextDisplay();
             updateContextFooter(false);
             
-            // Show confirmation
             showToast('Client info updated');
         }
         
@@ -1465,7 +1414,6 @@
                 emptyState.remove();
             }
             
-            // Map display role to API role
             const displayRole = role === 'assistant' ? 'ai' : role;
             const apiRole = role === 'ai' ? 'assistant' : role;
             
@@ -1486,7 +1434,6 @@
             chatContainer.appendChild(messageEl);
             chatContainer.scrollTop = chatContainer.scrollHeight;
             
-            // Store with API-compatible role
             messages.push({ role: apiRole, content });
         }
         
@@ -1508,12 +1455,10 @@
             chatInput.value = '';
             chatInput.style.height = 'auto';
             
-            // Blur input to dismiss keyboard on mobile
             chatInput.blur();
             
             addMessage('user', text);
             
-            // Create AI message with waveform indicator
             const messageEl = document.createElement('div');
             messageEl.className = 'message ai';
             messageEl.innerHTML = `
@@ -1524,7 +1469,6 @@
             
             const contentEl = messageEl.querySelector('.message-content');
             
-            // Buffer to collect full response
             let fullText = '';
             
             currentAbortController = new AbortController();
@@ -1554,10 +1498,8 @@
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let buffer = '';
-                let fullText = '';
                 let firstChunk = true;
                 
-                // OPTIMIZED: Stream text directly to UI as it arrives
                 while (true) {
                     const { done, value } = await reader.read();
                     
@@ -1579,7 +1521,6 @@
                                     const parsed = JSON.parse(data);
                                     const chunk = parsed.text || parsed.content;
                                     if (chunk) {
-                                        // Remove thinking waveform on first real content
                                         if (firstChunk) {
                                             contentEl.classList.remove('streaming');
                                             contentEl.innerHTML = '';
@@ -1588,7 +1529,6 @@
                                         }
                                         
                                         fullText += chunk;
-                                        // Show text with cursor as it streams
                                         contentEl.innerHTML = formatMessage(fullText) + '<span class="cursor"></span>';
                                     }
                                 } catch (e) {
@@ -1609,7 +1549,6 @@
                 
                 clearTimeout(requestTimeout);
                 
-                // Final render without cursor
                 if (fullText) {
                     contentEl.innerHTML = formatMessage(fullText);
                 } else {
@@ -1648,10 +1587,6 @@
                 currentAbortController = null;
             }
         }
-        
-        // REMOVED: animateResponse - now we stream text directly to UI as it arrives
-        // This provides instant feedback instead of waiting for full response then animating
-        // First token appears in ~400ms instead of waiting 3-4s for full response
     </script>
 </body>
 </html>
