@@ -433,6 +433,95 @@
         /* Hide old end session button - now in sidebar */
         .end-session-btn { display: none !important; }
         
+        /* ========== MOBILE BRANDED HEADER ========== */
+        .mobile-header {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 44px;
+            padding: 0 20px;
+            padding-top: var(--safe-top);
+            z-index: 300;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+        
+        /* Glass treatment during calls */
+        body.in-call .mobile-header {
+            background: var(--glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-bottom: 1px solid var(--glass-border);
+        }
+        
+        .mobile-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .mobile-header-logo {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .mobile-header-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .mobile-header-wordmark {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        
+        /* Hide wordmark during calls */
+        body.in-call .mobile-header-wordmark {
+            display: none;
+        }
+        
+        .mobile-header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Call timer in header - only visible during calls */
+        .mobile-header-timer {
+            display: none;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        body.in-call .mobile-header-timer {
+            display: flex;
+        }
+        
+        .mobile-header-timer .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .mobile-header-timer .timer-text {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+        }
+        
         /* ========== MOBILE BOTTOM PILL ========== */
         .bottom-pill {
             display: none;
@@ -3426,10 +3515,11 @@
             }
         }
         
-        /* Mobile: Hide sidebar, show bottom pill */
+        /* Mobile: Hide sidebar, show bottom pill and mobile header */
         @media (max-width: 767px) {
             .sidebar { display: none; }
-            .main-area { margin-left: 0; }
+            .main-area { margin-left: 0; padding-top: calc(44px + var(--safe-top)); }
+            .mobile-header { display: flex; }
             .bottom-pill { display: block; }
             .slide-panel { display: none; }
             .bottom-sheet { display: flex; }
@@ -3711,6 +3801,22 @@
     </div>
     
     <div class="app" id="app">
+        <!-- ========== MOBILE BRANDED HEADER ========== -->
+        <header class="mobile-header" id="mobileHeader">
+            <div class="mobile-header-left">
+                <div class="mobile-header-logo">
+                    <img src="/static/favicon.svg" alt="Coachd">
+                </div>
+                <span class="mobile-header-wordmark">Coachd</span>
+            </div>
+            <div class="mobile-header-right">
+                <div class="mobile-header-timer">
+                    <div class="status-dot"></div>
+                    <span class="timer-text" id="mobileTimer">0:00</span>
+                </div>
+            </div>
+        </header>
+        
         <!-- ========== DESKTOP SIDEBAR ========== -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-logo">
@@ -4643,7 +4749,11 @@
             state.callStartTime = Date.now();  // Track when call started for timestamps
             state.timerInterval = setInterval(() => {
                 state.seconds++;
-                dom.timer.textContent = formatTime(state.seconds);
+                const timeStr = formatTime(state.seconds);
+                dom.timer.textContent = timeStr;
+                // Also update mobile header timer
+                const mobileTimer = document.getElementById('mobileTimer');
+                if (mobileTimer) mobileTimer.textContent = timeStr;
             }, 1000);
         }
         
@@ -6296,6 +6406,9 @@
             console.log('[StartNewCall] Resetting for new call');
             try {
                 dom.timer.textContent = '0:00';
+                // Also reset mobile timer
+                const mobileTimer = document.getElementById('mobileTimer');
+                if (mobileTimer) mobileTimer.textContent = '0:00';
                 state.guidanceHistory = [];
                 state.selectedTipIndex = null;
                 state.sessionId = null;

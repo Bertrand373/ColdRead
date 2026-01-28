@@ -166,12 +166,20 @@
         .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
         .toast.error{background:var(--color-error)}
 
+        /* ===== MOBILE BRANDED HEADER ===== */
+        .mobile-header{display:none;position:fixed;top:0;left:0;right:0;height:44px;padding:0 20px;z-index:300;align-items:center;justify-content:space-between;background:transparent}
+        .mobile-header-left{display:flex;align-items:center;gap:8px}
+        .mobile-header-logo{width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+        .mobile-header-logo img{width:100%;height:100%;object-fit:contain}
+        .mobile-header-wordmark{font-size:0.75rem;font-weight:600;color:var(--color-text-muted);letter-spacing:0.1em;text-transform:uppercase}
+
         /* ===== RESPONSIVE ===== */
         @media(max-width:1024px){.progress-grid{grid-template-columns:repeat(2,1fr)}.content-grid{grid-template-columns:1fr}}
         @media(max-width:768px){
             .sidebar{display:none}
+            .mobile-header{display:flex}
             .bottom-nav{display:block}
-            .main-content{margin-left:0;padding:24px 20px calc(80px + var(--safe-bottom))}
+            .main-content{margin-left:0;padding:calc(44px + 24px) 20px calc(80px + var(--safe-bottom))}
             .page-header{flex-direction:column;gap:16px}
             .page-title{font-size:1.6rem}
             .progress-grid{grid-template-columns:1fr;gap:16px}
@@ -201,6 +209,15 @@
 
     <!-- DASHBOARD SCREEN (contains all nav elements) -->
     <div class="screen dashboard-screen" id="dashboardScreen">
+        <!-- Mobile Branded Header -->
+        <header class="mobile-header">
+            <div class="mobile-header-left">
+                <div class="mobile-header-logo">
+                    <img src="/static/favicon.svg" alt="Coachd">
+                </div>
+                <span class="mobile-header-wordmark">Coachd</span>
+            </div>
+        </header>
         <aside class="sidebar">
             <div class="sidebar-logo"><img src="/static/favicon.svg" alt=""></div>
             <nav class="sidebar-nav">
