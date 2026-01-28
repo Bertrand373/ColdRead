@@ -57,6 +57,9 @@ from .status_check import router as status_router
 # Phone verification for caller ID
 from .phone_verification import router as verification_router
 
+# Power Dialer for appointment booking
+from .dialer_routes import router as dialer_router
+
 
 # ============ PYDANTIC MODELS ============
 
@@ -164,6 +167,7 @@ app.include_router(outcome_router)
 app.include_router(status_router)
 app.include_router(telnyx_router)
 app.include_router(verification_router)
+app.include_router(dialer_router)
 
 
 # Service worker must be served from root for proper scope
@@ -343,6 +347,12 @@ async def call_telnyx_page(request: Request):
 async def call_test_page(request: Request):
     """Test page"""
     return templates.TemplateResponse("call_new.html", {"request": request})
+
+
+@app.get("/dialer", response_class=HTMLResponse)
+async def dialer_page(request: Request):
+    """Power Dialer - rapid appointment booking"""
+    return templates.TemplateResponse("power_dialer.html", {"request": request})
 
 
 @app.get("/admin", response_class=HTMLResponse)

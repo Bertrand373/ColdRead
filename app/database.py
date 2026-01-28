@@ -1,6 +1,6 @@
 """
 Coachd Database Setup
-PostgreSQL connection and models for usage tracking
+PostgreSQL connection and models for usage tracking + Power Dialer
 """
 
 import os
@@ -119,6 +119,110 @@ class PlatformConfig(Base):
     value = Column(Text)  # JSON string for complex values
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     updated_by = Column(String(100), nullable=True)  # Optional: track who changed it
+
+
+# ============ POWER DIALER MODELS ============
+
+class DialerSession(Base):
+    """
+    A Power Dialer session - one agent working through a list of contacts
+    """
+    __tablename__ = "dialer_sessions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String(100), unique=True, index=True)
+    
+    # Agent info
+    agent_phone = Column(String(20))
+    agency_code = Column(String(50), index=True)
+    agent_id = Column(String(100), nullable=True)
+    
+    # Session config
+    list_type = Column(String(50))  # referrals, policy_owner, cold
+    total_contacts = Column(Integer, default=0)
+    
+    # Progress tracking
+    contacts_called = Column(Integer, default=0)
+    appointments_set = Column(Integer, default=0)
+    callbacks_scheduled = Column(Integer, default=0)
+    
+    # Timestamps
+    started_at = Column(DateTime, default=datetime.utcnow)
+    ended_at = Column(DateTime, nullable=True)
+    
+    # Status
+    status = Column(String(20), default="active")  # active, paused, completed
+    
+    __table_args__ = (
+        Index('idx_dialer_session_agent', 'agent_phone', 'started_at'),
+        Index('idx_dialer_session_agency', 'agency_code', 'started_at'),
+    )
+
+
+class DialerContact(Base):
+    """
+    A contact in a Power Dialer session
+    """
+    __tablename__ = "dialer_contacts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String(100), index=True)
+    
+    # Contact info
+    name = Column(String(200))
+    phone = Column(String(20))
+    sponsor_name = Column(String(200), nullable=True)
+    
+    # Call tracking
+    call_order = Column(Integer)
+    call_attempted_at = Column(DateTime, nullable=True)
+    call_duration_seconds = Column(Integer, nullable=True)
+    call_control_id = Column(String(100), nullable=True)
+    
+    # Disposition
+    disposition = Column(String(50), nullable=True)
+    disposition_at = Column(DateTime, nullable=True)
+    notes = Column(Text, nullable=True)
+    
+    __table_args__ = (
+        Index('idx_dialer_contact_session', 'session_id', 'call_order'),
+    )
+
+
+class DialerAppointment(Base):
+    """
+    An appointment booked via Power Dialer
+    """
+    __tablename__ = "dialer_appointments"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    contact_id = Column(Integer, index=True)
+    session_id = Column(String(100), index=True)
+    
+    # Contact snapshot
+    contact_name = Column(String(200))
+    contact_phone = Column(String(20))
+    
+    # Appointment details
+    scheduled_date = Column(DateTime)
+    scheduled_time = Column(String(10))
+    notes = Column(Text, nullable=True)
+    
+    # Status
+    status = Column(String(20), default="scheduled")
+    
+    # Agent info
+    agent_phone = Column(String(20))
+    agency_code = Column(String(50), index=True)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    __table_args__ = (
+        Index('idx_dialer_appt_date', 'scheduled_date', 'agency_code'),
+        Index('idx_dialer_appt_status', 'status', 'agency_code'),
+    )
 
 
 def init_db():
@@ -449,3 +553,274 @@ def get_all_platform_config() -> Dict[str, Any]:
     except Exception as e:
         print(f"Failed to get all platform config: {e}")
         return {}
+
+
+# ============ POWER DIALER FUNCTIONS ============
+
+def create_dialer_session(
+    session_id: str,
+    agent_phone: str,
+    list_type: str,
+    total_contacts: int,
+    agency_code: Optional[str] = None,
+    agent_id: Optional[str] = None
+) -> Optional[int]:
+    """Create a new dialer session"""
+    if not is_db_configured():
+        return None
+    
+    try:
+        with get_db() as db:
+            session = DialerSession(
+                session_id=session_id,
+                agent_phone=agent_phone,
+                agency_code=agency_code,
+                agent_id=agent_id,
+                list_type=list_type,
+                total_contacts=total_contacts,
+                status="active"
+            )
+            db.add(session)
+            db.flush()
+            return session.id
+    except Exception as e:
+        print(f"Failed to create dialer session: {e}")
+        return None
+
+
+def add_dialer_contacts(session_id: str, contacts: List[Dict]) -> int:
+    """Add contacts to a dialer session"""
+    if not is_db_configured():
+        return 0
+    
+    try:
+        with get_db() as db:
+            added = 0
+            for i, contact in enumerate(contacts):
+                c = DialerContact(
+                    session_id=session_id,
+                    name=contact.get("name", f"Contact {i+1}"),
+                    phone=contact.get("phone", ""),
+                    sponsor_name=contact.get("sponsor"),
+                    call_order=i + 1
+                )
+                db.add(c)
+                added += 1
+            return added
+    except Exception as e:
+        print(f"Failed to add dialer contacts: {e}")
+        return 0
+
+
+def get_next_dialer_contact(session_id: str) -> Optional[Dict]:
+    """Get the next contact to call"""
+    if not is_db_configured():
+        return None
+    
+    try:
+        with get_db() as db:
+            contact = db.query(DialerContact).filter(
+                DialerContact.session_id == session_id,
+                DialerContact.disposition == None
+            ).order_by(DialerContact.call_order).first()
+            
+            if contact:
+                return {
+                    "id": contact.id,
+                    "name": contact.name,
+                    "phone": contact.phone,
+                    "sponsor": contact.sponsor_name,
+                    "order": contact.call_order
+                }
+            return None
+    except Exception as e:
+        print(f"Failed to get next contact: {e}")
+        return None
+
+
+def update_dialer_contact_disposition(
+    contact_id: int,
+    disposition: str,
+    duration_seconds: Optional[int] = None,
+    notes: Optional[str] = None
+) -> bool:
+    """Update a contact's disposition"""
+    if not is_db_configured():
+        return False
+    
+    try:
+        with get_db() as db:
+            contact = db.query(DialerContact).filter(DialerContact.id == contact_id).first()
+            if contact:
+                contact.disposition = disposition
+                contact.disposition_at = datetime.utcnow()
+                contact.call_duration_seconds = duration_seconds
+                contact.notes = notes
+                return True
+            return False
+    except Exception as e:
+        print(f"Failed to update contact disposition: {e}")
+        return False
+
+
+def create_dialer_appointment(
+    contact_id: int,
+    session_id: str,
+    contact_name: str,
+    contact_phone: str,
+    scheduled_date: datetime,
+    scheduled_time: str,
+    agent_phone: str,
+    agency_code: Optional[str] = None,
+    notes: Optional[str] = None
+) -> Optional[int]:
+    """Create an appointment"""
+    if not is_db_configured():
+        return None
+    
+    try:
+        with get_db() as db:
+            appt = DialerAppointment(
+                contact_id=contact_id,
+                session_id=session_id,
+                contact_name=contact_name,
+                contact_phone=contact_phone,
+                scheduled_date=scheduled_date,
+                scheduled_time=scheduled_time,
+                agent_phone=agent_phone,
+                agency_code=agency_code,
+                notes=notes,
+                status="scheduled"
+            )
+            db.add(appt)
+            db.flush()
+            return appt.id
+    except Exception as e:
+        print(f"Failed to create appointment: {e}")
+        return None
+
+
+def update_dialer_session_stats(session_id: str) -> bool:
+    """Update session stats"""
+    if not is_db_configured():
+        return False
+    
+    try:
+        with get_db() as db:
+            called = db.query(DialerContact).filter(
+                DialerContact.session_id == session_id,
+                DialerContact.disposition != None,
+                DialerContact.disposition != "skipped"
+            ).count()
+            
+            appointments = db.query(DialerContact).filter(
+                DialerContact.session_id == session_id,
+                DialerContact.disposition == "appointment"
+            ).count()
+            
+            callbacks = db.query(DialerContact).filter(
+                DialerContact.session_id == session_id,
+                DialerContact.disposition == "callback"
+            ).count()
+            
+            session = db.query(DialerSession).filter(
+                DialerSession.session_id == session_id
+            ).first()
+            
+            if session:
+                session.contacts_called = called
+                session.appointments_set = appointments
+                session.callbacks_scheduled = callbacks
+                return True
+            return False
+    except Exception as e:
+        print(f"Failed to update session stats: {e}")
+        return False
+
+
+def end_dialer_session(session_id: str) -> bool:
+    """Mark session as completed"""
+    if not is_db_configured():
+        return False
+    
+    try:
+        with get_db() as db:
+            session = db.query(DialerSession).filter(
+                DialerSession.session_id == session_id
+            ).first()
+            
+            if session:
+                session.status = "completed"
+                session.ended_at = datetime.utcnow()
+                return True
+            return False
+    except Exception as e:
+        print(f"Failed to end session: {e}")
+        return False
+
+
+def get_dialer_session_summary(session_id: str) -> Optional[Dict]:
+    """Get session summary"""
+    if not is_db_configured():
+        return None
+    
+    try:
+        with get_db() as db:
+            session = db.query(DialerSession).filter(
+                DialerSession.session_id == session_id
+            ).first()
+            
+            if session:
+                return {
+                    "session_id": session.session_id,
+                    "list_type": session.list_type,
+                    "total_contacts": session.total_contacts,
+                    "contacts_called": session.contacts_called,
+                    "appointments_set": session.appointments_set,
+                    "callbacks_scheduled": session.callbacks_scheduled,
+                    "started_at": session.started_at.isoformat() if session.started_at else None,
+                    "ended_at": session.ended_at.isoformat() if session.ended_at else None,
+                    "status": session.status
+                }
+            return None
+    except Exception as e:
+        print(f"Failed to get session summary: {e}")
+        return None
+
+
+def get_upcoming_appointments(
+    agency_code: Optional[str] = None,
+    days_ahead: int = 7
+) -> List[Dict]:
+    """Get upcoming appointments"""
+    if not is_db_configured():
+        return []
+    
+    try:
+        with get_db() as db:
+            query = db.query(DialerAppointment).filter(
+                DialerAppointment.status == "scheduled",
+                DialerAppointment.scheduled_date >= datetime.utcnow(),
+                DialerAppointment.scheduled_date <= datetime.utcnow() + timedelta(days=days_ahead)
+            )
+            
+            if agency_code:
+                query = query.filter(DialerAppointment.agency_code == agency_code)
+            
+            appointments = query.order_by(DialerAppointment.scheduled_date).all()
+            
+            return [
+                {
+                    "id": appt.id,
+                    "contact_name": appt.contact_name,
+                    "contact_phone": appt.contact_phone,
+                    "scheduled_date": appt.scheduled_date.isoformat() if appt.scheduled_date else None,
+                    "scheduled_time": appt.scheduled_time,
+                    "notes": appt.notes,
+                    "status": appt.status
+                }
+                for appt in appointments
+            ]
+    except Exception as e:
+        print(f"Failed to get upcoming appointments: {e}")
+        return []

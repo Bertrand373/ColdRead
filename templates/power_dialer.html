@@ -1,0 +1,2398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Power Dialer | Coachd</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="icon" type="image/png" sizes="96x96" href="/static/favicon-96x96.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+    <link rel="shortcut icon" href="/static/favicon.ico">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#F5F5F7">
+    
+    <!-- SEO -->
+    <meta name="description" content="Power Dialer for booking appointments - Coachd">
+    
+    <!-- VERSION: 2025-01-28-v1-power-dialer -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Aligned with call_telnyx.html Shop.app design system */
+            --bg: #F5F5F7;
+            --surface: #FFFFFF;
+            --glass: rgba(255,255,255,0.65);
+            --glass-strong: rgba(255,255,255,0.85);
+            --glass-border: rgba(255,255,255,0.4);
+            --border: rgba(0,0,0,0.06);
+            --border-solid: #E5E5E5;
+            --text: #1A1A1A;
+            --text-secondary: #6B7280;
+            --text-muted: #9CA3AF;
+            --accent: #3B82F6;
+            --accent-dark: #2563EB;
+            --accent-soft: rgba(59,130,246,0.12);
+            --success: #10B981;
+            --success-soft: rgba(16, 185, 129, 0.1);
+            --danger: #EF4444;
+            --danger-soft: rgba(239, 68, 68, 0.1);
+            --warning: #F59E0B;
+            --warning-soft: rgba(245, 158, 11, 0.1);
+            --blur: blur(24px);
+            --blur-strong: blur(40px);
+            --shadow-glass: 0 8px 32px rgba(0,0,0,0.06);
+            --radius-sm: 12px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-xl: 32px;
+            --radius-full: 9999px;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --sidebar-width: 72px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow: hidden;
+        }
+
+        /* ========== LANDSCAPE BLOCKER ========== */
+        .landscape-blocker {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(180deg, #FAFAFA 0%, #F5F5F5 100%);
+            z-index: 99999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+            gap: 28px;
+        }
+
+        @media (orientation: landscape) and (max-height: 500px) {
+            body:not(.in-call) .landscape-blocker { display: flex; }
+            body:not(.in-call) .app { display: none !important; }
+        }
+
+        .landscape-blocker-icon {
+            width: 72px;
+            height: 72px;
+            background: var(--surface);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+        }
+
+        .landscape-blocker-icon svg {
+            width: 36px;
+            height: 36px;
+            color: var(--text-muted);
+        }
+
+        .landscape-blocker-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .landscape-blocker-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            max-width: 280px;
+            line-height: 1.5;
+        }
+
+        /* ========== APP CONTAINER ========== */
+        .app {
+            display: flex;
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        /* ========== SIDEBAR (Desktop) ========== */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .sidebar-logo {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 32px;
+        }
+
+        .sidebar-logo img {
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 0 12px;
+        }
+
+        /* Normal nav (hidden during call) */
+        .sidebar-nav-normal { display: flex; flex-direction: column; gap: 8px; }
+        body.in-call .sidebar-nav-normal { display: none; }
+
+        /* Call nav (hidden when not in call) */
+        .sidebar-nav-call { display: none; flex-direction: column; gap: 8px; }
+        body.in-call .sidebar-nav-call { display: flex; }
+
+        .nav-item {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s;
+            text-decoration: none;
+            position: relative;
+        }
+
+        .nav-item:hover { background: rgba(255,255,255,0.5); color: var(--text); }
+        .nav-item.active { background: var(--accent-soft); color: var(--accent); }
+        .nav-item.danger { color: var(--danger); }
+        .nav-item.danger:hover { background: var(--danger-soft); }
+        .nav-item svg { width: 22px; height: 22px; }
+
+        /* Tooltip */
+        .nav-item::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: calc(100% + 12px);
+            padding: 8px 12px;
+            background: var(--text);
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border-radius: 8px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.15s;
+            pointer-events: none;
+        }
+        .nav-item:hover::after { opacity: 1; visibility: visible; }
+
+        .sidebar-footer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 0 12px;
+        }
+
+        /* Normal footer (hidden during call) */
+        .sidebar-footer-normal { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+        body.in-call .sidebar-footer-normal { display: none; }
+
+        /* Call footer (hidden when not in call) */
+        .sidebar-footer-call { display: none; flex-direction: column; gap: 8px; align-items: center; }
+        body.in-call .sidebar-footer-call { display: flex; }
+
+        /* ========== MAIN AREA ========== */
+        .main-area {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            min-height: 100dvh;
+            position: relative;
+        }
+
+        /* ========== MOBILE HEADER ========== */
+        .mobile-header {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 44px;
+            padding: 0 20px;
+            padding-top: var(--safe-top);
+            z-index: 300;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        /* Glass treatment during calls */
+        body.in-call .mobile-header {
+            background: var(--glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .mobile-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mobile-header-logo {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mobile-header-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .mobile-header-wordmark {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        /* Hide wordmark during calls */
+        body.in-call .mobile-header-wordmark {
+            display: none;
+        }
+
+        .mobile-header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ========== SESSION STATS HEADER (Power Dialer specific) ========== */
+        .session-header {
+            display: none;
+            justify-content: space-around;
+            align-items: center;
+            padding: 12px 20px;
+            background: var(--glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-bottom: 1px solid var(--glass-border);
+            flex-shrink: 0;
+        }
+
+        body.in-call .session-header { display: flex; }
+
+        .session-stat {
+            text-align: center;
+        }
+
+        .session-stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .session-stat-value.highlight {
+            color: var(--success);
+        }
+
+        .session-stat-label {
+            font-size: 0.625rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        /* ========== MOBILE SESSION STATS ========== */
+        .mobile-session-stats {
+            display: none;
+            justify-content: space-around;
+            padding: 8px 16px;
+            background: var(--glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .mobile-session-stat {
+            text-align: center;
+        }
+
+        .mobile-session-stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .mobile-session-stat-value.highlight {
+            color: var(--success);
+        }
+
+        .mobile-session-stat-label {
+            font-size: 0.5rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* ========== MOBILE BOTTOM PILL ========== */
+        .bottom-pill {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 400;
+            padding: 8px 16px calc(8px + var(--safe-bottom));
+        }
+
+        .bottom-pill-inner {
+            background: var(--glass-strong);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-full);
+            padding: 6px 8px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+        }
+
+        .bottom-pill-items {
+            display: flex;
+            justify-content: space-around;
+        }
+
+        /* Normal nav items (hidden during call) */
+        .pill-nav-normal { display: contents; }
+        body.in-call .pill-nav-normal { display: none; }
+
+        /* Call nav items (hidden when not in call) */
+        .pill-nav-call { display: none; }
+        body.in-call .pill-nav-call { display: contents; }
+
+        .pill-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 8px 12px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            text-decoration: none;
+        }
+
+        .pill-item.active { color: var(--accent); }
+        .pill-item.danger { color: var(--danger); }
+        .pill-item svg { width: 20px; height: 20px; }
+        .pill-item-label { font-size: 0.6rem; font-weight: 600; }
+
+        /* ========== SCREENS ========== */
+        .screen {
+            display: none;
+            flex: 1;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ========== UPLOAD SCREEN ========== */
+        .upload-screen {
+            justify-content: center;
+            align-items: center;
+            padding: 40px 24px;
+        }
+
+        .upload-screen.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ========== GLASS CARD ========== */
+        .glass-card {
+            background: var(--glass-strong);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-glass);
+            padding: 48px 40px;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+
+        .card-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: var(--accent-soft);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-icon svg {
+            width: 40px;
+            height: 40px;
+            color: var(--accent);
+        }
+
+        .card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .card-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+
+        /* ========== FORM ELEMENTS ========== */
+        .section-label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            color: var(--text);
+            background: transparent;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        textarea.form-input {
+            text-align: left;
+            resize: none;
+            height: 80px;
+        }
+
+        /* ========== LIST TYPE SELECTOR ========== */
+        .list-type-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .list-type-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: left;
+        }
+
+        .list-type-btn:hover {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }
+
+        .list-type-btn.selected {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }
+
+        .list-type-radio {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border-solid);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.15s ease;
+        }
+
+        .list-type-btn.selected .list-type-radio {
+            border-color: var(--accent);
+        }
+
+        .list-type-radio::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.15s ease;
+        }
+
+        .list-type-btn.selected .list-type-radio::after {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .list-type-info {
+            flex: 1;
+        }
+
+        .list-type-name {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .list-type-desc {
+            font-size: 0.6875rem;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        /* ========== UPLOAD AREA ========== */
+        .upload-methods {
+            margin-bottom: 24px;
+        }
+
+        .upload-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px;
+            background: var(--surface);
+            border: 1.5px dashed var(--border-solid);
+            border-radius: var(--radius-md);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 12px;
+        }
+
+        .upload-btn:hover {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }
+
+        .upload-btn svg {
+            width: 20px;
+            height: 20px;
+            color: var(--accent);
+        }
+
+        .upload-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin: 12px 0;
+        }
+
+        .upload-divider::before,
+        .upload-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ========== BUTTONS ========== */
+        .btn-primary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 16px 24px;
+            background: var(--text);
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); }
+        .btn-primary:active:not(:disabled) { transform: scale(0.98); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary svg { width: 22px; height: 22px; }
+
+        .btn-accent {
+            background: var(--accent);
+        }
+
+        .btn-accent:hover:not(:disabled) {
+            background: var(--accent-dark);
+        }
+
+        .btn-secondary {
+            width: 100%;
+            padding: 12px 24px;
+            background: rgba(255,255,255,0.5);
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.8);
+            color: var(--text);
+        }
+
+        .btn-danger {
+            background: var(--danger-soft);
+            color: var(--danger);
+            border: 1.5px solid var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .link-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 16px;
+        }
+
+        .link-btn:hover { color: var(--text-secondary); }
+
+        /* ========== CONNECTING SCREEN ========== */
+        .connecting-screen {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px 24px;
+        }
+
+        .connecting-screen.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ========== CONNECTION STEPS ========== */
+        .connection-steps {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            margin-bottom: 32px;
+            width: 100%;
+        }
+
+        .step-connector {
+            width: 100%;
+            max-width: 280px;
+            height: 20px;
+            position: relative;
+        }
+
+        .step-connector::before {
+            content: '';
+            position: absolute;
+            left: calc(24px - 1px);
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: var(--border);
+            border-radius: 1px;
+        }
+
+        .step-connector .connector-fill {
+            position: absolute;
+            left: calc(24px - 1px);
+            top: 0;
+            width: 2px;
+            height: 0%;
+            background: var(--success);
+            border-radius: 1px;
+            transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .step-connector.filled .connector-fill {
+            height: 100%;
+        }
+
+        .connection-step {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 0;
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .step-indicator {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.5);
+            border: 1.5px solid var(--border);
+            flex-shrink: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .step-indicator svg {
+            width: 22px;
+            height: 22px;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        /* Waiting state */
+        .connection-step.waiting .step-indicator { opacity: 0.5; }
+        .connection-step.waiting .step-content { opacity: 0.5; }
+        .connection-step.waiting .step-text { color: var(--text-muted); }
+
+        /* Active state */
+        .connection-step.active .step-indicator {
+            background: var(--accent-soft);
+            border-color: var(--accent);
+            animation: indicatorPulse 2s ease-in-out infinite;
+        }
+        .connection-step.active .step-indicator svg { color: var(--accent-dark); }
+        .connection-step.active .step-subtext { color: var(--accent-dark); }
+
+        @keyframes indicatorPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.3); }
+            50% { box-shadow: 0 0 0 8px rgba(96, 165, 250, 0); }
+        }
+
+        /* Phone ringing animation */
+        .connection-step.active[data-step="agent"] .step-indicator svg {
+            animation: phoneRing 1s ease-in-out infinite;
+        }
+
+        @keyframes phoneRing {
+            0%, 100% { transform: rotate(0deg); }
+            10% { transform: rotate(-12deg); }
+            20% { transform: rotate(12deg); }
+            30% { transform: rotate(-10deg); }
+            40% { transform: rotate(10deg); }
+            50% { transform: rotate(0deg); }
+        }
+
+        /* Complete state */
+        .connection-step.complete .step-indicator {
+            background: var(--success-soft);
+            border-color: var(--success);
+        }
+        .connection-step.complete .step-indicator svg { color: var(--success); }
+        .connection-step.complete .step-subtext { color: var(--success); }
+
+        .step-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+        }
+
+        .step-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text);
+            line-height: 1.3;
+        }
+
+        .step-subtext {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            line-height: 1.3;
+        }
+
+        /* ========== CALL SCREEN ========== */
+        .call-screen {
+            position: relative;
+            overflow: hidden;
+            background: var(--bg);
+        }
+
+        .call-screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ========== CALL INFO BAR ========== */
+        .call-info-bar {
+            text-align: center;
+            padding: 16px 20px;
+            background: var(--glass-strong);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            margin: 16px 20px;
+        }
+
+        .contact-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .contact-phone {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .call-timer-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: var(--success-soft);
+            border-radius: var(--radius-full);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--success);
+            margin-top: 10px;
+        }
+
+        .call-timer-inline svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* ========== SCRIPT AREA ========== */
+        .script-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0 20px 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ========== SCRIPT PANEL ========== */
+        .script-panel {
+            background: var(--glass-strong);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .script-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .script-header:hover {
+            background: rgba(0,0,0,0.02);
+        }
+
+        .script-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--accent-soft);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .script-icon svg {
+            width: 18px;
+            height: 18px;
+            color: var(--accent);
+        }
+
+        .script-header-content {
+            flex: 1;
+        }
+
+        .script-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9375rem;
+            font-weight: 600;
+        }
+
+        .script-type {
+            font-size: 0.6875rem;
+            color: var(--text-muted);
+        }
+
+        .script-toggle {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: transform 0.2s ease;
+        }
+
+        .script-toggle svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .script-panel.expanded .script-toggle {
+            transform: rotate(180deg);
+        }
+
+        .script-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .script-panel.expanded .script-content {
+            max-height: 500px;
+        }
+
+        .script-body {
+            padding: 0 16px 16px;
+        }
+
+        .script-text {
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: var(--text);
+            background: var(--surface);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+        .script-text strong {
+            color: var(--accent-dark);
+        }
+
+        .script-section {
+            padding: 10px 12px;
+            background: var(--surface);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .script-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .script-section-title {
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--accent-dark);
+            margin-bottom: 4px;
+        }
+
+        .script-section-content {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* ========== OBJECTIONS PANEL ========== */
+        .objections-panel {
+            background: var(--warning-soft);
+            border-radius: var(--radius-lg);
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .objections-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            cursor: pointer;
+        }
+
+        .objections-icon {
+            width: 32px;
+            height: 32px;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .objections-icon svg {
+            width: 16px;
+            height: 16px;
+            color: var(--warning);
+        }
+
+        .objections-header-content {
+            flex: 1;
+        }
+
+        .objections-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--warning);
+        }
+
+        .objections-toggle {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--warning);
+            transition: transform 0.2s ease;
+        }
+
+        .objections-toggle svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .objections-panel.expanded .objections-toggle {
+            transform: rotate(180deg);
+        }
+
+        .objections-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .objections-panel.expanded .objections-content {
+            max-height: 400px;
+        }
+
+        .objection-item {
+            padding: 12px 16px;
+            border-top: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .objection-trigger {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .objection-response {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            font-style: italic;
+        }
+
+        /* ========== END CALL BUTTON ========== */
+        .end-call-section {
+            margin-top: auto;
+            padding-top: 12px;
+        }
+
+        .end-call-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--danger-soft);
+            color: var(--danger);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            border: 1.5px solid var(--danger);
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .end-call-btn:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* ========== DISPOSITION SCREEN ========== */
+        .disposition-screen {
+            justify-content: flex-start;
+            align-items: center;
+            padding: 40px 24px;
+            overflow-y: auto;
+        }
+
+        .disposition-screen.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .call-summary {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .call-summary-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--success-soft);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+        }
+
+        .call-summary-icon svg {
+            width: 28px;
+            height: 28px;
+            color: var(--success);
+        }
+
+        .call-summary-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .call-summary-duration {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+        }
+
+        .disposition-card {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .disposition-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .disposition-btn {
+            padding: 14px 12px;
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .disposition-btn:hover {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }
+
+        .disposition-btn.selected {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+            color: var(--accent-dark);
+        }
+
+        .disposition-btn.success {
+            border-color: var(--success);
+            background: var(--success-soft);
+            color: var(--success);
+        }
+
+        .disposition-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* ========== APPOINTMENT FORM ========== */
+        .appointment-form {
+            background: var(--success-soft);
+            border: 1px solid var(--success);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .appointment-form.visible {
+            display: block;
+        }
+
+        .appointment-form-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--success);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .appointment-form-title svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .appointment-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .appointment-input {
+            flex: 1;
+            padding: 10px 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8125rem;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .appointment-input:focus {
+            outline: none;
+            border-color: var(--success);
+            box-shadow: 0 0 0 3px var(--success-soft);
+        }
+
+        .appointment-notes {
+            width: 100%;
+            padding: 10px 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8125rem;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            resize: none;
+            height: 60px;
+        }
+
+        /* ========== NEXT CONTACT ========== */
+        .next-contact {
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            margin-bottom: 16px;
+        }
+
+        .next-label {
+            font-size: 0.6875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .next-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .next-phone {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+        }
+
+        /* ========== SESSION COMPLETE ========== */
+        .complete-screen {
+            justify-content: center;
+            align-items: center;
+            padding: 40px 24px;
+        }
+
+        .complete-screen.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .complete-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--success-soft);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .complete-icon svg {
+            width: 40px;
+            height: 40px;
+            color: var(--success);
+        }
+
+        .complete-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .complete-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+
+        .complete-stats {
+            display: flex;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+
+        .complete-stat {
+            text-align: center;
+        }
+
+        .complete-stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .complete-stat-value.highlight {
+            color: var(--success);
+        }
+
+        .complete-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* ========== MOBILE STYLES ========== */
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main-area { margin-left: 0; }
+            .mobile-header { display: flex; }
+            .bottom-pill { display: block; }
+            .session-header { display: none; }
+
+            body.in-call .mobile-session-stats { display: flex; }
+
+            .phone-content {
+                padding-top: calc(44px + var(--safe-top));
+                padding-bottom: calc(80px + var(--safe-bottom));
+            }
+
+            .glass-card {
+                padding: 32px 24px;
+            }
+
+            .card-icon {
+                width: 64px;
+                height: 64px;
+                border-radius: 16px;
+            }
+
+            .card-icon svg {
+                width: 32px;
+                height: 32px;
+            }
+
+            .card-title {
+                font-size: 1.25rem;
+            }
+
+            .card-subtitle {
+                font-size: 0.85rem;
+                margin-bottom: 24px;
+            }
+
+            .script-area {
+                padding-bottom: calc(80px + var(--safe-bottom) + 20px);
+            }
+        }
+
+        /* ========== SCRIPTS DATA ========== */
+        /* Scripts stored in JS, loaded dynamically based on list type */
+    </style>
+</head>
+<body>
+    <!-- Landscape Blocker -->
+    <div class="landscape-blocker">
+        <div class="landscape-blocker-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="4" y="2" width="16" height="20" rx="2"/>
+                <line x1="12" y1="18" x2="12" y2="18"/>
+            </svg>
+        </div>
+        <h2 class="landscape-blocker-title">Rotate Your Phone</h2>
+        <p class="landscape-blocker-text">Power Dialer works best in portrait mode</p>
+    </div>
+
+    <div class="app">
+        <!-- Sidebar (Desktop) -->
+        <aside class="sidebar">
+            <a href="/" class="sidebar-logo">
+                <img src="/static/logo.svg" alt="Coachd" onerror="this.style.display='none'">
+            </a>
+
+            <nav class="sidebar-nav">
+                <!-- Normal nav -->
+                <div class="sidebar-nav-normal">
+                    <a href="/agent" class="nav-item" data-tooltip="Dashboard">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    </a>
+                    <a href="/call" class="nav-item" data-tooltip="Presentation">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="8" x2="4" y2="16"/><line x1="8" y1="5" x2="8" y2="19"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="16" y1="4" x2="16" y2="20"/><line x1="20" y1="9" x2="20" y2="15"/></svg>
+                    </a>
+                    <button class="nav-item active" data-tooltip="Power Dialer">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                    </button>
+                </div>
+
+                <!-- Call nav -->
+                <div class="sidebar-nav-call">
+                    <button class="nav-item" data-tooltip="Script" onclick="PowerDialer.toggleScript()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    </button>
+                    <button class="nav-item" data-tooltip="Objections" onclick="PowerDialer.toggleObjections()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    </button>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <!-- Normal footer -->
+                <div class="sidebar-footer-normal">
+                    <a href="/agent#settings" class="nav-item" data-tooltip="Settings">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                    </a>
+                </div>
+
+                <!-- Call footer -->
+                <div class="sidebar-footer-call">
+                    <button class="nav-item danger" data-tooltip="End Call" onclick="PowerDialer.endCall()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/><line x1="23" y1="1" x2="1" y2="23"/></svg>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Mobile Header -->
+        <header class="mobile-header">
+            <div class="mobile-header-left">
+                <div class="mobile-header-logo">
+                    <img src="/static/logo.svg" alt="Coachd" onerror="this.style.display='none'">
+                </div>
+                <span class="mobile-header-wordmark">Power Dialer</span>
+            </div>
+            <div class="mobile-header-right">
+                <!-- Timer shown during calls via JS -->
+            </div>
+        </header>
+
+        <!-- Main Area -->
+        <div class="main-area">
+            <!-- Session Stats Header (Desktop, during calls) -->
+            <header class="session-header" id="sessionHeader">
+                <div class="session-stat">
+                    <div class="session-stat-value" id="progressStat">0/0</div>
+                    <div class="session-stat-label">Progress</div>
+                </div>
+                <div class="session-stat">
+                    <div class="session-stat-value highlight" id="appointmentsStat">0</div>
+                    <div class="session-stat-label">Appts</div>
+                </div>
+                <div class="session-stat">
+                    <div class="session-stat-value" id="sessionTimerStat">0:00</div>
+                    <div class="session-stat-label">Session</div>
+                </div>
+            </header>
+
+            <!-- Mobile Session Stats (during calls) -->
+            <div class="mobile-session-stats" id="mobileSessionStats">
+                <div class="mobile-session-stat">
+                    <div class="mobile-session-stat-value" id="mobileProgressStat">0/0</div>
+                    <div class="mobile-session-stat-label">Progress</div>
+                </div>
+                <div class="mobile-session-stat">
+                    <div class="mobile-session-stat-value highlight" id="mobileAppointmentsStat">0</div>
+                    <div class="mobile-session-stat-label">Appts</div>
+                </div>
+                <div class="mobile-session-stat">
+                    <div class="mobile-session-stat-value" id="mobileSessionTimerStat">0:00</div>
+                    <div class="mobile-session-stat-label">Session</div>
+                </div>
+            </div>
+
+            <!-- Upload Screen -->
+            <div class="screen upload-screen active" id="uploadScreen">
+                <div class="glass-card">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7" rx="1"/>
+                            <rect x="14" y="3" width="7" height="7" rx="1"/>
+                            <rect x="3" y="14" width="7" height="7" rx="1"/>
+                            <rect x="14" y="14" width="7" height="7" rx="1"/>
+                        </svg>
+                    </div>
+                    <h1 class="card-title">Power Dialer</h1>
+                    <p class="card-subtitle">Book appointments fast</p>
+
+                    <div class="section-label">What type of list?</div>
+                    <div class="list-type-options" id="listTypeOptions">
+                        <button class="list-type-btn selected" data-type="referrals" onclick="PowerDialer.selectListType(this)">
+                            <div class="list-type-radio"></div>
+                            <div class="list-type-info">
+                                <div class="list-type-name">Referrals</div>
+                                <div class="list-type-desc">Sponsored by existing clients</div>
+                            </div>
+                        </button>
+                        <button class="list-type-btn" data-type="policy_owner" onclick="PowerDialer.selectListType(this)">
+                            <div class="list-type-radio"></div>
+                            <div class="list-type-info">
+                                <div class="list-type-name">Policy Owner Service</div>
+                                <div class="list-type-desc">Lapse reactivation</div>
+                            </div>
+                        </button>
+                        <button class="list-type-btn" data-type="cold" onclick="PowerDialer.selectListType(this)">
+                            <div class="list-type-radio"></div>
+                            <div class="list-type-info">
+                                <div class="list-type-name">Cold / Other</div>
+                                <div class="list-type-desc">Generic script</div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="section-label">Upload contacts</div>
+                    <div class="upload-methods">
+                        <button class="upload-btn" onclick="PowerDialer.takePhoto()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                            Take Photo of List
+                        </button>
+                        
+                        <div class="upload-divider"><span>or paste</span></div>
+                        
+                        <textarea class="form-input" id="pasteInput" placeholder="John Smith (678) 555-1234
+Maria Garcia 404-555-5678
+..."></textarea>
+                    </div>
+
+                    <button class="btn-primary btn-accent" onclick="PowerDialer.loadContacts()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="13 17 18 12 13 7"/>
+                            <polyline points="6 17 11 12 6 7"/>
+                        </svg>
+                        Start Dialing
+                    </button>
+
+                    <button class="link-btn" onclick="window.location.href='/call'">Switch to Presentation mode</button>
+                </div>
+            </div>
+
+            <!-- Connecting Screen -->
+            <div class="screen connecting-screen" id="connectingScreen">
+                <div class="glass-card">
+                    <h1 class="card-title" id="connectingTitle">Calling</h1>
+                    <p class="card-subtitle" id="connectingSubtitle">Maria Garcia</p>
+
+                    <div class="connection-steps">
+                        <div class="connection-step active" id="stepAgent" data-step="agent">
+                            <div class="step-indicator" id="stepAgentIndicator">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+                                </svg>
+                            </div>
+                            <div class="step-content">
+                                <span class="step-text">Your Phone</span>
+                                <span class="step-subtext" id="stepAgentSubtext">Ringing...</span>
+                            </div>
+                        </div>
+
+                        <div class="step-connector" id="connectorAgentClient">
+                            <div class="connector-fill"></div>
+                        </div>
+
+                        <div class="connection-step waiting" id="stepClient" data-step="client">
+                            <div class="step-indicator" id="stepClientIndicator">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                            </div>
+                            <div class="step-content">
+                                <span class="step-text">Client</span>
+                                <span class="step-subtext" id="stepClientSubtext">Waiting...</span>
+                            </div>
+                        </div>
+                        <!-- NO STEP 3 - No Coachd AI for Power Dialer -->
+                    </div>
+
+                    <button class="btn-secondary" onclick="PowerDialer.skipContact()">Skip</button>
+                </div>
+            </div>
+
+            <!-- Call Screen -->
+            <div class="screen call-screen" id="callScreen">
+                <div class="call-info-bar">
+                    <div class="contact-name" id="callContactName">Maria Garcia</div>
+                    <div class="contact-phone" id="callContactPhone">(404) 555-5678</div>
+                    <div class="call-timer-inline">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                        <span id="callTimer">0:00</span>
+                    </div>
+                </div>
+
+                <div class="script-area">
+                    <!-- Script Panel -->
+                    <div class="script-panel expanded" id="scriptPanel">
+                        <div class="script-header" onclick="PowerDialer.toggleScript()">
+                            <div class="script-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                                    <path d="M14 2v6h6"/>
+                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                    <line x1="16" y1="17" x2="8" y2="17"/>
+                                </svg>
+                            </div>
+                            <div class="script-header-content">
+                                <div class="script-title">Script</div>
+                                <div class="script-type" id="scriptTypeLabel">Referrals</div>
+                            </div>
+                            <div class="script-toggle">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="script-content">
+                            <div class="script-body" id="scriptBody">
+                                <!-- Populated by JS based on list type -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Objections Panel -->
+                    <div class="objections-panel" id="objectionsPanel">
+                        <div class="objections-header" onclick="PowerDialer.toggleObjections()">
+                            <div class="objections-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                                </svg>
+                            </div>
+                            <div class="objections-header-content">
+                                <div class="objections-title">Quick Objections</div>
+                            </div>
+                            <div class="objections-toggle">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="objections-content" id="objectionsContent">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- End Call Button -->
+                    <div class="end-call-section">
+                        <button class="end-call-btn" onclick="PowerDialer.endCall()">End Call</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Disposition Screen -->
+            <div class="screen disposition-screen" id="dispositionScreen">
+                <div class="call-summary">
+                    <div class="call-summary-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </div>
+                    <div class="call-summary-name" id="dispositionContactName">Maria Garcia</div>
+                    <div class="call-summary-duration">Call: <span id="dispositionDuration">1:47</span></div>
+                </div>
+
+                <div class="disposition-card glass-card" style="padding: 24px;">
+                    <div class="section-label">What happened?</div>
+                    <div class="disposition-grid">
+                        <button class="disposition-btn" data-disposition="appointment" onclick="PowerDialer.selectDisposition(this)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            Appt Set
+                        </button>
+                        <button class="disposition-btn" data-disposition="callback" onclick="PowerDialer.selectDisposition(this)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="23 4 23 10 17 10"/>
+                                <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+                            </svg>
+                            Callback
+                        </button>
+                        <button class="disposition-btn" data-disposition="not_interested" onclick="PowerDialer.selectDisposition(this)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="15" y1="9" x2="9" y2="15"/>
+                                <line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                            Not Interested
+                        </button>
+                        <button class="disposition-btn" data-disposition="no_answer" onclick="PowerDialer.selectDisposition(this)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10.68 13.31a16 16 0 003.41 2.6l1.27-1.27"/>
+                                <line x1="1" y1="1" x2="23" y2="23"/>
+                            </svg>
+                            No Answer
+                        </button>
+                    </div>
+
+                    <!-- Appointment Form (shown when Appt Set selected) -->
+                    <div class="appointment-form" id="appointmentForm">
+                        <div class="appointment-form-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                            </svg>
+                            Presentation Details
+                        </div>
+                        <div class="appointment-row">
+                            <input type="date" class="appointment-input" id="appointmentDate">
+                            <input type="time" class="appointment-input" id="appointmentTime">
+                        </div>
+                        <textarea class="appointment-notes" id="appointmentNotes" placeholder="Notes (e.g., both spouses confirmed)"></textarea>
+                    </div>
+
+                    <!-- Next Contact Preview -->
+                    <div class="next-contact" id="nextContactPreview">
+                        <div class="next-label">Up Next</div>
+                        <div class="next-name" id="nextContactName">Robert Johnson</div>
+                        <div class="next-phone" id="nextContactPhone">(770) 555-9012</div>
+                    </div>
+
+                    <button class="btn-primary btn-accent" onclick="PowerDialer.saveAndNext()">
+                        Save & Next Call
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="13 17 18 12 13 7"/>
+                            <polyline points="6 17 11 12 6 7"/>
+                        </svg>
+                    </button>
+
+                    <button class="link-btn" onclick="PowerDialer.endSession()">End Session</button>
+                </div>
+            </div>
+
+            <!-- Session Complete Screen -->
+            <div class="screen complete-screen" id="completeScreen">
+                <div class="glass-card">
+                    <div class="complete-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </div>
+                    <h1 class="complete-title">Session Complete</h1>
+                    <p class="complete-subtitle">Great work!</p>
+
+                    <div class="complete-stats">
+                        <div class="complete-stat">
+                            <div class="complete-stat-value" id="finalCallsStat">0</div>
+                            <div class="complete-stat-label">Calls</div>
+                        </div>
+                        <div class="complete-stat">
+                            <div class="complete-stat-value highlight" id="finalAppointmentsStat">0</div>
+                            <div class="complete-stat-label">Appointments</div>
+                        </div>
+                        <div class="complete-stat">
+                            <div class="complete-stat-value" id="finalTimeStat">0:00</div>
+                            <div class="complete-stat-label">Time</div>
+                        </div>
+                    </div>
+
+                    <button class="btn-primary" onclick="PowerDialer.newSession()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+                        </svg>
+                        New Session
+                    </button>
+
+                    <button class="link-btn" onclick="window.location.href='/agent'">Back to Dashboard</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Bottom Pill -->
+        <nav class="bottom-pill">
+            <div class="bottom-pill-inner">
+                <div class="bottom-pill-items">
+                    <!-- Normal nav -->
+                    <div class="pill-nav-normal">
+                        <a href="/agent" class="pill-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                            <span class="pill-item-label">Home</span>
+                        </a>
+                        <a href="/call" class="pill-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="8" x2="4" y2="16"/><line x1="8" y1="5" x2="8" y2="19"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="16" y1="4" x2="16" y2="20"/><line x1="20" y1="9" x2="20" y2="15"/></svg>
+                            <span class="pill-item-label">Presentation</span>
+                        </a>
+                        <button class="pill-item active">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                            <span class="pill-item-label">Dialer</span>
+                        </button>
+                    </div>
+
+                    <!-- Call nav -->
+                    <div class="pill-nav-call">
+                        <button class="pill-item" onclick="PowerDialer.toggleScript()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+                            <span class="pill-item-label">Script</span>
+                        </button>
+                        <button class="pill-item" onclick="PowerDialer.toggleObjections()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                            <span class="pill-item-label">Objections</span>
+                        </button>
+                        <button class="pill-item danger" onclick="PowerDialer.endCall()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72"/><line x1="23" y1="1" x2="1" y2="23"/></svg>
+                            <span class="pill-item-label">End</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <script>
+        // ========== SCRIPTS DATA ==========
+        const SCRIPTS = {
+            referrals: {
+                name: 'Referrals',
+                opener: `"Hey <strong>___</strong>, this is <strong>___</strong> with Globe Life Liberty National. <strong>(Sponsor's name)</strong> was really excited to include you because obviously if something happened to you unexpectedly, an extra $3,000 would be a HUGE help to your family."`,
+                sections: [
+                    {
+                        title: 'If home now',
+                        content: '"Go ahead and grab (spouse); we can handle this right now."'
+                    },
+                    {
+                        title: 'Schedule appointment',
+                        content: '"What time do you get home from work? I\'ll call you tomorrow between ___ and ___."'
+                    },
+                    {
+                        title: 'Confirmation',
+                        content: '"Grab a pen — my name is ___ and your confirmation # is (agent#). Be sure to let your spouse know I\'ll be calling!"'
+                    }
+                ]
+            },
+            policy_owner: {
+                name: 'Policy Owner Service',
+                opener: `"Hi <strong>___</strong>, this is <strong>___</strong> with Globe Life Liberty National. Your servicing Agent asked that I call you to verify a couple of things about your policy..."`,
+                sections: [
+                    {
+                        title: 'Beneficiary check',
+                        content: '"First, I need to verify your beneficiary information is still current. Who do you have listed?"'
+                    },
+                    {
+                        title: 'Policy review',
+                        content: '"We also want to make sure you\'re getting the most out of your coverage. When is a good time for a quick review?"'
+                    },
+                    {
+                        title: 'Schedule',
+                        content: '"Perfect. I\'ll call you (day) between (time) and (time). Will your spouse be available too?"'
+                    }
+                ]
+            },
+            cold: {
+                name: 'Cold / Other',
+                opener: `"Hi <strong>___</strong>, this is <strong>___</strong> with Globe Life Liberty National. I'm calling because you may qualify for some additional coverage benefits in your area..."`,
+                sections: [
+                    {
+                        title: 'Interest check',
+                        content: '"Have you had a chance to review your life insurance coverage recently?"'
+                    },
+                    {
+                        title: 'Schedule',
+                        content: '"I\'d like to show you what\'s available. When would be a good time for a quick 15-minute call with you and your spouse?"'
+                    }
+                ]
+            }
+        };
+
+        const OBJECTIONS = [
+            {
+                trigger: '"How long will this take?"',
+                response: '"It doesn\'t take long — for me the quicker the better."'
+            },
+            {
+                trigger: '"Why does my spouse need to be there?"',
+                response: '"They ask us to speak with both of you to answer any questions and make sure you\'re both protected."'
+            },
+            {
+                trigger: '"Just mail it to me"',
+                response: '"I wish we could, but we need to designate your beneficiaries for the no-cost coverage. It only takes a few minutes."'
+            },
+            {
+                trigger: '"Not interested"',
+                response: '"That\'s OK, but you\'re still entitled to the no-cost coverage. It doesn\'t take long — can we at least get you that?"'
+            }
+        ];
+
+        // ========== POWER DIALER STATE ==========
+        const PowerDialer = {
+            // State
+            listType: 'referrals',
+            contacts: [],
+            currentIndex: 0,
+            appointments: 0,
+            sessionStartTime: null,
+            callStartTime: null,
+            callTimerInterval: null,
+            sessionTimerInterval: null,
+
+            // DOM refs
+            get uploadScreen() { return document.getElementById('uploadScreen'); },
+            get connectingScreen() { return document.getElementById('connectingScreen'); },
+            get callScreen() { return document.getElementById('callScreen'); },
+            get dispositionScreen() { return document.getElementById('dispositionScreen'); },
+            get completeScreen() { return document.getElementById('completeScreen'); },
+
+            // ========== LIST TYPE ==========
+            selectListType(btn) {
+                document.querySelectorAll('.list-type-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                this.listType = btn.dataset.type;
+            },
+
+            // ========== PHOTO UPLOAD ==========
+            takePhoto() {
+                // In production, this would open camera and use Claude Vision OCR
+                alert('Photo capture would open here. For now, paste contacts manually.');
+            },
+
+            // ========== LOAD CONTACTS ==========
+            loadContacts() {
+                const input = document.getElementById('pasteInput').value.trim();
+                if (!input) {
+                    alert('Please enter some contacts');
+                    return;
+                }
+
+                // Parse contacts (simple format: "Name Phone")
+                const lines = input.split('\n').filter(l => l.trim());
+                this.contacts = lines.map((line, i) => {
+                    // Extract phone number (last sequence of digits)
+                    const phoneMatch = line.match(/[\d\(\)\-\s]{10,}/);
+                    const phone = phoneMatch ? phoneMatch[0].trim() : '';
+                    const name = line.replace(phone, '').trim() || `Contact ${i + 1}`;
+                    return { name, phone, disposition: null };
+                });
+
+                if (this.contacts.length === 0) {
+                    alert('No valid contacts found');
+                    return;
+                }
+
+                this.currentIndex = 0;
+                this.appointments = 0;
+                this.sessionStartTime = Date.now();
+                this.startSessionTimer();
+                this.dialNext();
+            },
+
+            // ========== DIAL NEXT CONTACT ==========
+            dialNext() {
+                if (this.currentIndex >= this.contacts.length) {
+                    this.showComplete();
+                    return;
+                }
+
+                const contact = this.contacts[this.currentIndex];
+                this.updateStats();
+
+                // Update connecting screen
+                document.getElementById('connectingSubtitle').textContent = `${contact.name} • ${contact.phone}`;
+
+                // Reset connection steps
+                const stepAgent = document.getElementById('stepAgent');
+                const stepClient = document.getElementById('stepClient');
+                const connector = document.getElementById('connectorAgentClient');
+
+                stepAgent.className = 'connection-step active';
+                stepAgent.querySelector('.step-subtext').textContent = 'Ringing...';
+                stepClient.className = 'connection-step waiting';
+                stepClient.querySelector('.step-subtext').textContent = 'Waiting...';
+                connector.classList.remove('filled');
+
+                this.showScreen('connectingScreen');
+
+                // Simulate connection flow (in production, this would be real Telnyx calls)
+                setTimeout(() => {
+                    // Agent connected
+                    stepAgent.className = 'connection-step complete';
+                    stepAgent.querySelector('.step-subtext').textContent = 'Connected';
+                    stepAgent.querySelector('.step-indicator').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+                    connector.classList.add('filled');
+
+                    // Start dialing client
+                    stepClient.className = 'connection-step active';
+                    stepClient.querySelector('.step-subtext').textContent = 'Ringing...';
+                }, 1500);
+
+                setTimeout(() => {
+                    // Client connected
+                    stepClient.className = 'connection-step complete';
+                    stepClient.querySelector('.step-subtext').textContent = 'Connected';
+                    stepClient.querySelector('.step-indicator').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+
+                    // Transition to call screen
+                    setTimeout(() => this.startCall(), 500);
+                }, 3000);
+            },
+
+            // ========== START CALL ==========
+            startCall() {
+                const contact = this.contacts[this.currentIndex];
+
+                document.getElementById('callContactName').textContent = contact.name;
+                document.getElementById('callContactPhone').textContent = contact.phone;
+
+                // Load script based on list type
+                this.loadScript();
+                this.loadObjections();
+
+                // Start call timer
+                this.callStartTime = Date.now();
+                this.startCallTimer();
+
+                // Enter call mode
+                document.body.classList.add('in-call');
+                this.showScreen('callScreen');
+            },
+
+            // ========== LOAD SCRIPT ==========
+            loadScript() {
+                const script = SCRIPTS[this.listType];
+                document.getElementById('scriptTypeLabel').textContent = script.name;
+
+                let html = `<div class="script-text">${script.opener}</div>`;
+                script.sections.forEach(section => {
+                    html += `
+                        <div class="script-section">
+                            <div class="script-section-title">${section.title}</div>
+                            <div class="script-section-content">${section.content}</div>
+                        </div>
+                    `;
+                });
+
+                document.getElementById('scriptBody').innerHTML = html;
+            },
+
+            // ========== LOAD OBJECTIONS ==========
+            loadObjections() {
+                let html = '';
+                OBJECTIONS.forEach(obj => {
+                    html += `
+                        <div class="objection-item">
+                            <div class="objection-trigger">${obj.trigger}</div>
+                            <div class="objection-response">${obj.response}</div>
+                        </div>
+                    `;
+                });
+                document.getElementById('objectionsContent').innerHTML = html;
+            },
+
+            // ========== TOGGLE PANELS ==========
+            toggleScript() {
+                document.getElementById('scriptPanel').classList.toggle('expanded');
+            },
+
+            toggleObjections() {
+                document.getElementById('objectionsPanel').classList.toggle('expanded');
+            },
+
+            // ========== SKIP CONTACT ==========
+            skipContact() {
+                this.contacts[this.currentIndex].disposition = 'skipped';
+                this.currentIndex++;
+                this.dialNext();
+            },
+
+            // ========== END CALL ==========
+            endCall() {
+                this.stopCallTimer();
+                document.body.classList.remove('in-call');
+
+                const contact = this.contacts[this.currentIndex];
+                const duration = this.formatTime(Date.now() - this.callStartTime);
+
+                document.getElementById('dispositionContactName').textContent = contact.name;
+                document.getElementById('dispositionDuration').textContent = duration;
+
+                // Reset disposition buttons
+                document.querySelectorAll('.disposition-btn').forEach(b => {
+                    b.classList.remove('selected', 'success');
+                });
+                document.getElementById('appointmentForm').classList.remove('visible');
+
+                // Set default date/time
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                document.getElementById('appointmentDate').value = tomorrow.toISOString().split('T')[0];
+                document.getElementById('appointmentTime').value = '18:00';
+                document.getElementById('appointmentNotes').value = '';
+
+                // Show next contact preview
+                const nextIndex = this.currentIndex + 1;
+                if (nextIndex < this.contacts.length) {
+                    const next = this.contacts[nextIndex];
+                    document.getElementById('nextContactName').textContent = next.name;
+                    document.getElementById('nextContactPhone').textContent = next.phone;
+                    document.getElementById('nextContactPreview').style.display = 'block';
+                } else {
+                    document.getElementById('nextContactPreview').style.display = 'none';
+                }
+
+                this.showScreen('dispositionScreen');
+            },
+
+            // ========== SELECT DISPOSITION ==========
+            selectDisposition(btn) {
+                document.querySelectorAll('.disposition-btn').forEach(b => {
+                    b.classList.remove('selected', 'success');
+                });
+
+                const disposition = btn.dataset.disposition;
+                this.contacts[this.currentIndex].disposition = disposition;
+
+                if (disposition === 'appointment') {
+                    btn.classList.add('success');
+                    document.getElementById('appointmentForm').classList.add('visible');
+                } else {
+                    btn.classList.add('selected');
+                    document.getElementById('appointmentForm').classList.remove('visible');
+                }
+            },
+
+            // ========== SAVE AND NEXT ==========
+            saveAndNext() {
+                const contact = this.contacts[this.currentIndex];
+
+                if (!contact.disposition) {
+                    alert('Please select a disposition');
+                    return;
+                }
+
+                if (contact.disposition === 'appointment') {
+                    this.appointments++;
+                    contact.appointmentDate = document.getElementById('appointmentDate').value;
+                    contact.appointmentTime = document.getElementById('appointmentTime').value;
+                    contact.appointmentNotes = document.getElementById('appointmentNotes').value;
+
+                    // In production, save to database here
+                    console.log('Appointment saved:', contact);
+                }
+
+                this.currentIndex++;
+                this.updateStats();
+                this.dialNext();
+            },
+
+            // ========== END SESSION ==========
+            endSession() {
+                this.showComplete();
+            },
+
+            // ========== SHOW COMPLETE ==========
+            showComplete() {
+                this.stopSessionTimer();
+                this.stopCallTimer();
+                document.body.classList.remove('in-call');
+
+                const totalCalls = this.contacts.filter(c => c.disposition && c.disposition !== 'skipped').length;
+                const totalTime = this.formatTime(Date.now() - this.sessionStartTime);
+
+                document.getElementById('finalCallsStat').textContent = totalCalls;
+                document.getElementById('finalAppointmentsStat').textContent = this.appointments;
+                document.getElementById('finalTimeStat').textContent = totalTime;
+
+                this.showScreen('completeScreen');
+            },
+
+            // ========== NEW SESSION ==========
+            newSession() {
+                this.contacts = [];
+                this.currentIndex = 0;
+                this.appointments = 0;
+                this.sessionStartTime = null;
+                document.getElementById('pasteInput').value = '';
+                this.showScreen('uploadScreen');
+            },
+
+            // ========== TIMERS ==========
+            startCallTimer() {
+                const timerEl = document.getElementById('callTimer');
+                this.callTimerInterval = setInterval(() => {
+                    const elapsed = Date.now() - this.callStartTime;
+                    timerEl.textContent = this.formatTime(elapsed);
+                }, 1000);
+            },
+
+            stopCallTimer() {
+                if (this.callTimerInterval) {
+                    clearInterval(this.callTimerInterval);
+                    this.callTimerInterval = null;
+                }
+            },
+
+            startSessionTimer() {
+                this.sessionTimerInterval = setInterval(() => {
+                    const elapsed = Date.now() - this.sessionStartTime;
+                    const formatted = this.formatTime(elapsed);
+                    document.getElementById('sessionTimerStat').textContent = formatted;
+                    document.getElementById('mobileSessionTimerStat').textContent = formatted;
+                }, 1000);
+            },
+
+            stopSessionTimer() {
+                if (this.sessionTimerInterval) {
+                    clearInterval(this.sessionTimerInterval);
+                    this.sessionTimerInterval = null;
+                }
+            },
+
+            formatTime(ms) {
+                const totalSeconds = Math.floor(ms / 1000);
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            },
+
+            // ========== UPDATE STATS ==========
+            updateStats() {
+                const progress = `${this.currentIndex + 1}/${this.contacts.length}`;
+                document.getElementById('progressStat').textContent = progress;
+                document.getElementById('mobileProgressStat').textContent = progress;
+                document.getElementById('appointmentsStat').textContent = this.appointments;
+                document.getElementById('mobileAppointmentsStat').textContent = this.appointments;
+            },
+
+            // ========== SCREEN MANAGEMENT ==========
+            showScreen(screenId) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById(screenId).classList.add('active');
+            }
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('[PowerDialer] Initialized');
+        });
+    </script>
+</body>
+</html>
