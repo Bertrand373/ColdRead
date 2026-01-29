@@ -60,6 +60,9 @@ from .phone_verification import router as verification_router
 # Power Dialer for appointment booking
 from .dialer_routes import router as dialer_router
 
+# Agent authentication
+from .auth import router as auth_router, init_auth_tables
+
 
 # ============ PYDANTIC MODELS ============
 
@@ -104,6 +107,8 @@ async def lifespan(app: FastAPI):
     if is_db_configured():
         init_db()
         print("✓ PostgreSQL database initialized")
+        # Initialize auth tables
+        init_auth_tables()
     else:
         print("⚠ DATABASE_URL not set - usage tracking disabled")
     
@@ -143,7 +148,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Coachd.ai",
     description="Real-time AI sales assistant for life insurance agents",
-    version="3.1.0",  # Added phone verification for caller ID
+    version="3.2.0",  # Added agent authentication
     lifespan=lifespan
 )
 
@@ -168,6 +173,7 @@ app.include_router(status_router)
 app.include_router(telnyx_router)
 app.include_router(verification_router)
 app.include_router(dialer_router)
+app.include_router(auth_router)
 
 
 # Service worker must be served from root for proper scope
@@ -400,16 +406,40 @@ async def terms_page(request: Request):
 
 @app.get("/health")
 async def health_check():
+    """Basic health check"""
+    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+
+
+@app.get("/api/status")
+async def api_status():
+    """Detailed status check"""
+    db = get_vector_db()
+    
     return {
         "status": "healthy",
-        "app": settings.app_name,
-        "version": "3.0.0",
-        "database": is_db_configured(),
-        "telnyx": is_telnyx_configured()
+        "services": {
+            "vector_db": {
+                "connected": True,
+                "document_count": db.get_document_count()
+            },
+            "anthropic": {
+                "configured": bool(settings.anthropic_api_key)
+            },
+            "deepgram": {
+                "configured": bool(settings.deepgram_api_key)
+            },
+            "telnyx": {
+                "configured": is_telnyx_configured()
+            },
+            "postgres": {
+                "configured": is_db_configured()
+            }
+        },
+        "timestamp": datetime.utcnow().isoformat()
     }
 
 
-# ============ PLATFORM ADMIN API ============
+# ============ PLATFORM USAGE ============
 
 @app.get("/api/platform/summary")
 async def platform_summary():
@@ -476,212 +506,92 @@ async def validate_agency(data: AgencyValidation):
             "name": AGENCIES[code]["name"]
         }
     
-    raise HTTPException(status_code=400, detail="Invalid agency code")
+    return {
+        "valid": False,
+        "code": code,
+        "error": "Invalid agency code"
+    }
 
 
-# ============ CHAT API ============
-
-@app.post("/api/chat")
-async def chat_endpoint(data: ChatRequest):
-    """Chat message (non-streaming)"""
-    
-    if not settings.anthropic_api_key:
-        raise HTTPException(status_code=503, detail="AI service not configured")
-    
-    try:
-        engine = RAGEngine()
-        
-        context = data.context or {}
-        client_info = []
-        if context.get("name"):
-            client_info.append(f"Name: {context['name']}")
-        if context.get("age"):
-            client_info.append(f"Age: {context['age']}")
-        if context.get("occupation"):
-            client_info.append(f"Occupation: {context['occupation']}")
-        if context.get("marital"):
-            client_info.append(f"Marital Status: {context['marital']}")
-        
-        client_info = "\n".join(client_info) if client_info else "Not specified"
-        product = context.get("product", "whole_life")
-        issue = context.get("issue", "")
-        
-        agency = data.agency or "ADERHOLT"
-        relevant_context = engine.get_relevant_context(
-            data.message,
-            category=product,
-            agency=agency
-        )
-        
-        messages = []
-        for msg in (data.history or []):
-            messages.append({"role": msg["role"], "content": msg["content"]})
-        messages.append({"role": "user", "content": data.message})
-        
-        system_prompt = f"""You are Coachd, an expert AI sales coach for life insurance agents.
-
-CLIENT: {client_info}
-Product: {product}
-{f"Issue: {issue}" if issue else ""}
-
-TRAINING MATERIALS:
-{relevant_context if relevant_context else "No specific materials found - use general knowledge."}
-
-YOUR JOB:
-Answer the agent's question. Give them what they need to close the deal.
-- If they need a rebuttal, give them the exact words to say
-- If they need strategy, explain the approach
-- If they need a quick answer, be brief
-- If they need depth, go deep
-
-Match your response to what the question actually requires. No filler, no fluff, no unnecessary padding. But don't cut corners if the situation calls for a thorough answer.
-
-Bold **key phrases** the agent should say out loud."""
-
-        response = engine.client.messages.create(
-            model=settings.claude_model,
-            max_tokens=1024,
-            system=system_prompt,
-            messages=messages
-        )
-        
-        log_claude_usage(
-            input_tokens=response.usage.input_tokens,
-            output_tokens=response.usage.output_tokens,
-            agency_code=agency,
-            model=settings.claude_model,
-            operation='chat'
-        )
-        
-        return {
-            "response": response.content[0].text,
-            "usage": {
-                "input_tokens": response.usage.input_tokens,
-                "output_tokens": response.usage.output_tokens
-            }
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+# ============ CHAT STREAMING ============
 
 @app.post("/api/chat/stream")
-async def chat_stream_endpoint(data: ChatRequest):
-    """Chat message (streaming)"""
+async def chat_stream(data: ChatRequest):
+    """Streaming chat endpoint"""
+    import anthropic
     
     if not settings.anthropic_api_key:
         raise HTTPException(status_code=503, detail="AI service not configured")
+    
+    agency = (data.agency or "ADERHOLT").upper()
     
     async def generate():
         try:
-            import anthropic
-            client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+            client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
             
-            context = data.context or {}
-            client_info = []
-            if context.get("name"):
-                client_info.append(f"Name: {context['name']}")
-            if context.get("age"):
-                client_info.append(f"Age: {context['age']}")
-            if context.get("occupation"):
-                client_info.append(f"Occupation: {context['occupation']}")
-            if context.get("marital"):
-                client_info.append(f"Marital Status: {context['marital']}")
+            # Get RAG context
+            db = get_vector_db()
+            results = db.search(data.message, top_k=5, agency=agency)
             
-            client_info = "\n".join(client_info) if client_info else "Not specified"
-            product = context.get("product", "whole_life")
-            issue = context.get("issue", "")
+            context_text = ""
+            if results:
+                context_text = "\n\nRelevant training materials:\n"
+                for r in results[:3]:
+                    context_text += f"- {r['content'][:500]}\n"
             
-            agency = data.agency or "ADERHOLT"
-            engine = RAGEngine()
-            relevant_context = engine.get_relevant_context(
-                data.message,
-                category=product,
-                agency=agency
-            )
+            system_prompt = f"""You are Coachd, an AI sales coach for Globe Life insurance agents.
+You help agents with:
+- Handling objections
+- Product knowledge
+- Sales techniques
+- Appointment setting
+- Closing strategies
+
+Be conversational, supportive, and practical. Keep responses focused and actionable.
+{context_text}"""
             
+            # Build messages from history
             messages = []
-            for msg in (data.history or []):
-                messages.append({"role": msg["role"], "content": msg["content"]})
+            for h in (data.history or [])[-10:]:
+                role = "user" if h.get("role") == "user" else "assistant"
+                messages.append({"role": role, "content": h.get("content", "")})
+            
             messages.append({"role": "user", "content": data.message})
             
-            system_prompt = f"""You are Coachd, an expert AI sales coach for life insurance agents.
-
-CLIENT: {client_info}
-Product: {product}
-{f"Issue: {issue}" if issue else ""}
-
-TRAINING MATERIALS:
-{relevant_context if relevant_context else "No specific materials found - use general knowledge."}
-
-YOUR JOB:
-Answer the agent's question. Give them what they need to close the deal.
-- If they need a rebuttal, give them the exact words to say
-- If they need strategy, explain the approach
-- If they need a quick answer, be brief
-- If they need depth, go deep
-
-Match your response to what the question actually requires. No filler, no fluff, no unnecessary padding. But don't cut corners if the situation calls for a thorough answer.
-
-Bold **key phrases** the agent should say out loud."""
-
-            usage_info = {'input': 0, 'output': 0}
-            loop = asyncio.get_event_loop()
-            chunk_queue = asyncio.Queue()
+            input_tokens = 0
+            output_tokens = 0
             
-            def stream_claude():
-                try:
-                    with client.messages.stream(
-                        model=settings.claude_model,
-                        max_tokens=1024,
-                        system=system_prompt,
-                        messages=messages
-                    ) as stream:
-                        for text in stream.text_stream:
-                            asyncio.run_coroutine_threadsafe(
-                                chunk_queue.put(('text', text)), loop
-                            )
-                        
-                        final_message = stream.get_final_message()
-                        if final_message and final_message.usage:
-                            usage_info['input'] = final_message.usage.input_tokens
-                            usage_info['output'] = final_message.usage.output_tokens
-                    
-                    asyncio.run_coroutine_threadsafe(
-                        chunk_queue.put(('done', None)), loop
-                    )
-                except Exception as e:
-                    asyncio.run_coroutine_threadsafe(
-                        chunk_queue.put(('error', str(e))), loop
-                    )
+            async with client.messages.stream(
+                model="claude-sonnet-4-20250514",
+                max_tokens=1024,
+                system=system_prompt,
+                messages=messages
+            ) as stream:
+                async for event in stream:
+                    if hasattr(event, 'type'):
+                        if event.type == 'content_block_delta':
+                            if hasattr(event.delta, 'text'):
+                                yield f"data: {json.dumps({'text': event.delta.text})}\n\n"
+                        elif event.type == 'message_start':
+                            if hasattr(event.message, 'usage'):
+                                input_tokens = event.message.usage.input_tokens
+                        elif event.type == 'message_delta':
+                            if hasattr(event, 'usage'):
+                                output_tokens = event.usage.output_tokens
             
-            thread = threading.Thread(target=stream_claude, daemon=True)
-            thread.start()
-            
-            while True:
-                msg_type, content = await chunk_queue.get()
-                
-                if msg_type == 'text':
-                    yield f"data: {json.dumps({'text': content})}\n\n"
-                elif msg_type == 'done':
-                    break
-                elif msg_type == 'error':
-                    yield f"data: {json.dumps({'error': content})}\n\n"
-                    break
-            
-            if usage_info['input'] or usage_info['output']:
+            # Log usage
+            if is_db_configured() and (input_tokens or output_tokens):
                 log_claude_usage(
-                    input_tokens=usage_info['input'],
-                    output_tokens=usage_info['output'],
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    model="claude-sonnet-4-20250514",
                     agency_code=agency,
-                    model=settings.claude_model,
-                    operation='chat_stream'
+                    feature="chat"
                 )
             
             yield "data: [DONE]\n\n"
             
         except Exception as e:
-            print(f"Stream error: {e}")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
     
     return StreamingResponse(
@@ -689,31 +599,30 @@ Bold **key phrases** the agent should say out loud."""
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no"
+            "Connection": "keep-alive"
         }
     )
 
 
 # ============ DOCUMENT MANAGEMENT ============
 
-MAX_FILE_SIZE = 50 * 1024 * 1024
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
-@app.post("/api/documents/upload")
+@app.post("/api/upload")
 async def upload_document(
     file: UploadFile = File(...),
     category: str = Form("general"),
     agency: str = Form("ADERHOLT")
 ):
-    """Upload and process a document"""
-    
+    """Upload a document to the knowledge base"""
     agency = agency.upper()
     if agency not in AGENCIES:
         raise HTTPException(status_code=400, detail=f"Invalid agency: {agency}")
     
-    file_size = 0
-    chunk_size = 1024 * 1024
+    # Read file with size limit
     contents = bytearray()
+    file_size = 0
+    chunk_size = 1024 * 64  # 64KB chunks
     
     while True:
         chunk = await file.read(chunk_size)
@@ -964,7 +873,6 @@ What should the agent say in response? Remember: 2-3 sentences max, conversation
             yield "data: [DONE]\n\n"
             
         except Exception as e:
-            logger.error(f"Test guidance error: {e}")
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
     
     return StreamingResponse(

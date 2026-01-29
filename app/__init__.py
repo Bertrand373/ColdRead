@@ -22,6 +22,7 @@ from .call_state_machine import (
     PRESENTATION_PHASES,
     DOWN_CLOSE_LEVELS
 )
+from .auth import Agent, get_current_agent, require_agent, init_auth_tables
 
 __all__ = [
     "settings",
@@ -46,5 +47,10 @@ __all__ = [
     "Sentiment",
     "PRODUCT_HIERARCHY",
     "PRODUCT_NAMES",
-    "OBJECTION_CATEGORIES"
+    "OBJECTION_CATEGORIES",
+    # Agent Authentication
+    "Agent",
+    "get_current_agent",
+    "require_agent",
+    "init_auth_tables",
 ]
