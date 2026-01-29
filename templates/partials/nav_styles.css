@@ -1,0 +1,369 @@
+/* ============================================
+   UNIVERSAL NAVIGATION STYLES
+   Single source of truth for all nav components
+   ============================================ */
+
+/* ========== CSS VARIABLES (ensure these exist in :root) ========== */
+/*
+Required variables - add to your page's :root if not present:
+--bg: #F5F5F7;
+--surface: #FFFFFF;
+--glass: rgba(255,255,255,0.65);
+--glass-strong: rgba(255,255,255,0.85);
+--glass-border: rgba(255,255,255,0.4);
+--border: rgba(0,0,0,0.06);
+--text: #1A1A1A;
+--text-secondary: #6B7280;
+--text-muted: #9CA3AF;
+--accent: #3B82F6;
+--accent-soft: rgba(59,130,246,0.12);
+--danger: #EF4444;
+--success: #10B981;
+--blur: blur(24px);
+--blur-strong: blur(40px);
+--radius-sm: 12px;
+--radius-md: 16px;
+--radius-full: 9999px;
+--safe-top: env(safe-area-inset-top, 0px);
+--safe-bottom: env(safe-area-inset-bottom, 0px);
+--sidebar-width: 72px;
+*/
+
+/* ========== DESKTOP SIDEBAR ========== */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: var(--glass);
+    backdrop-filter: var(--blur-strong);
+    -webkit-backdrop-filter: var(--blur-strong);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+    z-index: 100;
+}
+
+.sidebar-logo {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 32px;
+}
+
+.sidebar-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.sidebar-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+}
+
+/* Normal nav (default state) */
+.sidebar-nav-normal {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+body.in-call .sidebar-nav-normal { display: none; }
+
+/* Call nav (during active call) */
+.sidebar-nav-call {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+}
+body.in-call .sidebar-nav-call { display: flex; }
+
+/* Nav items */
+.nav-item {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    position: relative;
+}
+
+.nav-item:hover {
+    background: rgba(255,255,255,0.5);
+    color: var(--text);
+}
+
+.nav-item.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.nav-item.danger {
+    color: var(--danger);
+}
+
+.nav-item.danger:hover {
+    background: rgba(239,68,68,0.1);
+}
+
+.nav-item svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* Nav badge (for transcript/history counts) */
+.nav-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--accent);
+    color: white;
+    border-radius: 9px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.nav-badge.empty { display: none; }
+
+/* Tooltips */
+.nav-item[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: calc(100% + 12px);
+    padding: 8px 12px;
+    background: var(--text);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-radius: 8px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.15s ease;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+.nav-item:hover[data-tooltip]::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Sidebar footer */
+.sidebar-footer {
+    padding: 0 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.sidebar-footer-normal {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+body.in-call .sidebar-footer-normal { display: none; }
+
+.sidebar-footer-call {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+body.in-call .sidebar-footer-call { display: flex; }
+
+/* User avatar */
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+/* ========== MOBILE HEADER ========== */
+.mobile-header {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 44px;
+    padding: 0 20px;
+    padding-top: var(--safe-top);
+    z-index: 300;
+    align-items: center;
+    justify-content: space-between;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+/* Glass treatment during calls */
+body.in-call .mobile-header {
+    background: var(--glass);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.mobile-header-left {
+    display: flex;
+    align-items: center;
+}
+
+.mobile-header-logo {
+    height: 20px;
+    opacity: 0.9;
+}
+
+/* Hide logo during calls */
+body.in-call .mobile-header-logo {
+    display: none;
+}
+
+.mobile-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Call timer in header - only visible during calls */
+.mobile-header-timer {
+    display: none;
+    align-items: center;
+    gap: 6px;
+}
+
+body.in-call .mobile-header-timer {
+    display: flex;
+}
+
+.mobile-header-timer .status-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.mobile-header-timer .timer-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* ========== MOBILE BOTTOM NAV (Pill) ========== */
+.bottom-pill {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 400;
+    padding: 8px 16px calc(8px + var(--safe-bottom));
+}
+
+.bottom-pill-inner {
+    background: var(--glass-strong);
+    backdrop-filter: var(--blur-strong);
+    -webkit-backdrop-filter: var(--blur-strong);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-full);
+    padding: 6px 8px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+}
+
+.bottom-pill-items {
+    display: flex;
+    justify-content: space-around;
+}
+
+/* Normal nav items (hidden during call) */
+.pill-nav-normal { display: contents; }
+body.in-call .pill-nav-normal { display: none; }
+
+/* Call nav items (hidden when not in call) */
+.pill-nav-call { display: none; }
+body.in-call .pill-nav-call { display: contents; }
+
+.pill-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    position: relative;
+}
+
+.pill-item.active { color: var(--accent); }
+.pill-item.danger { color: var(--danger); }
+.pill-item svg { width: 20px; height: 20px; }
+.pill-item-label { font-size: 0.6rem; font-weight: 600; }
+
+.pill-item .pill-badge {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: var(--accent);
+    color: white;
+    border-radius: 8px;
+    font-size: 0.55rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.pill-item .pill-badge.empty { display: none; }
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .sidebar { display: none; }
+    .mobile-header { display: flex; }
+    .bottom-pill { display: block; }
+}
+
+@media (min-width: 769px) {
+    .sidebar { display: flex; }
+    .mobile-header { display: none; }
+    .bottom-pill { display: none; }
+}

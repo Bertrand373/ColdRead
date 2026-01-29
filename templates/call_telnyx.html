@@ -460,33 +460,15 @@
         .mobile-header-left {
             display: flex;
             align-items: center;
-            gap: 8px;
         }
         
         .mobile-header-logo {
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            height: 20px;
+            opacity: 0.9;
         }
         
-        .mobile-header-logo img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        
-        .mobile-header-wordmark {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text);
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-        }
-        
-        /* Hide wordmark during calls */
-        body.in-call .mobile-header-wordmark {
+        /* Hide logo during calls */
+        body.in-call .mobile-header-logo {
             display: none;
         }
         
@@ -4077,10 +4059,7 @@
         <!-- ========== MOBILE BRANDED HEADER ========== -->
         <header class="mobile-header" id="mobileHeader">
             <div class="mobile-header-left">
-                <div class="mobile-header-logo">
-                    <img src="/static/favicon.svg" alt="Coachd">
-                </div>
-                <span class="mobile-header-wordmark">Coachd</span>
+                <img src="/static/logo.png" alt="Coachd" class="mobile-header-logo">
             </div>
             <div class="mobile-header-right">
                 <div class="mobile-header-timer">
@@ -4596,8 +4575,8 @@
         </div>
     </div><!-- End .app -->
     
-    <!-- Page Loader -->
-    <div class="page-loader" id="pageLoader">
+    <!-- Page Loader (disabled - instant load) -->
+    <div class="page-loader hidden" id="pageLoader">
         <div class="page-loader-waveform">
             <div class="bar"></div>
             <div class="bar"></div>
