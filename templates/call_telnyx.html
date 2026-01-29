@@ -1214,6 +1214,282 @@
             background: var(--text-muted);
             cursor: not-allowed;
         }
+        
+        /* Power Dialer Active Screen */
+        .dialer-current-contact {
+            padding: 20px;
+            background: var(--accent-soft);
+            border-radius: var(--radius-md);
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        
+        .dialer-contact-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .dialer-contact-phone {
+            font-size: 0.95rem;
+            color: var(--accent);
+            font-weight: 500;
+        }
+        
+        .dialer-contact-sponsor {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            display: none;
+        }
+        
+        .dialer-call-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+        
+        .dialer-call-status.waiting { background: var(--surface); color: var(--text-secondary); }
+        .dialer-call-status.ringing { background: rgba(245,158,11,0.15); color: #F59E0B; }
+        .dialer-call-status.connected { background: rgba(16,185,129,0.12); color: var(--success); }
+        
+        .dialer-status-pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: dialerPulse 1.5s infinite;
+        }
+        
+        @keyframes dialerPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        
+        .dialer-script-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        
+        .dialer-script-toggle:hover { color: var(--text); }
+        .dialer-script-toggle svg { width: 16px; height: 16px; transition: transform 0.2s; }
+        .dialer-script-toggle.open svg { transform: rotate(180deg); }
+        
+        .dialer-script-body {
+            display: none;
+            padding: 16px;
+            background: #FFFEF5;
+            border: 1px solid #FEF3C7;
+            border-radius: var(--radius-sm);
+            margin-bottom: 20px;
+            text-align: left;
+            font-size: 0.88rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+        
+        .dialer-script-body.open { display: block; }
+        .dialer-script-body strong { color: var(--text); }
+        
+        .dialer-call-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .dialer-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 20px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .dialer-btn svg { width: 20px; height: 20px; }
+        .dialer-btn-primary { background: var(--accent); color: white; }
+        .dialer-btn-primary:hover { filter: brightness(0.95); }
+        .dialer-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .dialer-btn-outline { background: transparent; color: var(--text-secondary); border: 1.5px solid var(--border-solid); }
+        .dialer-btn-outline:hover { background: rgba(0,0,0,0.02); }
+        
+        .dialer-disp-section { display: none; }
+        .dialer-disp-section.active { display: block; }
+        
+        .dialer-disp-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        
+        .dialer-disp-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        
+        .dialer-disp-btn {
+            padding: 14px 12px;
+            background: white;
+            border: 1.5px solid var(--border-solid);
+            border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .dialer-disp-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+        .dialer-disp-btn.success { border-color: var(--success); background: rgba(16,185,129,0.12); color: var(--success); }
+        
+        .dialer-progress {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px 16px;
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            margin-top: 24px;
+        }
+        
+        .dialer-progress-track {
+            flex: 1;
+            height: 5px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .dialer-progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 3px;
+            transition: width 0.3s;
+        }
+        
+        .dialer-progress-text {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            min-width: 44px;
+            text-align: right;
+        }
+        
+        .dialer-end-link {
+            margin-top: 14px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        
+        .dialer-end-link:hover { color: var(--danger); }
+        
+        /* Dialer Complete Stats */
+        .dialer-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 32px 0;
+        }
+        
+        .dialer-stat-card {
+            padding: 20px 16px;
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+        
+        .dialer-stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        
+        .dialer-stat-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 4px;
+        }
+        
+        /* Dialer Modal */
+        .dialer-modal-bg {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            z-index: 1100;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        
+        .dialer-modal-bg.open { display: flex; }
+        
+        .dialer-modal {
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            width: 100%;
+            max-width: 340px;
+        }
+        
+        .dialer-modal-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .dialer-modal input {
+            width: 100%;
+            padding: 14px 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            border: 1.5px solid var(--border-solid);
+            border-radius: var(--radius-sm);
+            margin-bottom: 12px;
+        }
+        
+        .dialer-modal input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .dialer-modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
 
         .start-phone-display {
             display: flex;
@@ -4357,10 +4633,87 @@
                         </div>
                     </div>
                     
-                    <button class="start-btn dialer-start-btn" id="dialerStartBtn" onclick="Coachd.startDialer()" disabled>
+                    <button class="start-btn dialer-start-btn" id="dialerStartBtn" onclick="Coachd.dialerStart()" disabled>
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                         Start Dialing
                     </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Power Dialer Active Screen -->
+        <div class="screen dialer-active-screen" id="dialerActiveScreen">
+            <div class="start-card">
+                <div class="dialer-current-contact">
+                    <div class="dialer-contact-name" id="dialerContactName">Maria Garcia</div>
+                    <div class="dialer-contact-phone" id="dialerContactPhone">(404) 555-5678</div>
+                    <div class="dialer-contact-sponsor" id="dialerContactSponsor"></div>
+                </div>
+                
+                <div class="dialer-call-status waiting" id="dialerCallStatus">
+                    <span class="dialer-status-pulse"></span>
+                    <span id="dialerStatusText">Ready</span>
+                </div>
+                
+                <div class="dialer-script-toggle" id="dialerScriptToggle" onclick="Coachd.dialerToggleScript()">
+                    <span>View script</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </div>
+                <div class="dialer-script-body" id="dialerScriptBody"></div>
+                
+                <div class="dialer-call-actions" id="dialerCallActions">
+                    <button class="dialer-btn dialer-btn-primary" id="dialerDialBtn" onclick="Coachd.dialerDial()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                        Dial
+                    </button>
+                    <button class="dialer-btn dialer-btn-outline" onclick="Coachd.dialerSkip()">Skip</button>
+                </div>
+                
+                <div class="dialer-disp-section" id="dialerDispSection">
+                    <div class="dialer-disp-label">Outcome</div>
+                    <div class="dialer-disp-grid">
+                        <button class="dialer-disp-btn success" onclick="Coachd.dialerDisp('appointment')">📅 Appointment</button>
+                        <button class="dialer-disp-btn" onclick="Coachd.dialerDisp('callback')">🔄 Callback</button>
+                        <button class="dialer-disp-btn" onclick="Coachd.dialerDisp('no_answer')">📵 No Answer</button>
+                        <button class="dialer-disp-btn" onclick="Coachd.dialerDisp('not_interested')">❌ Not Interested</button>
+                    </div>
+                </div>
+                
+                <div class="dialer-progress">
+                    <div class="dialer-progress-track"><div class="dialer-progress-fill" id="dialerProgressFill"></div></div>
+                    <div class="dialer-progress-text" id="dialerProgressText">0/0</div>
+                </div>
+                
+                <button class="dialer-end-link" onclick="Coachd.dialerEnd()">End session</button>
+            </div>
+        </div>
+        
+        <!-- Power Dialer Complete Screen -->
+        <div class="screen dialer-complete-screen" id="dialerCompleteScreen">
+            <div class="start-card">
+                <h1 class="start-title">Session Complete 🎉</h1>
+                <p class="start-subtitle">Great work!</p>
+                <div class="dialer-stats-grid">
+                    <div class="dialer-stat-card"><div class="dialer-stat-value" id="dialerStatCalls">0</div><div class="dialer-stat-label">Calls</div></div>
+                    <div class="dialer-stat-card"><div class="dialer-stat-value" id="dialerStatAppts">0</div><div class="dialer-stat-label">Appts</div></div>
+                    <div class="dialer-stat-card"><div class="dialer-stat-value" id="dialerStatTime">0:00</div><div class="dialer-stat-label">Time</div></div>
+                </div>
+                <button class="start-btn" onclick="Coachd.dialerReset()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                    New Session
+                </button>
+            </div>
+        </div>
+        
+        <!-- Power Dialer Appointment Modal -->
+        <div class="dialer-modal-bg" id="dialerModal">
+            <div class="dialer-modal">
+                <h2 class="dialer-modal-title">📅 Book Appointment</h2>
+                <input type="date" id="dialerApptDate">
+                <input type="time" id="dialerApptTime" value="10:00">
+                <div class="dialer-modal-actions">
+                    <button class="dialer-btn dialer-btn-outline" onclick="Coachd.dialerCloseModal()">Cancel</button>
+                    <button class="dialer-btn dialer-btn-primary" onclick="Coachd.dialerSaveAppt()">Save</button>
                 </div>
             </div>
         </div>
@@ -7273,25 +7626,35 @@
         }
         
         // ==================== POWER DIALER ====================
+        const dialerState = {
+            sessionId: null,
+            contacts: [],
+            index: 0,
+            appointments: 0,
+            startTime: null,
+            script: `<p><strong>Opening:</strong> "Hi, is this [Name]? This is [Agent] from Globe Life. [Sponsor] suggested I call."</p><p><strong>Close:</strong> "Got 2 minutes to see if you qualify?"</p>`
+        };
+        
         function parseDialerContacts() {
             const textarea = document.getElementById('dialerContactsInput');
             const lines = textarea.value.trim().split('\n').filter(l => l.trim());
             
-            state.dialerContacts = lines.map(line => {
-                const phoneMatch = line.match(/[\d\(\)\-\.\s]{10,}/);
+            dialerState.contacts = lines.map((line, i) => {
+                const phoneMatch = line.match(/[\d\-\(\)\.\s]{10,}/);
                 const phone = phoneMatch ? phoneMatch[0].replace(/\D/g, '') : '';
-                const name = line.replace(phoneMatch ? phoneMatch[0] : '', '').trim() || 'Unknown';
-                return { name, phone };
-            }).filter(c => c.phone.length >= 10);
+                const name = line.replace(phoneMatch ? phoneMatch[0] : '', '').trim() || `Contact ${i+1}`;
+                const formattedPhone = phone.length === 10 ? `+1${phone}` : (phone.length === 11 ? `+${phone}` : '');
+                return { id: i+1, name, phone: formattedPhone };
+            }).filter(c => c.phone.length >= 11);
             
-            const count = state.dialerContacts.length;
+            const count = dialerState.contacts.length;
             document.getElementById('dialerCount').textContent = `✓ ${count} contact${count !== 1 ? 's' : ''}`;
             document.getElementById('dialerStartBtn').disabled = count === 0;
         }
         
         function clearDialerContacts() {
             document.getElementById('dialerContactsInput').value = '';
-            state.dialerContacts = [];
+            dialerState.contacts = [];
             document.getElementById('dialerCount').textContent = '✓ 0 contacts';
             document.getElementById('dialerStartBtn').disabled = true;
         }
@@ -7300,33 +7663,241 @@
             const file = event.target.files[0];
             if (!file) return;
             
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const base64 = e.target.result.split(',')[1];
-                try {
-                    const res = await fetch('/api/dialer/parse-image', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ image: base64 })
-                    });
-                    const data = await res.json();
-                    if (data.contacts && data.contacts.length > 0) {
-                        const lines = data.contacts.map(c => `${c.name} ${c.phone}`).join('\n');
-                        document.getElementById('dialerContactsInput').value = lines;
-                        parseDialerContacts();
-                    }
-                } catch (err) {
-                    console.error('Photo parse error:', err);
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const res = await fetch('/api/dialer/parse-image', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.contacts && data.contacts.length > 0) {
+                    dialerState.contacts = data.contacts;
+                    document.getElementById('dialerContactsInput').value = data.contacts.map(c => `${c.name} ${formatPhone(c.phone)}`).join('\n');
+                    parseDialerContacts();
+                } else {
+                    alert('No contacts found. Try typing them.');
                 }
-            };
-            reader.readAsDataURL(file);
+            } catch (err) {
+                console.error('Photo parse error:', err);
+                alert('Failed to read image.');
+            }
             event.target.value = '';
         }
         
-        function startDialer() {
-            if (state.dialerContacts.length === 0) return;
-            // For now, alert - full dialer flow TBD
-            alert(`Power Dialer: Ready to call ${state.dialerContacts.length} contacts.\n\nFull dialer flow coming soon!`);
+        function dialerShowScreen(screenId) {
+            ['startScreen', 'dialerActiveScreen', 'dialerCompleteScreen'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('active', id === screenId);
+            });
+        }
+        
+        async function dialerStart() {
+            if (dialerState.contacts.length === 0) return;
+            
+            dialerState.index = 0;
+            dialerState.appointments = 0;
+            dialerState.startTime = Date.now();
+            
+            // Set up script
+            document.getElementById('dialerScriptBody').innerHTML = dialerState.script;
+            
+            // Show active screen
+            dialerShowScreen('dialerActiveScreen');
+            dialerUpdateProgress();
+            dialerShowContact();
+            dialerSetStatus('waiting', 'Calling you...');
+            
+            // Initialize appointment date
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('dialerApptDate').value = tomorrow.toISOString().split('T')[0];
+            
+            try {
+                const res = await fetch('/api/dialer/start-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        agent_phone: state.agentPhone,
+                        list_type: 'referrals',
+                        contacts: dialerState.contacts
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    dialerState.sessionId = data.session_id;
+                    dialerSetStatus('ringing', 'Answer phone');
+                }
+            } catch (e) {
+                console.error('Dialer start error:', e);
+            }
+        }
+        
+        function dialerShowContact() {
+            const contact = dialerState.contacts[dialerState.index];
+            if (contact) {
+                document.getElementById('dialerContactName').textContent = contact.name;
+                document.getElementById('dialerContactPhone').textContent = formatPhone(contact.phone);
+                const sponsorEl = document.getElementById('dialerContactSponsor');
+                if (contact.sponsor) {
+                    sponsorEl.textContent = `Referred by ${contact.sponsor}`;
+                    sponsorEl.style.display = 'block';
+                } else {
+                    sponsorEl.style.display = 'none';
+                }
+            }
+        }
+        
+        function dialerSetStatus(type, text) {
+            document.getElementById('dialerCallStatus').className = `dialer-call-status ${type}`;
+            document.getElementById('dialerStatusText').textContent = text;
+        }
+        
+        function dialerUpdateProgress() {
+            const percent = dialerState.contacts.length ? (dialerState.index / dialerState.contacts.length) * 100 : 0;
+            document.getElementById('dialerProgressFill').style.width = `${percent}%`;
+            document.getElementById('dialerProgressText').textContent = `${dialerState.index}/${dialerState.contacts.length}`;
+        }
+        
+        function dialerToggleScript() {
+            document.getElementById('dialerScriptToggle').classList.toggle('open');
+            document.getElementById('dialerScriptBody').classList.toggle('open');
+        }
+        
+        async function dialerDial() {
+            if (!dialerState.sessionId) return;
+            
+            dialerSetStatus('ringing', 'Dialing...');
+            document.getElementById('dialerDialBtn').disabled = true;
+            document.getElementById('dialerCallActions').style.display = 'flex';
+            document.getElementById('dialerDispSection').classList.remove('active');
+            
+            try {
+                const res = await fetch('/api/dialer/dial-next', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: dialerState.sessionId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setTimeout(() => {
+                        dialerSetStatus('connected', 'Connected');
+                        document.getElementById('dialerCallActions').style.display = 'none';
+                        document.getElementById('dialerDispSection').classList.add('active');
+                    }, 2000);
+                } else if (data.complete) {
+                    dialerEnd();
+                }
+            } catch (e) {
+                console.error('Dial error:', e);
+            }
+        }
+        
+        async function dialerSkip() {
+            if (dialerState.sessionId) {
+                try {
+                    await fetch('/api/dialer/skip', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ session_id: dialerState.sessionId })
+                    });
+                } catch (e) {}
+            }
+            
+            dialerState.index++;
+            dialerUpdateProgress();
+            
+            if (dialerState.index >= dialerState.contacts.length) {
+                dialerEnd();
+            } else {
+                dialerShowContact();
+                dialerResetUI();
+            }
+        }
+        
+        function dialerDisp(type) {
+            if (type === 'appointment') {
+                document.getElementById('dialerModal').classList.add('open');
+            } else {
+                dialerSaveDisp(type);
+            }
+        }
+        
+        async function dialerSaveDisp(type, date, time) {
+            const contact = dialerState.contacts[dialerState.index];
+            
+            try {
+                await fetch('/api/dialer/disposition', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: dialerState.sessionId,
+                        contact_id: contact.id,
+                        disposition: type,
+                        scheduled_date: date,
+                        scheduled_time: time
+                    })
+                });
+            } catch (e) {}
+            
+            if (type === 'appointment') dialerState.appointments++;
+            
+            dialerState.index++;
+            dialerUpdateProgress();
+            
+            if (dialerState.index >= dialerState.contacts.length) {
+                dialerEnd();
+            } else {
+                dialerShowContact();
+                dialerResetUI();
+            }
+        }
+        
+        function dialerResetUI() {
+            document.getElementById('dialerCallActions').style.display = 'flex';
+            document.getElementById('dialerDispSection').classList.remove('active');
+            document.getElementById('dialerDialBtn').disabled = false;
+            dialerSetStatus('waiting', 'Ready');
+        }
+        
+        function dialerCloseModal() {
+            document.getElementById('dialerModal').classList.remove('open');
+        }
+        
+        function dialerSaveAppt() {
+            dialerCloseModal();
+            dialerSaveDisp('appointment', document.getElementById('dialerApptDate').value, document.getElementById('dialerApptTime').value);
+        }
+        
+        async function dialerEnd() {
+            if (dialerState.sessionId) {
+                try {
+                    await fetch('/api/dialer/end-session', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ session_id: dialerState.sessionId })
+                    });
+                } catch (e) {}
+            }
+            
+            const seconds = Math.floor((Date.now() - dialerState.startTime) / 1000);
+            document.getElementById('dialerStatCalls').textContent = dialerState.index;
+            document.getElementById('dialerStatAppts').textContent = dialerState.appointments;
+            document.getElementById('dialerStatTime').textContent = `${Math.floor(seconds/60)}:${(seconds%60).toString().padStart(2,'0')}`;
+            
+            dialerShowScreen('dialerCompleteScreen');
+        }
+        
+        function dialerReset() {
+            dialerState.sessionId = null;
+            dialerState.contacts = [];
+            dialerState.index = 0;
+            dialerState.appointments = 0;
+            dialerState.startTime = null;
+            
+            document.getElementById('dialerContactsInput').value = '';
+            document.getElementById('dialerCount').textContent = '✓ 0 contacts';
+            document.getElementById('dialerStartBtn').disabled = true;
+            
+            dialerShowScreen('startScreen');
         }
         
         // ==================== PUBLIC API ====================
@@ -7365,10 +7936,19 @@
             useChatSuggestion,
             // Mode switching
             switchMode,
+            // Power Dialer
             parseDialerContacts,
             clearDialerContacts,
             dialerPhoto,
-            startDialer,
+            dialerStart,
+            dialerDial,
+            dialerSkip,
+            dialerDisp,
+            dialerToggleScript,
+            dialerCloseModal,
+            dialerSaveAppt,
+            dialerEnd,
+            dialerReset,
             getState: () => state
         };
     })();
