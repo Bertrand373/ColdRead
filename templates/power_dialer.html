@@ -25,9 +25,7 @@
             --success: #10B981;
             --success-soft: rgba(16,185,129,0.1);
             --danger: #EF4444;
-            --danger-soft: rgba(239,68,68,0.1);
             --warning: #F59E0B;
-            --warning-soft: rgba(245,158,11,0.1);
             --blur: blur(24px);
             --blur-strong: blur(40px);
             --shadow-glass: 0 8px 32px rgba(0,0,0,0.06);
@@ -52,24 +50,20 @@
             overflow-x: hidden;
         }
         
-        /* ========== SIDEBAR ========== */
+        /* Sidebar */
         .sidebar {
-            position: fixed;
-            left: 0; top: 0; bottom: 0;
+            position: fixed; left: 0; top: 0; bottom: 0;
             width: var(--sidebar-width);
             background: var(--glass);
             backdrop-filter: var(--blur);
             -webkit-backdrop-filter: var(--blur);
             border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            padding: 16px 0;
-            z-index: 100;
+            display: flex; flex-direction: column;
+            padding: 16px 0; z-index: 100;
         }
         
         .sidebar-logo { padding: 8px 0 24px; display: flex; justify-content: center; }
         .sidebar-logo img { width: 32px; height: 32px; }
-        
         .sidebar-nav { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 12px; }
         
         .nav-item {
@@ -93,11 +87,9 @@
             white-space: nowrap; opacity: 0; visibility: hidden;
             transition: all 0.15s; pointer-events: none; z-index: 1000;
         }
-        
         .nav-item:hover::after { opacity: 1; visibility: visible; }
         
         .sidebar-footer { padding: 0 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-        
         .user-avatar {
             width: 36px; height: 36px; border-radius: 50%;
             background: var(--accent); color: white;
@@ -105,7 +97,7 @@
             font-size: 0.85rem; font-weight: 600;
         }
         
-        /* ========== MAIN ========== */
+        /* Main */
         .main-content {
             margin-left: var(--sidebar-width);
             min-height: 100vh; min-height: 100dvh;
@@ -123,8 +115,8 @@
             border: 1px solid var(--glass-border);
             border-radius: var(--radius-xl);
             box-shadow: var(--shadow-glass);
-            padding: 40px 36px;
-            width: 100%; max-width: 420px;
+            padding: 48px 40px;
+            width: 100%; max-width: 400px;
             text-align: center;
             position: relative;
         }
@@ -132,10 +124,9 @@
         /* Mode Toggle */
         .mode-toggle {
             display: flex;
-            background: var(--surface);
+            background: rgba(0,0,0,0.04);
             border-radius: var(--radius-full);
             padding: 4px; margin-bottom: 28px; gap: 4px;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);
         }
         
         .mode-btn {
@@ -149,169 +140,153 @@
         }
         
         .mode-btn:hover { color: var(--text); }
-        .mode-btn.active { background: white; color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .mode-btn.active { background: white; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .mode-btn svg { width: 16px; height: 16px; }
         
-        .card-title { font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 6px; }
-        .card-subtitle { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 28px; }
+        .card-title { font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 8px; }
+        .card-subtitle { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 32px; }
         
-        /* Agent Phone Pill */
-        .agent-phone-pill {
+        /* Phone Pill */
+        .phone-pill {
             display: inline-flex; align-items: center; gap: 10px;
             padding: 12px 20px;
-            background: rgba(255,255,255,0.6);
-            border-radius: var(--radius-full);
-            margin-bottom: 24px;
-            font-size: 0.95rem; font-weight: 500; color: var(--text);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-        
-        .agent-phone-pill svg { width: 18px; height: 18px; color: var(--accent); }
-        
-        /* Form Elements */
-        .form-group { margin-bottom: 20px; text-align: left; }
-        .form-label { display: block; font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
-        
-        /* Custom Select */
-        .custom-select { position: relative; width: 100%; }
-        
-        .select-trigger {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 14px 16px;
-            background: white;
-            border: 1.5px solid var(--border-solid);
-            border-radius: var(--radius-full);
-            cursor: pointer; transition: all 0.2s;
-            font-size: 0.95rem; font-weight: 500;
-        }
-        
-        .select-trigger:hover { border-color: var(--text-muted); }
-        .custom-select.open .select-trigger { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
-        .select-trigger svg { width: 18px; height: 18px; color: var(--text-muted); transition: transform 0.2s; }
-        .custom-select.open .select-trigger svg { transform: rotate(180deg); }
-        
-        .select-options {
-            position: absolute; top: 100%; left: 0; right: 0;
-            background: white;
-            border: 1.5px solid var(--accent);
-            border-top: none;
-            border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
-            z-index: 100;
-            opacity: 0; visibility: hidden;
-            transform: translateY(-4px);
-            transition: all 0.2s;
-        }
-        
-        .custom-select.open .select-options { opacity: 1; visibility: visible; transform: translateY(0); }
-        
-        .select-option {
-            padding: 14px 16px;
-            cursor: pointer; transition: background 0.15s;
-            display: flex; flex-direction: column; gap: 2px;
-        }
-        
-        .select-option:hover { background: var(--accent-soft); }
-        .select-option:last-child { border-radius: 0 0 10px 10px; }
-        .option-title { font-weight: 500; font-size: 0.95rem; }
-        .option-desc { font-size: 0.8rem; color: var(--text-muted); }
-        
-        /* Input Methods */
-        .input-methods { display: flex; gap: 8px; margin-bottom: 12px; }
-        
-        .method-btn {
-            flex: 1;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            padding: 14px 12px;
-            background: white;
-            border: 1.5px solid var(--border-solid);
-            border-radius: var(--radius-full);
-            font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
-            color: var(--text-secondary);
-            cursor: pointer; transition: all 0.2s;
-        }
-        
-        .method-btn:hover { border-color: var(--accent); color: var(--accent); }
-        .method-btn.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
-        .method-btn svg { width: 20px; height: 20px; }
-        
-        /* Camera Upload */
-        .camera-upload {
-            display: none;
-            flex-direction: column; align-items: center;
-            padding: 28px 24px;
-            border: 2px dashed var(--border-solid);
-            border-radius: var(--radius-md);
             background: rgba(255,255,255,0.5);
-            cursor: pointer; transition: all 0.2s;
+            border-radius: var(--radius-full);
+            margin-bottom: 28px;
+            font-size: 1rem; font-weight: 500;
+        }
+        .phone-pill svg { width: 18px; height: 18px; color: var(--accent); }
+        
+        /* Contacts Input */
+        .contacts-section { width: 100%; margin-bottom: 24px; }
+        
+        .contacts-label {
+            display: block;
+            font-size: 0.7rem; font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 8px;
+            text-align: left;
         }
         
-        .camera-upload.active { display: flex; }
-        .camera-upload:hover { border-color: var(--accent); background: var(--accent-soft); }
-        .camera-upload svg { width: 44px; height: 44px; color: var(--accent); margin-bottom: 12px; }
-        .camera-upload-text { font-size: 0.95rem; font-weight: 600; color: var(--text); }
-        .camera-upload-hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
-        .camera-upload input { display: none; }
-        
-        /* Image Preview */
-        .image-preview { display: none; position: relative; margin-bottom: 16px; border-radius: var(--radius-md); overflow: hidden; }
-        .image-preview.active { display: block; }
-        .image-preview img { width: 100%; max-height: 180px; object-fit: cover; }
-        
-        .preview-remove {
-            position: absolute; top: 8px; right: 8px;
-            width: 32px; height: 32px;
-            background: rgba(0,0,0,0.6); border: none; border-radius: 50%;
-            color: white; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-        }
-        
-        .preview-remove svg { width: 18px; height: 18px; }
-        
-        /* Paste Area */
-        .paste-area { display: none; }
-        .paste-area.active { display: block; }
-        
-        .form-textarea {
-            width: 100%; padding: 14px 16px;
-            font-family: 'Inter', sans-serif; font-size: 0.9rem;
-            color: var(--text); background: white;
+        .contacts-input-wrap {
+            position: relative;
+            background: white;
             border: 1.5px solid var(--border-solid);
             border-radius: var(--radius-sm);
-            resize: none; min-height: 100px; line-height: 1.5;
             transition: all 0.2s;
         }
         
-        .form-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-        .form-textarea::placeholder { color: var(--text-muted); }
-        .form-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 8px; }
+        .contacts-input-wrap:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        
+        .contacts-textarea {
+            width: 100%;
+            min-height: 88px;
+            padding: 14px 50px 14px 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--text);
+            background: transparent;
+            border: none;
+            resize: none;
+            outline: none;
+        }
+        
+        .contacts-textarea::placeholder { color: var(--text-muted); }
+        
+        .camera-btn {
+            position: absolute;
+            right: 10px; top: 10px;
+            width: 36px; height: 36px;
+            background: var(--accent-soft);
+            border: none; border-radius: 10px;
+            color: var(--accent);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s;
+        }
+        
+        .camera-btn:hover { background: var(--accent); color: white; }
+        .camera-btn svg { width: 20px; height: 20px; }
+        .camera-btn input { display: none; }
+        
+        .contacts-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+            text-align: left;
+        }
         
         /* Contacts Preview */
-        .contacts-preview { display: none; margin-top: 16px; text-align: left; }
+        .contacts-preview {
+            display: none;
+            margin-top: 12px;
+            padding: 12px 14px;
+            background: var(--success-soft);
+            border-radius: var(--radius-sm);
+            text-align: left;
+        }
+        
         .contacts-preview.active { display: block; }
         
-        .contacts-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
         
-        .contacts-count { font-size: 0.8rem; font-weight: 600; color: var(--success); display: flex; align-items: center; gap: 6px; }
-        .contacts-count svg { width: 16px; height: 16px; }
+        .preview-count {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--success);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
         
-        .contacts-edit { font-size: 0.8rem; color: var(--accent); background: none; border: none; cursor: pointer; font-weight: 500; }
+        .preview-count svg { width: 16px; height: 16px; }
         
-        .contacts-list { max-height: 140px; overflow-y: auto; background: rgba(255,255,255,0.6); border-radius: var(--radius-sm); padding: 6px; }
+        .preview-clear {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
         
-        .contact-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 8px; font-size: 0.85rem; }
-        .contact-row:nth-child(odd) { background: rgba(0,0,0,0.02); }
-        .contact-row-name { font-weight: 500; }
-        .contact-row-phone { color: var(--text-muted); font-size: 0.8rem; }
+        .preview-clear:hover { color: var(--danger); }
         
-        /* Processing Overlay */
-        .processing { display: none; position: absolute; inset: 0; background: rgba(255,255,255,0.92); backdrop-filter: blur(4px); border-radius: var(--radius-xl); flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+        /* Processing */
+        .processing {
+            display: none;
+            position: absolute; inset: 0;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(4px);
+            border-radius: var(--radius-xl);
+            flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 10;
+        }
+        
         .processing.active { display: flex; }
         
-        .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
+        .spinner {
+            width: 36px; height: 36px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 14px;
+        }
+        
         @keyframes spin { to { transform: rotate(360deg); } }
         
-        .processing-text { font-size: 0.95rem; font-weight: 500; color: var(--text-secondary); }
+        .processing-text { font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); }
         
         /* Start Button */
         .start-btn {
@@ -321,45 +296,83 @@
             font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 600;
             border: none; border-radius: var(--radius-full);
             cursor: pointer; transition: all 0.2s;
-            width: 100%; margin-top: 8px;
+            width: 100%;
             box-shadow: 0 2px 8px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08);
         }
         
         .start-btn:hover:not(:disabled) { transform: translateY(-2px); }
         .start-btn:active:not(:disabled) { transform: scale(0.98); }
         .start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .start-btn svg { width: 22px; height: 22px; }
+        .start-btn svg { width: 20px; height: 20px; }
         
         /* ========== ACTIVE SCREEN ========== */
-        .active-screen .glass-card { max-width: 440px; }
+        .current-contact {
+            padding: 20px;
+            background: var(--accent-soft);
+            border-radius: var(--radius-md);
+            margin-bottom: 24px;
+        }
         
-        .current-contact { padding: 20px; background: var(--accent-soft); border-radius: var(--radius-md); margin-bottom: 20px; }
-        .contact-name { font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 600; margin-bottom: 4px; }
+        .contact-name { font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 600; margin-bottom: 4px; }
         .contact-phone { font-size: 0.95rem; color: var(--accent); font-weight: 500; }
         .contact-sponsor { font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; }
         
-        .call-status { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: var(--radius-full); font-size: 0.85rem; font-weight: 600; margin-bottom: 20px; }
+        .call-status {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 16px; border-radius: var(--radius-full);
+            font-size: 0.85rem; font-weight: 600;
+            margin-bottom: 24px;
+        }
+        
         .call-status.waiting { background: var(--surface); color: var(--text-secondary); }
-        .call-status.ringing { background: var(--warning-soft); color: var(--warning); }
+        .call-status.ringing { background: rgba(245,158,11,0.15); color: var(--warning); }
         .call-status.connected { background: var(--success-soft); color: var(--success); }
         
         .status-pulse { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         
-        /* Script Expander */
-        .script-box { background: white; border-radius: var(--radius-sm); margin-bottom: 16px; overflow: hidden; border: 1px solid var(--border); }
-        .script-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; cursor: pointer; font-weight: 500; font-size: 0.9rem; }
-        .script-header svg { width: 18px; height: 18px; color: var(--text-muted); transition: transform 0.2s; }
-        .script-box.open .script-header svg { transform: rotate(180deg); }
-        .script-body { display: none; padding: 0 16px 16px; font-size: 0.88rem; line-height: 1.7; text-align: left; color: var(--text-secondary); background: #FFFEF5; border-top: 1px solid #FEF3C7; }
-        .script-box.open .script-body { display: block; }
+        /* Script */
+        .script-toggle {
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 10px;
+            font-size: 0.85rem; font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        
+        .script-toggle:hover { color: var(--text); }
+        .script-toggle svg { width: 16px; height: 16px; transition: transform 0.2s; }
+        .script-toggle.open svg { transform: rotate(180deg); }
+        
+        .script-body {
+            display: none;
+            padding: 16px;
+            background: #FFFEF5;
+            border: 1px solid #FEF3C7;
+            border-radius: var(--radius-sm);
+            margin-bottom: 20px;
+            text-align: left;
+            font-size: 0.88rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+        
+        .script-body.open { display: block; }
         .script-body strong { color: var(--text); }
         
-        /* Buttons */
-        .call-actions { display: flex; gap: 10px; margin-bottom: 16px; }
+        /* Actions */
+        .call-actions { display: flex; gap: 10px; margin-bottom: 20px; }
         .call-actions .btn { flex: 1; }
         
-        .btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 20px; font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 600; border: none; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s; }
+        .btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 14px 20px;
+            font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 600;
+            border: none; border-radius: var(--radius-sm);
+            cursor: pointer; transition: all 0.15s;
+        }
+        
         .btn svg { width: 20px; height: 20px; }
         .btn-primary { background: var(--accent); color: white; }
         .btn-primary:hover { background: var(--accent-dark); }
@@ -367,54 +380,65 @@
         .btn-outline:hover { background: rgba(0,0,0,0.02); }
         
         /* Disposition */
-        .disposition-section { display: none; }
-        .disposition-section.active { display: block; }
-        .disposition-label { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; text-align: left; }
-        .disposition-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .disp-section { display: none; }
+        .disp-section.active { display: block; }
         
-        .disp-btn { padding: 14px 12px; background: white; border: 1.5px solid var(--border-solid); border-radius: var(--radius-sm); font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+        .disp-label { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; text-align: left; }
+        .disp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        
+        .disp-btn {
+            padding: 14px 12px;
+            background: white; border: 1.5px solid var(--border-solid);
+            border-radius: var(--radius-sm);
+            font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 500;
+            cursor: pointer; transition: all 0.15s;
+        }
+        
         .disp-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
         .disp-btn.success { border-color: var(--success); background: var(--success-soft); color: var(--success); }
         
         /* Progress */
-        .progress-section { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--surface); border-radius: var(--radius-sm); margin-top: 20px; }
-        .progress-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+        .progress-bar {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 16px;
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            margin-top: 24px;
+        }
+        
+        .progress-track { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
         .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; }
-        .progress-text { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); min-width: 48px; text-align: right; }
+        .progress-text { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); min-width: 44px; text-align: right; }
         
-        .end-session-link { margin-top: 12px; background: none; border: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 500; cursor: pointer; text-decoration: underline; }
-        .end-session-link:hover { color: var(--danger); }
+        .end-link { margin-top: 14px; background: none; border: none; color: var(--text-muted); font-size: 0.85rem; cursor: pointer; text-decoration: underline; }
+        .end-link:hover { color: var(--danger); }
         
-        /* ========== COMPLETE SCREEN ========== */
-        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 28px 0; }
+        /* Complete */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 32px 0; }
         .stat-card { padding: 20px 16px; background: var(--surface); border-radius: var(--radius-sm); }
         .stat-value { font-family: 'Outfit', sans-serif; font-size: 1.75rem; font-weight: 700; color: var(--accent); }
         .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
         
-        /* ========== MODAL ========== */
-        .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 24px; }
-        .modal-backdrop.open { display: flex; }
-        .modal { background: white; border-radius: var(--radius-lg); padding: 28px; width: 100%; max-width: 340px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        /* Modal */
+        .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 24px; }
+        .modal-bg.open { display: flex; }
+        .modal { background: white; border-radius: var(--radius-lg); padding: 28px; width: 100%; max-width: 340px; }
         .modal-title { font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 600; margin-bottom: 20px; }
-        .modal .form-input { width: 100%; padding: 14px 16px; font-family: 'Inter', sans-serif; font-size: 0.95rem; border: 1.5px solid var(--border-solid); border-radius: var(--radius-sm); margin-bottom: 12px; }
-        .modal .form-input:focus { outline: none; border-color: var(--accent); }
+        .modal input { width: 100%; padding: 14px 16px; font-family: 'Inter', sans-serif; font-size: 0.95rem; border: 1.5px solid var(--border-solid); border-radius: var(--radius-sm); margin-bottom: 12px; }
+        .modal input:focus { outline: none; border-color: var(--accent); }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
         .modal-actions .btn { flex: 1; }
         
-        /* ========== MOBILE ========== */
+        /* Mobile */
         @media (max-width: 768px) {
             .sidebar { display: none; }
             .main-content { margin-left: 0; padding: 20px; padding-top: calc(20px + var(--safe-top)); }
-            .glass-card { padding: 32px 24px; }
+            .glass-card { padding: 36px 28px; }
             .mode-btn { padding: 10px 12px; font-size: 0.8rem; }
-            .stats-grid { gap: 8px; }
-            .stat-card { padding: 16px 12px; }
-            .stat-value { font-size: 1.4rem; }
         }
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-logo"><img src="/static/favicon.svg" alt="Coachd"></div>
         <nav class="sidebar-nav">
@@ -430,12 +454,12 @@
     </aside>
 
     <div class="main-content">
-        <!-- SETUP SCREEN -->
+        <!-- SETUP -->
         <div class="screen setup-screen active" id="setupScreen">
             <div class="glass-card">
                 <div class="processing" id="processing">
                     <div class="spinner"></div>
-                    <div class="processing-text" id="processingText">Reading contacts...</div>
+                    <div class="processing-text">Reading contacts...</div>
                 </div>
                 
                 <div class="mode-toggle">
@@ -446,60 +470,28 @@
                 <h1 class="card-title">Power Dialer</h1>
                 <p class="card-subtitle">Book appointments fast</p>
                 
-                <div class="agent-phone-pill">
+                <div class="phone-pill">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-                    <span id="agentPhoneDisplay">(404) 422-1729</span>
+                    <span id="agentPhone">(404) 422-1729</span>
                 </div>
                 
-                <!-- List Type -->
-                <div class="form-group">
-                    <label class="form-label">List Type</label>
-                    <div class="custom-select" id="listTypeSelect">
-                        <div class="select-trigger" onclick="PD.toggleDropdown()">
-                            <span id="listTypeText">Referrals</span>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                <div class="contacts-section">
+                    <label class="contacts-label">Contacts</label>
+                    <div class="contacts-input-wrap">
+                        <textarea class="contacts-textarea" id="contactsInput" placeholder="John Smith (678) 555-1234&#10;Maria Garcia 404-555-5678" oninput="PD.parse()"></textarea>
+                        <button class="camera-btn" onclick="document.getElementById('imageInput').click()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                            <input type="file" id="imageInput" accept="image/*" capture="environment" onchange="PD.photo(event)">
+                        </button>
+                    </div>
+                    <div class="contacts-hint">One per line · or tap 📷 to photo your list</div>
+                    
+                    <div class="contacts-preview" id="preview">
+                        <div class="preview-header">
+                            <div class="preview-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span id="previewCount">0 contacts</span></div>
+                            <button class="preview-clear" onclick="PD.clear()">Clear</button>
                         </div>
-                        <div class="select-options">
-                            <div class="select-option" onclick="PD.selectType('referrals','Referrals')"><span class="option-title">Referrals</span><span class="option-desc">Sponsored by existing clients</span></div>
-                            <div class="select-option" onclick="PD.selectType('policy_owner','Policy Owner Service')"><span class="option-title">Policy Owner Service</span><span class="option-desc">Lapse reactivation</span></div>
-                            <div class="select-option" onclick="PD.selectType('cold','Cold / Other')"><span class="option-title">Cold / Other</span><span class="option-desc">Generic script</span></div>
-                        </div>
                     </div>
-                </div>
-                
-                <!-- Contact Input -->
-                <div class="form-group">
-                    <label class="form-label">Add Contacts</label>
-                    <div class="input-methods">
-                        <button class="method-btn active" id="cameraBtn" onclick="PD.setMethod('camera')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Photo</button>
-                        <button class="method-btn" id="pasteBtn" onclick="PD.setMethod('paste')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>Paste</button>
-                    </div>
-                    
-                    <div class="camera-upload active" id="cameraUpload" onclick="document.getElementById('imageInput').click()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        <div class="camera-upload-text">Tap to photo your list</div>
-                        <div class="camera-upload-hint">AI extracts names & numbers instantly</div>
-                        <input type="file" id="imageInput" accept="image/*" capture="environment" onchange="PD.handleImage(event)">
-                    </div>
-                    
-                    <div class="image-preview" id="imagePreview">
-                        <img id="previewImg" src="" alt="Preview">
-                        <button class="preview-remove" onclick="PD.removeImage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-                    </div>
-                    
-                    <div class="paste-area" id="pasteArea">
-                        <textarea class="form-textarea" id="contactsText" placeholder="John Smith (678) 555-1234&#10;Maria Garcia 404-555-5678" oninput="PD.parseText()"></textarea>
-                        <div class="form-hint">One per line: Name Phone</div>
-                    </div>
-                </div>
-                
-                <!-- Preview -->
-                <div class="contacts-preview" id="contactsPreview">
-                    <div class="contacts-header">
-                        <div class="contacts-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span id="countText">0 contacts</span></div>
-                        <button class="contacts-edit" onclick="PD.editContacts()">Edit</button>
-                    </div>
-                    <div class="contacts-list" id="contactsList"></div>
                 </div>
                 
                 <button class="start-btn" id="startBtn" onclick="PD.start()" disabled>
@@ -509,7 +501,7 @@
             </div>
         </div>
         
-        <!-- ACTIVE SCREEN -->
+        <!-- ACTIVE -->
         <div class="screen active-screen" id="activeScreen">
             <div class="glass-card">
                 <div class="current-contact">
@@ -520,19 +512,20 @@
                 
                 <div class="call-status waiting" id="callStatus"><span class="status-pulse"></span><span id="statusText">Ready</span></div>
                 
-                <div class="script-box" id="scriptBox" onclick="this.classList.toggle('open')">
-                    <div class="script-header"><span>📋 View Script</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
-                    <div class="script-body" id="scriptBody"></div>
+                <div class="script-toggle" id="scriptToggle" onclick="PD.toggleScript()">
+                    <span>View script</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
                 </div>
+                <div class="script-body" id="scriptBody"></div>
                 
                 <div class="call-actions" id="callActions">
                     <button class="btn btn-primary" id="dialBtn" onclick="PD.dial()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>Dial</button>
                     <button class="btn btn-outline" onclick="PD.skip()">Skip</button>
                 </div>
                 
-                <div class="disposition-section" id="dispSection">
-                    <div class="disposition-label">Quick Outcome</div>
-                    <div class="disposition-grid">
+                <div class="disp-section" id="dispSection">
+                    <div class="disp-label">Outcome</div>
+                    <div class="disp-grid">
                         <button class="disp-btn success" onclick="PD.disp('appointment')">📅 Appointment</button>
                         <button class="disp-btn" onclick="PD.disp('callback')">🔄 Callback</button>
                         <button class="disp-btn" onclick="PD.disp('no_answer')">📵 No Answer</button>
@@ -540,16 +533,16 @@
                     </div>
                 </div>
                 
-                <div class="progress-section">
+                <div class="progress-bar">
                     <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
                     <div class="progress-text" id="progressText">0/0</div>
                 </div>
                 
-                <button class="end-session-link" onclick="PD.end()">End Session</button>
+                <button class="end-link" onclick="PD.end()">End session</button>
             </div>
         </div>
         
-        <!-- COMPLETE SCREEN -->
+        <!-- COMPLETE -->
         <div class="screen complete-screen" id="completeScreen">
             <div class="glass-card">
                 <h1 class="card-title">Session Complete 🎉</h1>
@@ -559,17 +552,16 @@
                     <div class="stat-card"><div class="stat-value" id="statAppts">0</div><div class="stat-label">Appts</div></div>
                     <div class="stat-card"><div class="stat-value" id="statTime">0:00</div><div class="stat-label">Time</div></div>
                 </div>
-                <button class="start-btn" onclick="PD.reset()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Start New Session</button>
+                <button class="start-btn" onclick="PD.reset()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>New Session</button>
             </div>
         </div>
     </div>
     
-    <!-- Modal -->
-    <div class="modal-backdrop" id="modal">
+    <div class="modal-bg" id="modal">
         <div class="modal">
             <h2 class="modal-title">📅 Book Appointment</h2>
-            <input type="date" class="form-input" id="apptDate">
-            <input type="time" class="form-input" id="apptTime" value="10:00">
+            <input type="date" id="apptDate">
+            <input type="time" id="apptTime" value="10:00">
             <div class="modal-actions">
                 <button class="btn btn-outline" onclick="PD.closeModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="PD.saveAppt()">Save</button>
@@ -579,89 +571,73 @@
 
     <script>
     const PD = {
-        sessionId: null, agentPhone: '', listType: 'referrals',
-        contacts: [], idx: 0, appts: 0, startTime: null,
-        
-        scripts: {
-            referrals: `<p><strong>Opening:</strong> "Hi, is this [Name]? This is [Agent] from Globe Life. [Sponsor] suggested I call."</p><p><strong>Bridge:</strong> "They got coverage with us and wanted to share the opportunity."</p><p><strong>Close:</strong> "Quick questions to see if you qualify. Got 2 minutes?"</p>`,
-            policy_owner: `<p><strong>Opening:</strong> "Hi [Name], this is [Agent] with Globe Life about your policy."</p><p><strong>Purpose:</strong> "Checking your coverage still fits and sharing updates."</p><p><strong>Close:</strong> "Got a moment to review?"</p>`,
-            cold: `<p><strong>Opening:</strong> "Hi, is this [Name]? This is [Agent] with Globe Life."</p><p><strong>Purpose:</strong> "Reaching families in your area about affordable life insurance."</p><p><strong>Close:</strong> "30 seconds to see if you qualify?"</p>`
-        },
+        sid: null, phone: '', contacts: [], idx: 0, appts: 0, t0: null,
+        script: `<p><strong>Opening:</strong> "Hi, is this [Name]? This is [Agent] from Globe Life. [Sponsor] suggested I call."</p><p><strong>Close:</strong> "Got 2 minutes to see if you qualify?"</p>`,
         
         init() {
             const p = localStorage.getItem('coachd_agent_phone');
-            if (p) { this.agentPhone = p; document.getElementById('agentPhoneDisplay').textContent = this.fmt(p); }
-            const t = new Date(); t.setDate(t.getDate() + 1);
-            document.getElementById('apptDate').value = t.toISOString().split('T')[0];
-            document.addEventListener('click', e => { if (!document.getElementById('listTypeSelect').contains(e.target)) document.getElementById('listTypeSelect').classList.remove('open'); });
+            if (p) { this.phone = p; document.getElementById('agentPhone').textContent = this.fmt(p); }
+            const d = new Date(); d.setDate(d.getDate() + 1);
+            document.getElementById('apptDate').value = d.toISOString().split('T')[0];
         },
         
-        fmt(p) { const d = p.replace(/\D/g, '').slice(-10); return d.length === 10 ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}` : p; },
+        fmt(p) { const d = p.replace(/\D/g,'').slice(-10); return d.length===10 ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}` : p; },
         
-        toggleDropdown() { document.getElementById('listTypeSelect').classList.toggle('open'); },
-        selectType(v, l) { this.listType = v; document.getElementById('listTypeText').textContent = l; document.getElementById('listTypeSelect').classList.remove('open'); },
-        
-        setMethod(m) {
-            document.getElementById('cameraBtn').classList.toggle('active', m === 'camera');
-            document.getElementById('pasteBtn').classList.toggle('active', m === 'paste');
-            document.getElementById('cameraUpload').classList.toggle('active', m === 'camera');
-            document.getElementById('pasteArea').classList.toggle('active', m === 'paste');
-            if (m === 'paste') document.getElementById('imagePreview').classList.remove('active');
+        parse() {
+            const lines = document.getElementById('contactsInput').value.trim().split('\n').filter(l => l.trim());
+            this.contacts = lines.map((l, i) => {
+                const m = l.match(/[\d\-\(\)\.\s]{10,}/);
+                const ph = m ? m[0].replace(/\D/g,'') : '';
+                const nm = l.replace(m ? m[0] : '', '').trim() || `Contact ${i+1}`;
+                return { id: i+1, name: nm, phone: ph.length===10 ? `+1${ph}` : (ph.length===11 ? `+${ph}` : '') };
+            }).filter(c => c.phone.length >= 11);
+            this.updatePreview();
         },
         
-        async handleImage(e) {
+        async photo(e) {
             const f = e.target.files[0]; if (!f) return;
-            const r = new FileReader();
-            r.onload = ev => { document.getElementById('previewImg').src = ev.target.result; document.getElementById('imagePreview').classList.add('active'); document.getElementById('cameraUpload').classList.remove('active'); };
-            r.readAsDataURL(f);
-            this.showProc('Reading with AI...');
+            this.showProc();
             try {
                 const fd = new FormData(); fd.append('image', f);
                 const res = await fetch('/api/dialer/parse-image', { method: 'POST', body: fd });
                 const data = await res.json();
-                if (data.contacts?.length) { this.contacts = data.contacts; this.showPreview(); }
-                else alert('No contacts found. Try clearer photo or paste manually.');
-            } catch (err) { alert('Failed to process. Try again or paste.'); }
+                if (data.contacts?.length) {
+                    this.contacts = data.contacts;
+                    document.getElementById('contactsInput').value = this.contacts.map(c => `${c.name} ${this.fmt(c.phone)}`).join('\n');
+                    this.updatePreview();
+                } else alert('No contacts found. Try typing them.');
+            } catch (err) { alert('Failed to read image.'); }
             this.hideProc();
         },
         
-        removeImage() { document.getElementById('imagePreview').classList.remove('active'); document.getElementById('cameraUpload').classList.add('active'); document.getElementById('imageInput').value = ''; this.contacts = []; document.getElementById('contactsPreview').classList.remove('active'); document.getElementById('startBtn').disabled = true; },
-        
-        parseText() {
-            const lines = document.getElementById('contactsText').value.trim().split('\n').filter(l => l.trim());
-            this.contacts = lines.map((l, i) => {
-                const pm = l.match(/[\d\-\(\)\.\s]{10,}/);
-                const ph = pm ? pm[0].replace(/\D/g, '') : '';
-                const nm = l.replace(pm ? pm[0] : '', '').trim() || `Contact ${i+1}`;
-                return { id: i+1, name: nm, phone: ph.length === 10 ? `+1${ph}` : (ph.length === 11 ? `+${ph}` : '') };
-            }).filter(c => c.phone.length >= 11);
-            this.contacts.length ? this.showPreview() : (document.getElementById('contactsPreview').classList.remove('active'), document.getElementById('startBtn').disabled = true);
+        updatePreview() {
+            const n = this.contacts.length;
+            document.getElementById('previewCount').textContent = `${n} contact${n!==1?'s':''}`;
+            document.getElementById('preview').classList.toggle('active', n > 0);
+            document.getElementById('startBtn').disabled = n === 0;
         },
         
-        showPreview() {
-            document.getElementById('countText').textContent = `${this.contacts.length} contacts`;
-            document.getElementById('contactsList').innerHTML = this.contacts.slice(0, 5).map(c => `<div class="contact-row"><span class="contact-row-name">${c.name}</span><span class="contact-row-phone">${this.fmt(c.phone)}</span></div>`).join('') + (this.contacts.length > 5 ? `<div class="contact-row" style="justify-content:center;color:var(--text-muted)">+${this.contacts.length - 5} more</div>` : '');
-            document.getElementById('contactsPreview').classList.add('active');
-            document.getElementById('startBtn').disabled = false;
+        clear() {
+            this.contacts = [];
+            document.getElementById('contactsInput').value = '';
+            this.updatePreview();
         },
         
-        editContacts() { this.setMethod('paste'); document.getElementById('contactsText').value = this.contacts.map(c => `${c.name} ${this.fmt(c.phone)}`).join('\n'); },
-        
-        showProc(t) { document.getElementById('processingText').textContent = t; document.getElementById('processing').classList.add('active'); },
+        showProc() { document.getElementById('processing').classList.add('active'); },
         hideProc() { document.getElementById('processing').classList.remove('active'); },
         
         screen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); },
         
         async start() {
             if (!this.contacts.length) return;
-            this.idx = 0; this.appts = 0; this.startTime = Date.now();
-            document.getElementById('scriptBody').innerHTML = this.scripts[this.listType];
-            this.screen('activeScreen'); this.updateProgress(); this.showContact();
-            this.setStatus('waiting', 'Calling you...');
+            this.idx = 0; this.appts = 0; this.t0 = Date.now();
+            document.getElementById('scriptBody').innerHTML = this.script;
+            this.screen('activeScreen'); this.progress(); this.showContact();
+            this.status('waiting', 'Calling you...');
             try {
-                const res = await fetch('/api/dialer/start-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agent_phone: this.agentPhone, list_type: this.listType, contacts: this.contacts.map(c => ({ name: c.name, phone: c.phone, sponsor: c.sponsor })) }) });
+                const res = await fetch('/api/dialer/start-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agent_phone: this.phone, list_type: 'referrals', contacts: this.contacts }) });
                 const data = await res.json();
-                if (data.success) { this.sessionId = data.session_id; this.setStatus('ringing', 'Answer phone'); }
+                if (data.success) { this.sid = data.session_id; this.status('ringing', 'Answer phone'); }
             } catch (e) { console.error(e); }
         },
         
@@ -676,26 +652,31 @@
             }
         },
         
-        setStatus(t, txt) { const b = document.getElementById('callStatus'); b.className = `call-status ${t}`; document.getElementById('statusText').textContent = txt; },
-        updateProgress() { const pct = this.contacts.length ? (this.idx / this.contacts.length) * 100 : 0; document.getElementById('progressFill').style.width = `${pct}%`; document.getElementById('progressText').textContent = `${this.idx}/${this.contacts.length}`; },
+        status(t, txt) { document.getElementById('callStatus').className = `call-status ${t}`; document.getElementById('statusText').textContent = txt; },
+        progress() { const p = this.contacts.length ? (this.idx / this.contacts.length) * 100 : 0; document.getElementById('progressFill').style.width = `${p}%`; document.getElementById('progressText').textContent = `${this.idx}/${this.contacts.length}`; },
+        
+        toggleScript() {
+            document.getElementById('scriptToggle').classList.toggle('open');
+            document.getElementById('scriptBody').classList.toggle('open');
+        },
         
         async dial() {
-            if (!this.sessionId) return;
-            this.setStatus('ringing', 'Dialing...');
+            if (!this.sid) return;
+            this.status('ringing', 'Dialing...');
             document.getElementById('dialBtn').disabled = true;
             document.getElementById('callActions').style.display = 'flex';
             document.getElementById('dispSection').classList.remove('active');
             try {
-                const res = await fetch('/api/dialer/dial-next', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: this.sessionId }) });
+                const res = await fetch('/api/dialer/dial-next', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: this.sid }) });
                 const data = await res.json();
-                if (data.success) setTimeout(() => { this.setStatus('connected', 'Connected'); document.getElementById('callActions').style.display = 'none'; document.getElementById('dispSection').classList.add('active'); }, 2000);
+                if (data.success) setTimeout(() => { this.status('connected', 'Connected'); document.getElementById('callActions').style.display = 'none'; document.getElementById('dispSection').classList.add('active'); }, 2000);
                 else if (data.complete) this.end();
             } catch (e) { console.error(e); }
         },
         
         async skip() {
-            if (this.sessionId) try { await fetch('/api/dialer/skip', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: this.sessionId }) }); } catch (e) {}
-            this.idx++; this.updateProgress();
+            if (this.sid) try { await fetch('/api/dialer/skip', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: this.sid }) }); } catch (e) {}
+            this.idx++; this.progress();
             this.idx >= this.contacts.length ? this.end() : (this.showContact(), this.resetUI());
         },
         
@@ -703,20 +684,20 @@
         
         async saveDisp(t, date, time) {
             const c = this.contacts[this.idx];
-            try { await fetch('/api/dialer/disposition', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: this.sessionId, contact_id: c.id, disposition: t, scheduled_date: date, scheduled_time: time }) }); } catch (e) {}
+            try { await fetch('/api/dialer/disposition', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: this.sid, contact_id: c.id, disposition: t, scheduled_date: date, scheduled_time: time }) }); } catch (e) {}
             if (t === 'appointment') this.appts++;
-            this.idx++; this.updateProgress();
+            this.idx++; this.progress();
             this.idx >= this.contacts.length ? this.end() : (this.showContact(), this.resetUI());
         },
         
-        resetUI() { document.getElementById('callActions').style.display = 'flex'; document.getElementById('dispSection').classList.remove('active'); document.getElementById('dialBtn').disabled = false; this.setStatus('waiting', 'Ready'); },
+        resetUI() { document.getElementById('callActions').style.display = 'flex'; document.getElementById('dispSection').classList.remove('active'); document.getElementById('dialBtn').disabled = false; this.status('waiting', 'Ready'); },
         
         closeModal() { document.getElementById('modal').classList.remove('open'); },
         saveAppt() { this.closeModal(); this.saveDisp('appointment', document.getElementById('apptDate').value, document.getElementById('apptTime').value); },
         
         async end() {
-            if (this.sessionId) try { await fetch('/api/dialer/end-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: this.sessionId }) }); } catch (e) {}
-            const s = Math.floor((Date.now() - this.startTime) / 1000);
+            if (this.sid) try { await fetch('/api/dialer/end-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: this.sid }) }); } catch (e) {}
+            const s = Math.floor((Date.now() - this.t0) / 1000);
             document.getElementById('statCalls').textContent = this.idx;
             document.getElementById('statAppts').textContent = this.appts;
             document.getElementById('statTime').textContent = `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
@@ -724,13 +705,10 @@
         },
         
         reset() {
-            this.sessionId = null; this.contacts = []; this.idx = 0; this.appts = 0; this.startTime = null;
-            document.getElementById('contactsText').value = '';
-            document.getElementById('contactsPreview').classList.remove('active');
+            this.sid = null; this.contacts = []; this.idx = 0; this.appts = 0; this.t0 = null;
+            document.getElementById('contactsInput').value = '';
+            document.getElementById('preview').classList.remove('active');
             document.getElementById('startBtn').disabled = true;
-            document.getElementById('imagePreview').classList.remove('active');
-            document.getElementById('cameraUpload').classList.add('active');
-            document.getElementById('imageInput').value = '';
             this.screen('setupScreen');
         }
     };
