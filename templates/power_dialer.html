@@ -429,16 +429,83 @@
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
         .modal-actions .btn { flex: 1; }
         
+        /* Mobile Header */
+        .mobile-header {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 44px;
+            padding: 0 20px;
+            padding-top: var(--safe-top);
+            z-index: 300;
+            align-items: center;
+        }
+        
+        .mobile-header-left { display: flex; align-items: center; gap: 8px; }
+        .mobile-header-logo { width: 24px; height: 24px; }
+        .mobile-header-logo img { width: 100%; height: 100%; object-fit: contain; }
+        .mobile-header-wordmark { font-size: 0.75rem; font-weight: 600; color: var(--text); letter-spacing: 0.1em; text-transform: uppercase; }
+        
+        /* Mobile Bottom Nav */
+        .bottom-pill {
+            display: none;
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            z-index: 400;
+            padding: 8px 16px calc(8px + var(--safe-bottom));
+        }
+        
+        .bottom-pill-inner {
+            background: var(--glass-strong);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-full);
+            padding: 6px 8px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+        }
+        
+        .bottom-pill-items { display: flex; justify-content: space-around; }
+        
+        .pill-item {
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+            padding: 8px 12px;
+            background: transparent; border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            text-decoration: none;
+        }
+        
+        .pill-item.active { color: var(--accent); }
+        .pill-item svg { width: 20px; height: 20px; }
+        .pill-item-label { font-size: 0.6rem; font-weight: 600; }
+        
         /* Mobile */
         @media (max-width: 768px) {
             .sidebar { display: none; }
-            .main-content { margin-left: 0; padding: 20px; padding-top: calc(20px + var(--safe-top)); }
+            .mobile-header { display: flex; }
+            .bottom-pill { display: block; }
+            .main-content { margin-left: 0; padding: 20px; padding-top: calc(60px + var(--safe-top)); padding-bottom: 100px; }
             .glass-card { padding: 36px 28px; }
             .mode-btn { padding: 10px 12px; font-size: 0.8rem; }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-header { display: none; }
+            .bottom-pill { display: none; }
         }
     </style>
 </head>
 <body>
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <div class="mobile-header-left">
+            <div class="mobile-header-logo"><img src="/static/favicon.svg" alt="Coachd"></div>
+            <span class="mobile-header-wordmark">Coachd</span>
+        </div>
+    </header>
+
     <aside class="sidebar">
         <div class="sidebar-logo"><img src="/static/favicon.svg" alt="Coachd"></div>
         <nav class="sidebar-nav">
@@ -568,6 +635,34 @@
             </div>
         </div>
     </div>
+
+    <!-- Mobile Bottom Nav -->
+    <nav class="bottom-pill">
+        <div class="bottom-pill-inner">
+            <div class="bottom-pill-items">
+                <a href="/" class="pill-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                    <span class="pill-item-label">Home</span>
+                </a>
+                <a href="/call" class="pill-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                    <span class="pill-item-label">Call</span>
+                </a>
+                <button class="pill-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    <span class="pill-item-label">Ask</span>
+                </button>
+                <a href="#" class="pill-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                    <span class="pill-item-label">Resources</span>
+                </a>
+                <a href="#" class="pill-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                    <span class="pill-item-label">Settings</span>
+                </a>
+            </div>
+        </div>
+    </nav>
 
     <script>
     const PD = {
