@@ -7238,24 +7238,40 @@
             const file = event.target.files[0];
             if (!file) return;
             
+            // Show loading state
+            const cameraBtn = document.querySelector('.dialer-camera-btn');
+            if (cameraBtn) cameraBtn.style.opacity = '0.5';
+            
             const formData = new FormData();
             formData.append('image', file);
             
             try {
                 const res = await fetch('/api/dialer/parse-image', { method: 'POST', body: formData });
+                
+                if (!res.ok) {
+                    throw new Error(`Server error: ${res.status}`);
+                }
+                
                 const data = await res.json();
+                
+                if (data.success === false) {
+                    throw new Error(data.error || 'Could not parse contacts from image');
+                }
+                
                 if (data.contacts && data.contacts.length > 0) {
                     dialerState.contacts = data.contacts;
                     document.getElementById('dialerContactsInput').value = data.contacts.map(c => `${c.name} ${formatPhone(c.phone)}`).join('\n');
                     parseDialerContacts();
                 } else {
-                    alert('No contacts found. Try typing them.');
+                    showErrorModal('No Contacts Found', 'Could not find any contacts in the image. Try typing them manually.');
                 }
             } catch (err) {
                 console.error('Photo parse error:', err);
-                alert('Failed to read image.');
+                showErrorModal('Image Error', err.message || 'Failed to read image. Please try again or type contacts manually.');
+            } finally {
+                if (cameraBtn) cameraBtn.style.opacity = '1';
+                event.target.value = '';
             }
-            event.target.value = '';
         }
         
         function dialerShowScreen(screenId) {

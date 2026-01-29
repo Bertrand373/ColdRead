@@ -773,9 +773,18 @@ async def parse_image_contacts(image: UploadFile = File(...)):
     Use Claude Vision to extract contacts from a photo of a list.
     Returns structured contact data (name, phone, optional sponsor).
     """
+    # Check API key first
+    if not settings.anthropic_api_key:
+        logger.error("Anthropic API key not configured")
+        return {"success": False, "contacts": [], "error": "API not configured"}
+    
     try:
         # Read and encode image
         image_data = await image.read()
+        
+        if not image_data:
+            return {"success": False, "contacts": [], "error": "Empty image file"}
+        
         base64_image = base64.b64encode(image_data).decode('utf-8')
         
         # Determine media type
@@ -789,11 +798,13 @@ async def parse_image_contacts(image: UploadFile = File(...)):
         else:
             media_type = 'image/jpeg'
         
+        print(f"[Dialer] Processing image: {len(image_data)} bytes, type: {media_type}", flush=True)
+        
         # Call Claude Vision
         client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
         
         message = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=settings.claude_model,
             max_tokens=2000,
             messages=[
                 {
@@ -832,6 +843,7 @@ Rules:
         
         # Parse response
         response_text = message.content[0].text.strip()
+        print(f"[Dialer] Claude response: {response_text[:200]}...", flush=True)
         
         # Handle if Claude wrapped it in markdown code blocks
         if '```' in response_text:
@@ -867,6 +879,12 @@ Rules:
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse Claude response as JSON: {e}")
         return {"success": False, "contacts": [], "error": "Could not parse contacts from image"}
+    except anthropic.APIError as e:
+        logger.error(f"Anthropic API error: {e}")
+        return {"success": False, "contacts": [], "error": f"AI service error: {str(e)}"}
+    except anthropic.AuthenticationError as e:
+        logger.error(f"Anthropic auth error: {e}")
+        return {"success": False, "contacts": [], "error": "API authentication failed"}
     except Exception as e:
-        logger.error(f"Image parsing failed: {e}")
+        logger.error(f"Image parsing failed: {type(e).__name__}: {e}")
         return {"success": False, "contacts": [], "error": str(e)}
