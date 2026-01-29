@@ -1121,6 +1121,100 @@
             height: 16px;
         }
         
+        /* Power Dialer Mode Styles */
+        .mode-content { width: 100%; }
+        
+        .dialer-contacts-section {
+            width: 100%;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .dialer-input-wrap {
+            position: relative;
+            margin-bottom: 8px;
+        }
+        
+        .dialer-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 16px;
+            padding-right: 56px;
+            border: 1.5px solid var(--border-solid);
+            border-radius: var(--radius-md);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            resize: none;
+            background: white;
+        }
+        
+        .dialer-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .dialer-camera-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 40px;
+            height: 40px;
+            background: var(--accent-soft);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: var(--accent);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+        
+        .dialer-camera-btn:hover {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .dialer-camera-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .dialer-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+        
+        .dialer-preview {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .dialer-count {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .dialer-clear {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        
+        .dialer-clear:hover {
+            color: var(--text);
+        }
+        
+        .dialer-start-btn:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+        }
+
         .start-phone-display {
             display: flex;
             align-items: center;
@@ -4194,45 +4288,80 @@
             <div class="start-card">
                 <!-- Mode Toggle -->
                 <div class="mode-toggle">
-                    <button class="mode-toggle-btn active" data-mode="presentation">
+                    <button class="mode-toggle-btn active" data-mode="presentation" onclick="Coachd.switchMode('presentation')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
                         Presentation
                     </button>
-                    <button class="mode-toggle-btn" data-mode="dialer" onclick="window.location.href='/dialer'">
+                    <button class="mode-toggle-btn" data-mode="dialer" onclick="Coachd.switchMode('dialer')">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="4" height="4" rx="1"/><rect x="10" y="4" width="4" height="4" rx="1"/><rect x="16" y="4" width="4" height="4" rx="1"/><rect x="4" y="10" width="4" height="4" rx="1"/><rect x="10" y="10" width="4" height="4" rx="1"/><rect x="16" y="10" width="4" height="4" rx="1"/><rect x="4" y="16" width="4" height="4" rx="1"/><rect x="10" y="16" width="4" height="4" rx="1"/><rect x="16" y="16" width="4" height="4" rx="1"/></svg>
                         Power Dialer
                     </button>
                 </div>
                 
-                <h1 class="start-title">Ready to close?</h1>
-                <p class="start-subtitle">Your coach is on standby</p>
-                
-                <div class="start-phone-display" id="phoneDisplay">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                    </svg>
-                    <span id="phoneDisplayNumber">(404) 555-1234</span>
+                <!-- PRESENTATION MODE CONTENT -->
+                <div class="mode-content" id="presentationMode">
+                    <h1 class="start-title">Ready to close?</h1>
+                    <p class="start-subtitle">Your coach is on standby</p>
+                    
+                    <div class="start-phone-display" id="phoneDisplay">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                        <span id="phoneDisplayNumber">(404) 555-1234</span>
+                    </div>
+                    
+                    <!-- Client Phone Input for Click-to-Call -->
+                    <div class="client-phone-section">
+                        <label class="form-label">CLIENT PHONE NUMBER</label>
+                        <input type="tel" 
+                               id="clientPhoneInput" 
+                               class="form-input"
+                               placeholder="(555) 123-4567"
+                               autocomplete="tel">
+                        <p class="client-phone-error" id="clientPhoneError">Please enter a valid phone number</p>
+                        <div class="client-phone-hint">We'll dial your client after you answer</div>
+                    </div>
+                    
+                    <button class="start-btn" id="startBtn" onclick="Coachd.startCall()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                        </svg>
+                        Start Coaching
+                    </button>
+                    <button class="change-agent" onclick="Coachd.changeAgent()">Not you? Change settings</button>
                 </div>
                 
-                <!-- Client Phone Input for Click-to-Call -->
-                <div class="client-phone-section">
-                    <label class="form-label">CLIENT PHONE NUMBER</label>
-                    <input type="tel" 
-                           id="clientPhoneInput" 
-                           class="form-input"
-                           placeholder="(555) 123-4567"
-                           autocomplete="tel">
-                    <p class="client-phone-error" id="clientPhoneError">Please enter a valid phone number</p>
-                    <div class="client-phone-hint">We'll dial your client after you answer</div>
+                <!-- POWER DIALER MODE CONTENT -->
+                <div class="mode-content" id="dialerMode" style="display:none">
+                    <h1 class="start-title">Power Dialer</h1>
+                    <p class="start-subtitle">Book appointments fast</p>
+                    
+                    <div class="start-phone-display">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                        <span id="dialerPhoneDisplay">(404) 422-1729</span>
+                    </div>
+                    
+                    <div class="dialer-contacts-section">
+                        <label class="form-label">CONTACTS</label>
+                        <div class="dialer-input-wrap">
+                            <textarea class="dialer-textarea" id="dialerContactsInput" placeholder="John Smith (678) 555-1234&#10;Maria Garcia 404-555-5678" oninput="Coachd.parseDialerContacts()"></textarea>
+                            <button class="dialer-camera-btn" onclick="document.getElementById('dialerImageInput').click()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                            </button>
+                            <input type="file" id="dialerImageInput" accept="image/*" capture="environment" style="display:none" onchange="Coachd.dialerPhoto(event)">
+                        </div>
+                        <div class="dialer-hint">One per line · or tap 📷 to photo your list</div>
+                        <div class="dialer-preview" id="dialerPreview">
+                            <span class="dialer-count" id="dialerCount">✓ 0 contacts</span>
+                            <button class="dialer-clear" onclick="Coachd.clearDialerContacts()">Clear</button>
+                        </div>
+                    </div>
+                    
+                    <button class="start-btn dialer-start-btn" id="dialerStartBtn" onclick="Coachd.startDialer()" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        Start Dialing
+                    </button>
                 </div>
-                
-                <button class="start-btn" id="startBtn" onclick="Coachd.startCall()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                    </svg>
-                    Start Coaching
-                </button>
-                <button class="change-agent" onclick="Coachd.changeAgent()">Not you? Change settings</button>
             </div>
         </div>
         
@@ -4646,6 +4775,9 @@
             validatedAgencyCode: null,
             validatedAgencyName: null,
             callType: 'presentation',
+            currentMode: 'presentation',  // 'presentation' or 'dialer'
+            dialerContacts: [],
+            dialerIndex: 0,
             isInCall: false,
             seconds: 0,
             timerInterval: null,
@@ -7121,6 +7253,82 @@
         init();
         initChatInput();
         
+        // ==================== MODE SWITCHING ====================
+        function switchMode(mode) {
+            state.currentMode = mode;
+            
+            // Update toggle buttons
+            document.querySelectorAll('.mode-toggle-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+            
+            // Show/hide content
+            document.getElementById('presentationMode').style.display = mode === 'presentation' ? 'block' : 'none';
+            document.getElementById('dialerMode').style.display = mode === 'dialer' ? 'block' : 'none';
+            
+            // Update dialer phone display
+            if (mode === 'dialer' && state.agentPhone) {
+                document.getElementById('dialerPhoneDisplay').textContent = formatPhone(state.agentPhone);
+            }
+        }
+        
+        // ==================== POWER DIALER ====================
+        function parseDialerContacts() {
+            const textarea = document.getElementById('dialerContactsInput');
+            const lines = textarea.value.trim().split('\n').filter(l => l.trim());
+            
+            state.dialerContacts = lines.map(line => {
+                const phoneMatch = line.match(/[\d\(\)\-\.\s]{10,}/);
+                const phone = phoneMatch ? phoneMatch[0].replace(/\D/g, '') : '';
+                const name = line.replace(phoneMatch ? phoneMatch[0] : '', '').trim() || 'Unknown';
+                return { name, phone };
+            }).filter(c => c.phone.length >= 10);
+            
+            const count = state.dialerContacts.length;
+            document.getElementById('dialerCount').textContent = `✓ ${count} contact${count !== 1 ? 's' : ''}`;
+            document.getElementById('dialerStartBtn').disabled = count === 0;
+        }
+        
+        function clearDialerContacts() {
+            document.getElementById('dialerContactsInput').value = '';
+            state.dialerContacts = [];
+            document.getElementById('dialerCount').textContent = '✓ 0 contacts';
+            document.getElementById('dialerStartBtn').disabled = true;
+        }
+        
+        async function dialerPhoto(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const base64 = e.target.result.split(',')[1];
+                try {
+                    const res = await fetch('/api/dialer/parse-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: base64 })
+                    });
+                    const data = await res.json();
+                    if (data.contacts && data.contacts.length > 0) {
+                        const lines = data.contacts.map(c => `${c.name} ${c.phone}`).join('\n');
+                        document.getElementById('dialerContactsInput').value = lines;
+                        parseDialerContacts();
+                    }
+                } catch (err) {
+                    console.error('Photo parse error:', err);
+                }
+            };
+            reader.readAsDataURL(file);
+            event.target.value = '';
+        }
+        
+        function startDialer() {
+            if (state.dialerContacts.length === 0) return;
+            // For now, alert - full dialer flow TBD
+            alert(`Power Dialer: Ready to call ${state.dialerContacts.length} contacts.\n\nFull dialer flow coming soon!`);
+        }
+        
         // ==================== PUBLIC API ====================
         return {
             startCall,
@@ -7155,6 +7363,12 @@
             closeChat,
             sendChatMessage,
             useChatSuggestion,
+            // Mode switching
+            switchMode,
+            parseDialerContacts,
+            clearDialerContacts,
+            dialerPhoto,
+            startDialer,
             getState: () => state
         };
     })();
