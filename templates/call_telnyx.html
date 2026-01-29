@@ -1066,54 +1066,67 @@
         
         .start-title {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.5rem;
+            font-size: 1.75rem;
             font-weight: 600;
             letter-spacing: -0.02em;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         
         .start-subtitle {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: var(--text-secondary);
-            margin-bottom: 32px;
+            margin-bottom: 28px;
             line-height: 1.5;
         }
         
-        /* Mode Toggle */
+        /* Mode Toggle - subtle text tabs */
         .mode-toggle {
             display: flex;
-            background: rgba(0,0,0,0.04);
-            border-radius: var(--radius-full);
-            padding: 4px;
-            margin-bottom: 28px;
-            gap: 4px;
+            justify-content: center;
+            gap: 32px;
+            margin-bottom: 32px;
+            position: relative;
         }
         
         .mode-toggle-btn {
-            flex: 1;
-            padding: 10px 16px;
+            padding: 8px 4px;
             border: none;
-            border-radius: var(--radius-full);
             background: transparent;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            position: relative;
+        }
+        
+        .mode-toggle-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 1px;
+            transform: scaleX(0);
+            transition: transform 0.2s ease;
         }
         
         .mode-toggle-btn:hover {
-            color: var(--text);
+            color: var(--text-secondary);
         }
         
         .mode-toggle-btn.active {
-            background: white;
             color: var(--text);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .mode-toggle-btn.active::after {
+            transform: scaleX(1);
         }
         
         .mode-toggle-btn svg {
@@ -1140,17 +1153,31 @@
             min-height: 100px;
             padding: 16px;
             padding-right: 56px;
-            border: 1.5px solid var(--border-solid);
+            border: 1.5px solid var(--border);
             border-radius: var(--radius-md);
             font-family: 'Inter', sans-serif;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            line-height: 1.6;
             resize: none;
-            background: white;
+            background: transparent;
+            color: var(--text);
+            transition: all 0.2s ease;
+        }
+        
+        .dialer-textarea::placeholder {
+            color: var(--text-muted);
         }
         
         .dialer-textarea:focus {
             outline: none;
             border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        
+        .dialer-textarea.error {
+            border-color: var(--danger);
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+            animation: shake 0.5s ease-in-out;
         }
         
         .dialer-camera-btn {
@@ -1168,11 +1195,22 @@
             align-items: center;
             justify-content: center;
             transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
         }
         
-        .dialer-camera-btn:hover {
+        /* Only apply hover on devices that support it */
+        @media (hover: hover) {
+            .dialer-camera-btn:hover {
+                background: var(--accent);
+                color: white;
+            }
+        }
+        
+        /* Active state for touch feedback */
+        .dialer-camera-btn:active {
             background: var(--accent);
             color: white;
+            transform: scale(0.95);
         }
         
         .dialer-camera-btn svg {
@@ -1181,9 +1219,10 @@
         }
         
         .dialer-hint {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--text-muted);
             margin-bottom: 12px;
+            text-align: left;
         }
         
         .dialer-preview {
@@ -1208,11 +1247,6 @@
         
         .dialer-clear:hover {
             color: var(--text);
-        }
-        
-        .dialer-start-btn:disabled {
-            background: var(--text-muted);
-            cursor: not-allowed;
         }
         
         /* Power Dialer Active Screen */
@@ -1492,25 +1526,28 @@
         }
 
         .start-phone-display {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            padding: 12px 20px;
-            background: rgba(255,255,255,0.5);
-            border-radius: var(--radius-sm);
-            margin-bottom: 24px;
-            font-size: 1rem;
-            font-weight: 500;
-            color: var(--text);
+            gap: 8px;
+            padding: 10px 18px;
+            background: var(--glass-strong);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-full);
+            margin-bottom: 28px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent);
+            box-shadow: var(--shadow-glass);
         }
         
         .start-phone-display svg {
-            width: 18px;
-            height: 18px;
-            min-width: 18px;
+            width: 16px;
+            height: 16px;
+            min-width: 16px;
             flex-shrink: 0;
-            color: var(--accent);
         }
         
         .start-btn {
@@ -3924,209 +3961,8 @@
             display: block;
         }
         
-        /* ========== CHAT MODAL ========== */
-        .chat-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(4px);
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s;
-        }
-        .chat-overlay.open { opacity: 1; visibility: visible; }
-        .chat-modal {
-            position: fixed;
-            bottom: 0;
-            right: 0;
-            width: 420px;
-            height: 85vh;
-            max-height: 700px;
-            background: var(--glass-strong);
-            backdrop-filter: var(--blur-strong);
-            -webkit-backdrop-filter: var(--blur-strong);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-            box-shadow: 0 -8px 40px rgba(0,0,0,0.15);
-            z-index: 1001;
-            display: flex;
-            flex-direction: column;
-            transform: translateY(100%);
-            transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
-        }
-        .chat-overlay.open .chat-modal { transform: translateY(0); }
-        .chat-modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-        }
-        .chat-modal-logo { height: 22px; opacity: 0.85; }
-        .chat-modal-close {
-            width: 32px;
-            height: 32px;
-            border: none;
-            border-radius: var(--radius-full);
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.15s;
-        }
-        .chat-modal-close:hover { background: rgba(0,0,0,0.05); color: var(--text-primary); }
-        .chat-modal-close svg { width: 20px; height: 20px; }
-        .chat-modal-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-        }
-        .chat-modal-body::-webkit-scrollbar { width: 4px; }
-        .chat-modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-        .chat-empty {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
-        }
-        .chat-empty-icon {
-            width: 48px;
-            height: 48px;
-            background: var(--accent-soft);
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 16px;
-        }
-        .chat-empty-icon svg { width: 24px; height: 24px; color: var(--accent); }
-        .chat-empty-title {
-            font-family: var(--font-display);
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 6px;
-        }
-        .chat-empty-text {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            max-width: 260px;
-            line-height: 1.5;
-            margin-bottom: 20px;
-        }
-        .chat-empty-suggestions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-        }
-        .chat-suggestion {
-            padding: 8px 14px;
-            background: rgba(255,255,255,0.6);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-full);
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            cursor: pointer;
-        }
-        .chat-suggestion:hover { border-color: var(--accent); color: var(--accent); }
-        .chat-messages { display: flex; flex-direction: column; gap: 16px; }
-        .chat-message { max-width: 85%; animation: chatMsgIn 0.2s; }
-        @keyframes chatMsgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .chat-message.user { align-self: flex-end; }
-        .chat-message.user .msg-bubble {
-            background: var(--text-primary);
-            color: white;
-            border-radius: 18px 18px 4px 18px;
-            padding: 12px 16px;
-            font-size: 0.9rem;
-            line-height: 1.5;
-        }
-        .chat-message.ai { align-self: flex-start; }
-        .chat-message.ai .msg-label {
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-        }
-        .chat-message.ai .msg-bubble { font-size: 0.9rem; line-height: 1.6; }
-        .chat-message.ai .msg-bubble strong { font-weight: 600; }
-        .chat-typing-indicator { display: flex; gap: 4px; padding: 12px 0; }
-        .chat-typing-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--accent);
-            animation: chatBounce 1.4s ease-in-out infinite;
-        }
-        .chat-typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .chat-typing-dot:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes chatBounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-4px); } }
-        .chat-modal-footer {
-            padding: 16px 20px;
-            border-top: 1px solid var(--border);
-        }
-        .chat-input-wrap {
-            display: flex;
-            align-items: flex-end;
-            gap: 10px;
-            padding: 8px 8px 8px 16px;
-            background: transparent;
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-md);
-            transition: all 0.2s;
-        }
-        .chat-input-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-        .chat-input {
-            flex: 1;
-            border: none;
-            background: transparent;
-            font-family: var(--font-body);
-            font-size: 0.9rem;
-            color: var(--text-primary);
-            resize: none;
-            outline: none;
-            min-height: 24px;
-            max-height: 100px;
-            padding: 6px 0;
-        }
-        .chat-input::placeholder { color: var(--text-muted); }
-        .chat-send {
-            width: 36px;
-            height: 36px;
-            border: none;
-            border-radius: var(--radius-full);
-            background: var(--text-primary);
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            transition: all 0.15s;
-        }
-        .chat-send:hover { transform: scale(1.05); }
-        .chat-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-        .chat-send svg { width: 16px; height: 16px; }
-        
-        @media (max-width: 767px) {
-            .chat-modal {
-                width: 100%;
-                height: 90vh;
-                max-height: none;
-                border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-            }
-        }
+        /* Chat styles loaded from partial */
+        {% include 'partials/chat_styles.css' %}
         
         /* ========== RESPONSIVE ========== */
         @media (min-width: 768px) {
@@ -4454,7 +4290,7 @@
                     <a href="/call" class="nav-item active" data-tooltip="Live Call">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
                     </a>
-                    <button class="nav-item" data-tooltip="Ask" onclick="Coachd.openChat()">
+                    <button class="nav-item" data-tooltip="Ask" onclick="Chat.open()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                     </button>
                     <a href="#" class="nav-item" data-tooltip="Resources">
@@ -4626,14 +4462,14 @@
                             </button>
                             <input type="file" id="dialerImageInput" accept="image/*" capture="environment" style="display:none" onchange="Coachd.dialerPhoto(event)">
                         </div>
-                        <div class="dialer-hint">One per line · or tap 📷 to photo your list</div>
+                        <div class="dialer-hint">Name and phone number, one per line</div>
                         <div class="dialer-preview" id="dialerPreview">
                             <span class="dialer-count" id="dialerCount">✓ 0 contacts</span>
                             <button class="dialer-clear" onclick="Coachd.clearDialerContacts()">Clear</button>
                         </div>
                     </div>
                     
-                    <button class="start-btn dialer-start-btn" id="dialerStartBtn" onclick="Coachd.dialerStart()" disabled>
+                    <button class="start-btn" id="dialerStartBtn" onclick="Coachd.dialerStart()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                         Start Dialing
                     </button>
@@ -4986,7 +4822,7 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
                             <span class="pill-item-label">Call</span>
                         </a>
-                        <button class="pill-item" onclick="Coachd.openChat()">
+                        <button class="pill-item" onclick="Chat.open()">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
                             <span class="pill-item-label">Ask</span>
                         </button>
@@ -5068,42 +4904,13 @@
         </div>
     </div>
     
-    <!-- Chat Modal (global overlay) -->
-    <div class="chat-overlay" id="chatOverlay" onclick="if(event.target===this)Coachd.closeChat()">
-        <div class="chat-modal" onclick="event.stopPropagation()">
-            <div class="chat-modal-header">
-                <img src="/static/logo.png" alt="Coachd" class="chat-modal-logo">
-                <button class="chat-modal-close" onclick="Coachd.closeChat()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                </button>
-            </div>
-            <div class="chat-modal-body" id="chatBody">
-                <div class="chat-empty" id="chatEmpty">
-                    <div class="chat-empty-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                    </div>
-                    <h3 class="chat-empty-title">How can I help?</h3>
-                    <p class="chat-empty-text">Ask about objections, scripts, products, or get advice for specific situations.</p>
-                    <div class="chat-empty-suggestions">
-                        <button class="chat-suggestion" onclick="Coachd.useChatSuggestion('Client says they cannot afford it')">Can't afford it</button>
-                        <button class="chat-suggestion" onclick="Coachd.useChatSuggestion('Down-close sequence')">Down-close</button>
-                        <button class="chat-suggestion" onclick="Coachd.useChatSuggestion('How to handle think about it')">Think about it</button>
-                    </div>
-                </div>
-                <div class="chat-messages" id="chatMessages"></div>
-            </div>
-            <div class="chat-modal-footer">
-                <div class="chat-input-wrap">
-                    <textarea class="chat-input" id="chatInput" placeholder="Ask anything..." rows="1"></textarea>
-                    <button class="chat-send" id="chatSend" onclick="Coachd.sendChatMessage()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Chat Modal (loaded from partial) -->
+    {% include 'partials/chat.html' %}
     
     <script>
+    // Chat module (loaded from partial)
+    {% include 'partials/chat.js' %}
+    
     const Coachd = (function() {
         'use strict';
         
@@ -5156,9 +4963,6 @@
             // History panel state
             historyExpanded: false,
             mobileHistoryExpanded: false,
-            // Chat state
-            chatMessages: [],
-            chatWaiting: false,
             clientContext: {
                 product: 'whole_life',
                 age: null,
@@ -7442,169 +7246,12 @@
             }
         }
         
-        // ==================== CHAT FUNCTIONS ====================
-        function openChat() {
-            const overlay = document.getElementById('chatOverlay');
-            const input = document.getElementById('chatInput');
-            if (overlay) overlay.classList.add('open');
-            if (input) input.focus();
-        }
-        
-        function closeChat() {
-            const overlay = document.getElementById('chatOverlay');
-            if (overlay) overlay.classList.remove('open');
-        }
-        
-        function useChatSuggestion(text) {
-            const input = document.getElementById('chatInput');
-            if (input) {
-                input.value = text;
-                sendChatMessage();
-            }
-        }
-        
-        async function sendChatMessage() {
-            const input = document.getElementById('chatInput');
-            const text = input?.value.trim();
-            if (!text || state.chatWaiting) return;
-            
-            const emptyEl = document.getElementById('chatEmpty');
-            const messagesEl = document.getElementById('chatMessages');
-            const sendBtn = document.getElementById('chatSend');
-            
-            if (emptyEl) emptyEl.style.display = 'none';
-            
-            // Add user message
-            addChatMessage('user', text);
-            input.value = '';
-            input.style.height = 'auto';
-            
-            state.chatWaiting = true;
-            if (sendBtn) sendBtn.disabled = true;
-            
-            // Add typing indicator
-            const typingEl = document.createElement('div');
-            typingEl.className = 'chat-message ai';
-            typingEl.innerHTML = '<div class="msg-label">Coachd</div><div class="chat-typing-indicator"><div class="chat-typing-dot"></div><div class="chat-typing-dot"></div><div class="chat-typing-dot"></div></div>';
-            messagesEl?.appendChild(typingEl);
-            scrollChat();
-            
-            try {
-                const res = await fetch('/api/chat/stream', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        message: text,
-                        agency: state.validatedAgencyCode || state.agency?.code,
-                        history: state.chatMessages.slice(-10)
-                    })
-                });
-                
-                typingEl.remove();
-                if (!res.ok) throw new Error();
-                
-                const reader = res.body.getReader();
-                const decoder = new TextDecoder();
-                let buffer = '', fullText = '';
-                
-                const aiMsgEl = document.createElement('div');
-                aiMsgEl.className = 'chat-message ai';
-                aiMsgEl.innerHTML = '<div class="msg-label">Coachd</div><div class="msg-bubble"></div>';
-                messagesEl?.appendChild(aiMsgEl);
-                const bubbleEl = aiMsgEl.querySelector('.msg-bubble');
-                
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    buffer += decoder.decode(value, { stream: true });
-                    const parts = buffer.split('\n\n');
-                    buffer = parts.pop() || '';
-                    for (const part of parts) {
-                        for (const line of part.split('\n')) {
-                            if (line.startsWith('data: ')) {
-                                const data = line.slice(6);
-                                if (data === '[DONE]') continue;
-                                try {
-                                    const parsed = JSON.parse(data);
-                                    const chunk = parsed.text || parsed.content;
-                                    if (chunk) {
-                                        fullText += chunk;
-                                        if (bubbleEl) bubbleEl.innerHTML = formatChatMsg(fullText);
-                                        scrollChat();
-                                    }
-                                } catch (e) {
-                                    if (data.trim() && data !== '[DONE]') {
-                                        fullText += data;
-                                        if (bubbleEl) bubbleEl.innerHTML = formatChatMsg(fullText);
-                                        scrollChat();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                if (bubbleEl) bubbleEl.innerHTML = formatChatMsg(fullText);
-                state.chatMessages.push({ role: 'assistant', content: fullText });
-            } catch (e) {
-                typingEl.remove();
-                addChatMessage('ai', 'Sorry, something went wrong. Please try again.');
-            }
-            
-            state.chatWaiting = false;
-            if (sendBtn) sendBtn.disabled = false;
-        }
-        
-        function addChatMessage(role, content) {
-            const messagesEl = document.getElementById('chatMessages');
-            const msgEl = document.createElement('div');
-            msgEl.className = `chat-message ${role}`;
-            
-            if (role === 'user') {
-                msgEl.innerHTML = `<div class="msg-bubble">${escapeHtml(content)}</div>`;
-            } else {
-                msgEl.innerHTML = `<div class="msg-label">Coachd</div><div class="msg-bubble">${formatChatMsg(content)}</div>`;
-            }
-            
-            messagesEl?.appendChild(msgEl);
-            state.chatMessages.push({ role: role === 'ai' ? 'assistant' : role, content });
-            scrollChat();
-        }
-        
-        function formatChatMsg(text) {
-            return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
-        }
-        
-        function escapeHtml(text) {
-            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        }
-        
-        function scrollChat() {
-            const body = document.getElementById('chatBody');
-            if (body) body.scrollTop = body.scrollHeight;
-        }
-        
-        // Setup chat input handlers
-        function initChatInput() {
-            const input = document.getElementById('chatInput');
-            if (!input) return;
-            
-            input.addEventListener('input', () => {
-                input.style.height = 'auto';
-                input.style.height = Math.min(input.scrollHeight, 100) + 'px';
-            });
-            
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendChatMessage();
-                }
-            });
-        }
+        // ==================== CHAT (uses Chat module) ====================
+        // Chat module is already loaded - just connect it to agency code
+        Chat.setAgencyCodeGetter(() => state.validatedAgencyCode || state.agency?.code);
         
         // Initialize
         init();
-        initChatInput();
         
         // ==================== MODE SWITCHING ====================
         function switchMode(mode) {
@@ -7649,14 +7296,19 @@
             
             const count = dialerState.contacts.length;
             document.getElementById('dialerCount').textContent = `✓ ${count} contact${count !== 1 ? 's' : ''}`;
-            document.getElementById('dialerStartBtn').disabled = count === 0;
+            
+            // Clear error state when user types valid contacts
+            if (count > 0) {
+                textarea.classList.remove('error');
+            }
         }
         
         function clearDialerContacts() {
-            document.getElementById('dialerContactsInput').value = '';
+            const textarea = document.getElementById('dialerContactsInput');
+            textarea.value = '';
+            textarea.classList.remove('error');
             dialerState.contacts = [];
             document.getElementById('dialerCount').textContent = '✓ 0 contacts';
-            document.getElementById('dialerStartBtn').disabled = true;
         }
         
         async function dialerPhoto(event) {
@@ -7691,7 +7343,16 @@
         }
         
         async function dialerStart() {
-            if (dialerState.contacts.length === 0) return;
+            const textarea = document.getElementById('dialerContactsInput');
+            
+            // Show error animation if no contacts
+            if (dialerState.contacts.length === 0) {
+                textarea.classList.remove('error');
+                void textarea.offsetWidth; // Force reflow to restart animation
+                textarea.classList.add('error');
+                textarea.focus();
+                return;
+            }
             
             dialerState.index = 0;
             dialerState.appointments = 0;
@@ -7893,9 +7554,10 @@
             dialerState.appointments = 0;
             dialerState.startTime = null;
             
-            document.getElementById('dialerContactsInput').value = '';
+            const textarea = document.getElementById('dialerContactsInput');
+            textarea.value = '';
+            textarea.classList.remove('error');
             document.getElementById('dialerCount').textContent = '✓ 0 contacts';
-            document.getElementById('dialerStartBtn').disabled = true;
             
             dialerShowScreen('startScreen');
         }
@@ -7929,11 +7591,6 @@
             toggleSlidePanel,
             toggleBottomSheet,
             closeBottomSheet,
-            // Chat methods
-            openChat,
-            closeChat,
-            sendChatMessage,
-            useChatSuggestion,
             // Mode switching
             switchMode,
             // Power Dialer

@@ -1,0 +1,42 @@
+<!-- Chat Modal Partial -->
+<div class="chat-overlay" id="chatOverlay" onclick="if(event.target===this)Chat.close()">
+    <div class="chat-modal" onclick="event.stopPropagation()">
+        <div class="chat-modal-header">
+            <img src="/static/logo.png" alt="Coachd" class="chat-modal-logo">
+            <button class="chat-modal-close" onclick="Chat.close()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="chat-modal-body" id="chatBody">
+            <div class="chat-empty" id="chatEmpty">
+                <div class="chat-empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                    </svg>
+                </div>
+                <h3 class="chat-empty-title">How can I help?</h3>
+                <p class="chat-empty-text">Ask about objections, scripts, products, or get advice for specific situations.</p>
+                <div class="chat-empty-suggestions">
+                    <button class="chat-suggestion" onclick="Chat.useSuggestion('Client says they cannot afford it')">Can't afford it</button>
+                    <button class="chat-suggestion" onclick="Chat.useSuggestion('Down-close sequence')">Down-close</button>
+                    <button class="chat-suggestion" onclick="Chat.useSuggestion('How to handle think about it')">Think about it</button>
+                </div>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+        </div>
+        <div class="chat-modal-footer">
+            <div class="chat-input-wrap">
+                <textarea class="chat-input" id="chatInput" placeholder="Ask anything..." rows="1"></textarea>
+                <button class="chat-send" id="chatSend" onclick="Chat.send()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"/>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
