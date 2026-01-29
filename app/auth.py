@@ -222,6 +222,8 @@ async def get_current_agent(
             # Update last_active
             agent.last_active = datetime.utcnow()
             db.commit()
+            # Ensure all attributes are loaded before detaching
+            db.refresh(agent)
             # Detach from session for use outside context
             db.expunge(agent)
         return agent

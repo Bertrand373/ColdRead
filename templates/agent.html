@@ -66,7 +66,7 @@
         @keyframes spin{to{transform:rotate(360deg)}}
         
         /* Success checkmark */
-        .success-icon{width:64px;height:64px;background:var(--color-success-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:24px}
+        .success-icon{width:64px;height:64px;background:var(--color-success-soft);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;margin-bottom:24px}
         .success-icon svg{width:32px;height:32px;color:var(--color-success)}
         
         /* Name inputs row */
@@ -74,8 +74,8 @@
         .name-row .input-wrapper{flex:1;margin-bottom:0}
         
         /* Inline error text */
-        .input-error{font-size:0.8rem;color:var(--color-error);margin-top:8px;text-align:center;opacity:0;height:0;overflow:hidden;transition:all 0.2s}
-        .input-error.show{opacity:1;height:auto;margin-top:10px}
+        .input-error{font-size:0.8rem;color:var(--color-error);margin-top:8px;margin-bottom:16px;text-align:center;opacity:0;height:0;overflow:hidden;transition:all 0.2s}
+        .input-error.show{opacity:1;height:auto;margin-top:12px;margin-bottom:20px}
 
         /* ===== DASHBOARD SCREEN ===== */
         .dashboard-screen{flex-direction:row;position:relative}
