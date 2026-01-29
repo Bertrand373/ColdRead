@@ -342,72 +342,48 @@
             padding-bottom: var(--safe-bottom);
         }
         
-        /* ========== HEADER (Minimal - just timer during call) ========== */
+        /* ========== HEADER (Hidden during call - floating status instead) ========== */
         .header {
             display: none;
-            justify-content: flex-end;
-            align-items: center;
-            padding: 12px 20px;
-            background: var(--glass);
-            backdrop-filter: var(--blur);
-            -webkit-backdrop-filter: var(--blur);
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
         }
         
-        body.in-call .header { display: flex; }
-        
-        .header-left {
-            display: flex;
+        /* Floating call status - sits on guidance panel */
+        .floating-status {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            display: none;
             align-items: center;
-            gap: 12px;
-        }
-        
-        .back-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            background: rgba(255,255,255,0.5);
-            border: none;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: all 0.15s ease;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        .back-btn:hover { background: rgba(255,255,255,0.8); }
-        .back-btn:active { transform: scale(0.95); }
-        .back-btn svg { width: 20px; height: 20px; color: var(--text); }
-        
-        .logo { display: none; }
-        
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        
-        .timer {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text);
-            min-width: 50px;
-            text-align: center;
-            padding: 8px 16px;
-            background: rgba(255,255,255,0.5);
+            gap: 10px;
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.5);
             border-radius: var(--radius-full);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            z-index: 10;
         }
         
-        .status-dot {
+        body.in-call .floating-status { display: flex; }
+        
+        .floating-status .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             background: var(--success);
             animation: pulse 2s ease-in-out infinite;
         }
+        
+        .floating-status .timer {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+            min-width: 40px;
+        }
+        
+        .logo { display: none; }
         
         @keyframes pulse {
             0%, 100% { opacity: 1; }
@@ -734,15 +710,6 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-        }
-        
-        .timer {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text);
-            min-width: 45px;
-            text-align: right;
         }
         
         .status-indicator {
@@ -1995,58 +1962,22 @@
             align-items: center;
             width: 100%;
             max-width: 100%;
-            /* Smart centering - stays centered in flex-start container */
             margin: auto 0;
         }
         
-        /* Branded Waveform - replaces ring */
-        .listening-waveform {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            height: 48px;
-            margin-bottom: 20px;
-        }
-        
-        .waveform-bar {
-            width: 4px;
+        /* Simple pulsing dot */
+        .listening-dot {
+            width: 8px;
+            height: 8px;
             background: var(--accent);
-            border-radius: 2px;
-            animation: waveBreath 2s ease-in-out infinite;
-        }
-        
-        .waveform-bar:nth-child(1) { height: 20px; animation-delay: 0s; }
-        .waveform-bar:nth-child(2) { height: 32px; animation-delay: 0.15s; }
-        .waveform-bar:nth-child(3) { height: 40px; animation-delay: 0.3s; }
-        .waveform-bar:nth-child(4) { height: 32px; animation-delay: 0.45s; }
-        .waveform-bar:nth-child(5) { height: 20px; animation-delay: 0.6s; }
-        
-        @keyframes waveBreath {
-            0%, 100% { 
-                transform: scaleY(0.5); 
-                opacity: 0.4; 
-            }
-            50% { 
-                transform: scaleY(1); 
-                opacity: 0.8; 
-            }
-        }
-        
-        /* Legacy ring - hidden but kept for fallback */
-        .listening-ring {
-            display: none;
-            width: 48px;
-            height: 48px;
-            border: 2px solid var(--accent);
             border-radius: 50%;
-            margin-bottom: 20px;
-            animation: ringPulse 2.5s ease-in-out infinite;
+            margin-bottom: 16px;
+            animation: dotPulse 2s ease-in-out infinite;
         }
         
-        @keyframes ringPulse {
-            0%, 100% { opacity: 0.35; transform: scale(0.95); }
-            50% { opacity: 0.7; transform: scale(1); }
+        @keyframes dotPulse {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
         }
         
         .listening-text {
@@ -4362,13 +4293,6 @@
         
         <!-- ========== MAIN AREA ========== -->
         <div class="main-area">
-            <!-- Timer Header (only visible during active call) -->
-            <header class="header">
-                <div class="header-right">
-                    <div class="status-dot"></div>
-                    <span class="timer" id="timer">0:00</span>
-                </div>
-            </header>
         
             <!-- Identify Screen -->
             <div class="screen identify-screen active" id="identifyScreen">
@@ -4633,17 +4557,16 @@
                 <!-- Main Guidance Area -->
                 <div class="call-main">
                     <div class="guidance-area">
+                        <!-- Floating Call Status -->
+                        <div class="floating-status">
+                            <div class="status-dot"></div>
+                            <span class="timer" id="timer">0:00</span>
+                        </div>
+                        
                         <div class="teleprompter" id="teleprompter" onclick="Coachd.dismissGuidance()">
                             <div class="listening-state" id="listeningState">
-                                <!-- Branded Waveform -->
-                                <div class="listening-waveform">
-                                    <div class="waveform-bar"></div>
-                                    <div class="waveform-bar"></div>
-                                    <div class="waveform-bar"></div>
-                                    <div class="waveform-bar"></div>
-                                    <div class="waveform-bar"></div>
-                                </div>
-                                <div class="listening-text">Listening</div>
+                                <div class="listening-dot"></div>
+                                <div class="listening-text">LISTENING</div>
                             </div>
                             
                             <div class="guidance-state" id="guidanceState">
