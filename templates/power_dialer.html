@@ -2,28 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>Power Dialer | Coachd</title>
-    
-    <!-- Favicon -->
+    <title>Power Dialer - Coachd</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <link rel="icon" type="image/png" sizes="96x96" href="/static/favicon-96x96.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
-    <link rel="shortcut icon" href="/static/favicon.ico">
-    <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#F5F5F7">
-    
-    <!-- SEO -->
-    <meta name="description" content="Power Dialer for booking appointments - Coachd">
-    
-    <!-- VERSION: 2025-01-28-v1-power-dialer -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Aligned with call_telnyx.html Shop.app design system */
             --bg: #F5F5F7;
             --surface: #FFFFFF;
             --glass: rgba(255,255,255,0.65);
@@ -38,11 +23,11 @@
             --accent-dark: #2563EB;
             --accent-soft: rgba(59,130,246,0.12);
             --success: #10B981;
-            --success-soft: rgba(16, 185, 129, 0.1);
+            --success-soft: rgba(16,185,129,0.1);
             --danger: #EF4444;
-            --danger-soft: rgba(239, 68, 68, 0.1);
+            --danger-soft: rgba(239,68,68,0.1);
             --warning: #F59E0B;
-            --warning-soft: rgba(245, 158, 11, 0.1);
+            --warning-soft: rgba(245,158,11,0.1);
             --blur: blur(24px);
             --blur-strong: blur(40px);
             --shadow-glass: 0 8px 32px rgba(0,0,0,0.06);
@@ -55,401 +40,82 @@
             --safe-bottom: env(safe-area-inset-bottom, 0px);
             --sidebar-width: 72px;
         }
-
+        
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
+        
         body {
             font-family: 'Inter', -apple-system, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
             min-height: 100dvh;
-            overflow: hidden;
+            overflow-x: hidden;
         }
-
-        /* ========== LANDSCAPE BLOCKER ========== */
-        .landscape-blocker {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: linear-gradient(180deg, #FAFAFA 0%, #F5F5F5 100%);
-            z-index: 99999;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 24px;
-            gap: 28px;
-        }
-
-        @media (orientation: landscape) and (max-height: 500px) {
-            body:not(.in-call) .landscape-blocker { display: flex; }
-            body:not(.in-call) .app { display: none !important; }
-        }
-
-        .landscape-blocker-icon {
-            width: 72px;
-            height: 72px;
-            background: var(--surface);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
-        }
-
-        .landscape-blocker-icon svg {
-            width: 36px;
-            height: 36px;
-            color: var(--text-muted);
-        }
-
-        .landscape-blocker-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .landscape-blocker-text {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            max-width: 280px;
-            line-height: 1.5;
-        }
-
-        /* ========== APP CONTAINER ========== */
-        .app {
-            display: flex;
-            height: 100vh;
-            height: 100dvh;
-        }
-
-        /* ========== SIDEBAR (Desktop) ========== */
+        
+        /* ========== SIDEBAR ========== */
         .sidebar {
+            position: fixed;
+            left: 0; top: 0; bottom: 0;
             width: var(--sidebar-width);
-            background: var(--surface);
+            background: var(--glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            align-items: center;
-            padding: 20px 0;
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
+            padding: 16px 0;
             z-index: 100;
         }
-
-        .sidebar-logo {
-            width: 40px;
-            height: 40px;
-            margin-bottom: 32px;
-        }
-
-        .sidebar-logo img {
-            width: 100%;
-            height: 100%;
-        }
-
-        .sidebar-nav {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            padding: 0 12px;
-        }
-
-        /* Normal nav (hidden during call) */
-        .sidebar-nav-normal { display: flex; flex-direction: column; gap: 8px; }
-        body.in-call .sidebar-nav-normal { display: none; }
-
-        /* Call nav (hidden when not in call) */
-        .sidebar-nav-call { display: none; flex-direction: column; gap: 8px; }
-        body.in-call .sidebar-nav-call { display: flex; }
-
+        
+        .sidebar-logo { padding: 8px 0 24px; display: flex; justify-content: center; }
+        .sidebar-logo img { width: 32px; height: 32px; }
+        
+        .sidebar-nav { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0 12px; }
+        
         .nav-item {
-            width: 48px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            border-radius: var(--radius-sm);
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: all 0.15s;
-            text-decoration: none;
-            position: relative;
+            width: 48px; height: 48px;
+            display: flex; align-items: center; justify-content: center;
+            border: none; border-radius: var(--radius-sm);
+            background: transparent; color: var(--text-muted);
+            cursor: pointer; transition: all 0.15s;
+            text-decoration: none; position: relative;
         }
-
-        .nav-item:hover { background: rgba(255,255,255,0.5); color: var(--text); }
+        
+        .nav-item:hover { background: rgba(0,0,0,0.04); color: var(--text); }
         .nav-item.active { background: var(--accent-soft); color: var(--accent); }
-        .nav-item.danger { color: var(--danger); }
-        .nav-item.danger:hover { background: var(--danger-soft); }
         .nav-item svg { width: 22px; height: 22px; }
-
-        /* Tooltip */
-        .nav-item::after {
+        
+        .nav-item[data-tooltip]::after {
             content: attr(data-tooltip);
-            position: absolute;
-            left: calc(100% + 12px);
-            padding: 8px 12px;
-            background: var(--text);
-            color: white;
-            font-size: 0.8rem;
-            font-weight: 500;
-            border-radius: 8px;
-            white-space: nowrap;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.15s;
-            pointer-events: none;
+            position: absolute; left: calc(100% + 12px);
+            padding: 8px 12px; background: var(--text); color: white;
+            font-size: 0.75rem; font-weight: 500; border-radius: 8px;
+            white-space: nowrap; opacity: 0; visibility: hidden;
+            transition: all 0.15s; pointer-events: none; z-index: 1000;
         }
+        
         .nav-item:hover::after { opacity: 1; visibility: visible; }
-
-        .sidebar-footer {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            padding: 0 12px;
+        
+        .sidebar-footer { padding: 0 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        
+        .user-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: var(--accent); color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem; font-weight: 600;
         }
-
-        /* Normal footer (hidden during call) */
-        .sidebar-footer-normal { display: flex; flex-direction: column; gap: 8px; align-items: center; }
-        body.in-call .sidebar-footer-normal { display: none; }
-
-        /* Call footer (hidden when not in call) */
-        .sidebar-footer-call { display: none; flex-direction: column; gap: 8px; align-items: center; }
-        body.in-call .sidebar-footer-call { display: flex; }
-
-        /* ========== MAIN AREA ========== */
-        .main-area {
-            flex: 1;
+        
+        /* ========== MAIN ========== */
+        .main-content {
             margin-left: var(--sidebar-width);
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            min-height: 100dvh;
-            position: relative;
+            min-height: 100vh; min-height: 100dvh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 24px;
         }
-
-        /* ========== MOBILE HEADER ========== */
-        .mobile-header {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 44px;
-            padding: 0 20px;
-            padding-top: var(--safe-top);
-            z-index: 300;
-            align-items: center;
-            justify-content: space-between;
-            transition: all 0.3s ease;
-        }
-
-        /* Glass treatment during calls */
-        body.in-call .mobile-header {
-            background: var(--glass);
-            backdrop-filter: var(--blur);
-            -webkit-backdrop-filter: var(--blur);
-            border-bottom: 1px solid var(--glass-border);
-        }
-
-        .mobile-header-left {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .mobile-header-logo {
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .mobile-header-logo img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        .mobile-header-wordmark {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-        }
-
-        /* Hide wordmark during calls */
-        body.in-call .mobile-header-wordmark {
-            display: none;
-        }
-
-        .mobile-header-right {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* ========== SESSION STATS HEADER (Power Dialer specific) ========== */
-        .session-header {
-            display: none;
-            justify-content: space-around;
-            align-items: center;
-            padding: 12px 20px;
-            background: var(--glass);
-            backdrop-filter: var(--blur);
-            -webkit-backdrop-filter: var(--blur);
-            border-bottom: 1px solid var(--glass-border);
-            flex-shrink: 0;
-        }
-
-        body.in-call .session-header { display: flex; }
-
-        .session-stat {
-            text-align: center;
-        }
-
-        .session-stat-value {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .session-stat-value.highlight {
-            color: var(--success);
-        }
-
-        .session-stat-label {
-            font-size: 0.625rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-
-        /* ========== MOBILE SESSION STATS ========== */
-        .mobile-session-stats {
-            display: none;
-            justify-content: space-around;
-            padding: 8px 16px;
-            background: var(--glass);
-            backdrop-filter: var(--blur);
-            -webkit-backdrop-filter: var(--blur);
-            border-bottom: 1px solid var(--glass-border);
-        }
-
-        .mobile-session-stat {
-            text-align: center;
-        }
-
-        .mobile-session-stat-value {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .mobile-session-stat-value.highlight {
-            color: var(--success);
-        }
-
-        .mobile-session-stat-label {
-            font-size: 0.5rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        /* ========== MOBILE BOTTOM PILL ========== */
-        .bottom-pill {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 400;
-            padding: 8px 16px calc(8px + var(--safe-bottom));
-        }
-
-        .bottom-pill-inner {
-            background: var(--glass-strong);
-            backdrop-filter: var(--blur-strong);
-            -webkit-backdrop-filter: var(--blur-strong);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-full);
-            padding: 6px 8px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.1);
-        }
-
-        .bottom-pill-items {
-            display: flex;
-            justify-content: space-around;
-        }
-
-        /* Normal nav items (hidden during call) */
-        .pill-nav-normal { display: contents; }
-        body.in-call .pill-nav-normal { display: none; }
-
-        /* Call nav items (hidden when not in call) */
-        .pill-nav-call { display: none; }
-        body.in-call .pill-nav-call { display: contents; }
-
-        .pill-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3px;
-            padding: 8px 12px;
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            border-radius: var(--radius-md);
-            text-decoration: none;
-        }
-
-        .pill-item.active { color: var(--accent); }
-        .pill-item.danger { color: var(--danger); }
-        .pill-item svg { width: 20px; height: 20px; }
-        .pill-item-label { font-size: 0.6rem; font-weight: 600; }
-
-        /* ========== SCREENS ========== */
-        .screen {
-            display: none;
-            flex: 1;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        .screen.active {
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* ========== UPLOAD SCREEN ========== */
-        .upload-screen {
-            justify-content: center;
-            align-items: center;
-            padding: 40px 24px;
-        }
-
-        .upload-screen.active {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        /* ========== GLASS CARD ========== */
+        
+        .screen { display: none; }
+        .screen.active { display: flex; justify-content: center; align-items: center; width: 100%; }
+        
         .glass-card {
             background: var(--glass-strong);
             backdrop-filter: var(--blur-strong);
@@ -457,1988 +123,619 @@
             border: 1px solid var(--glass-border);
             border-radius: var(--radius-xl);
             box-shadow: var(--shadow-glass);
-            padding: 48px 40px;
-            width: 100%;
-            max-width: 420px;
+            padding: 40px 36px;
+            width: 100%; max-width: 420px;
             text-align: center;
+            position: relative;
         }
-
-        .card-icon {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 24px;
-            background: var(--accent-soft);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .card-icon svg {
-            width: 40px;
-            height: 40px;
-            color: var(--accent);
-        }
-
-        .card-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-            margin-bottom: 8px;
-        }
-
-        .card-subtitle {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-bottom: 32px;
-            line-height: 1.5;
-        }
-
+        
         /* Mode Toggle */
         .mode-toggle {
             display: flex;
-            background: rgba(0,0,0,0.04);
+            background: var(--surface);
             border-radius: var(--radius-full);
-            padding: 4px;
-            margin-bottom: 28px;
-            gap: 4px;
+            padding: 4px; margin-bottom: 28px; gap: 4px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);
         }
         
-        .mode-toggle-btn {
-            flex: 1;
-            padding: 10px 16px;
-            border: none;
+        .mode-btn {
+            flex: 1; padding: 10px 16px;
+            border: none; border-radius: var(--radius-full);
+            background: transparent; color: var(--text-secondary);
+            font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            text-decoration: none;
+        }
+        
+        .mode-btn:hover { color: var(--text); }
+        .mode-btn.active { background: white; color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .mode-btn svg { width: 16px; height: 16px; }
+        
+        .card-title { font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 6px; }
+        .card-subtitle { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 28px; }
+        
+        /* Agent Phone Pill */
+        .agent-phone-pill {
+            display: inline-flex; align-items: center; gap: 10px;
+            padding: 12px 20px;
+            background: rgba(255,255,255,0.6);
             border-radius: var(--radius-full);
-            background: transparent;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            margin-bottom: 24px;
+            font-size: 0.95rem; font-weight: 500; color: var(--text);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
         
-        .mode-toggle-btn:hover {
-            color: var(--text);
-        }
+        .agent-phone-pill svg { width: 18px; height: 18px; color: var(--accent); }
         
-        .mode-toggle-btn.active {
-            background: white;
-            color: var(--text);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
+        /* Form Elements */
+        .form-group { margin-bottom: 20px; text-align: left; }
+        .form-label { display: block; font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
         
-        .mode-toggle-btn svg {
-            width: 16px;
-            height: 16px;
-        }
-
-        /* ========== FORM ELEMENTS ========== */
-        .section-label {
-            display: block;
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 10px;
-            text-align: left;
-        }
-
-        .form-input {
-            width: 100%;
+        /* Custom Select */
+        .custom-select { position: relative; width: 100%; }
+        
+        .select-trigger {
+            display: flex; align-items: center; justify-content: space-between;
             padding: 14px 16px;
-            font-family: 'Inter', sans-serif;
-            font-size: 1rem;
-            color: var(--text);
-            background: transparent;
-            border: 1.5px solid var(--border);
-            border-radius: 12px;
-            transition: all 0.2s ease;
-            text-align: center;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-soft);
-        }
-
-        .form-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        textarea.form-input {
-            text-align: left;
-            resize: none;
-            height: 80px;
-        }
-
-        /* ========== LIST TYPE SELECTOR ========== */
-        .list-type-options {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 24px;
-        }
-
-        .list-type-btn {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 14px;
-            background: var(--surface);
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: all 0.15s ease;
-            text-align: left;
-        }
-
-        .list-type-btn:hover {
-            border-color: var(--accent);
-            background: var(--accent-soft);
-        }
-
-        .list-type-btn.selected {
-            border-color: var(--accent);
-            background: var(--accent-soft);
-        }
-
-        .list-type-radio {
-            width: 18px;
-            height: 18px;
-            border: 2px solid var(--border-solid);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            transition: all 0.15s ease;
-        }
-
-        .list-type-btn.selected .list-type-radio {
-            border-color: var(--accent);
-        }
-
-        .list-type-radio::after {
-            content: '';
-            width: 8px;
-            height: 8px;
-            background: var(--accent);
-            border-radius: 50%;
-            opacity: 0;
-            transform: scale(0);
-            transition: all 0.15s ease;
-        }
-
-        .list-type-btn.selected .list-type-radio::after {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        .list-type-info {
-            flex: 1;
-        }
-
-        .list-type-name {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--text);
-        }
-
-        .list-type-desc {
-            font-size: 0.6875rem;
-            color: var(--text-muted);
-            margin-top: 1px;
-        }
-
-        /* ========== UPLOAD AREA ========== */
-        .upload-methods {
-            margin-bottom: 24px;
-        }
-
-        .upload-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            width: 100%;
-            padding: 16px;
-            background: var(--surface);
-            border: 1.5px dashed var(--border-solid);
-            border-radius: var(--radius-md);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--text);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-bottom: 12px;
-        }
-
-        .upload-btn:hover {
-            border-color: var(--accent);
-            background: var(--accent-soft);
-        }
-
-        .upload-btn svg {
-            width: 20px;
-            height: 20px;
-            color: var(--accent);
-        }
-
-        .upload-divider {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: var(--text-muted);
-            font-size: 0.75rem;
-            margin: 12px 0;
-        }
-
-        .upload-divider::before,
-        .upload-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border);
-        }
-
-        /* ========== BUTTONS ========== */
-        .btn-primary {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            width: 100%;
-            padding: 16px 24px;
-            background: var(--text);
-            color: white;
-            font-family: 'Outfit', sans-serif;
-            font-size: 1rem;
-            font-weight: 600;
-            border: none;
-            border-radius: var(--radius-full);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08);
-        }
-
-        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); }
-        .btn-primary:active:not(:disabled) { transform: scale(0.98); }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-        .btn-primary svg { width: 22px; height: 22px; }
-
-        .btn-accent {
-            background: var(--accent);
-        }
-
-        .btn-accent:hover:not(:disabled) {
-            background: var(--accent-dark);
-        }
-
-        .btn-secondary {
-            width: 100%;
-            padding: 12px 24px;
-            background: rgba(255,255,255,0.5);
-            color: var(--text-secondary);
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.9rem;
-            font-weight: 500;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255,255,255,0.8);
-            color: var(--text);
-        }
-
-        .btn-danger {
-            background: var(--danger-soft);
-            color: var(--danger);
-            border: 1.5px solid var(--danger);
-        }
-
-        .btn-danger:hover {
-            background: var(--danger);
-            color: white;
-        }
-
-        .link-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            cursor: pointer;
-            text-decoration: underline;
-            margin-top: 16px;
-        }
-
-        .link-btn:hover { color: var(--text-secondary); }
-
-        /* ========== CONNECTING SCREEN ========== */
-        .connecting-screen {
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 40px 24px;
-        }
-
-        .connecting-screen.active {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        /* ========== CONNECTION STEPS ========== */
-        .connection-steps {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0;
-            margin-bottom: 32px;
-            width: 100%;
-        }
-
-        .step-connector {
-            width: 100%;
-            max-width: 280px;
-            height: 20px;
-            position: relative;
-        }
-
-        .step-connector::before {
-            content: '';
-            position: absolute;
-            left: calc(24px - 1px);
-            top: 0;
-            width: 2px;
-            height: 100%;
-            background: var(--border);
-            border-radius: 1px;
-        }
-
-        .step-connector .connector-fill {
-            position: absolute;
-            left: calc(24px - 1px);
-            top: 0;
-            width: 2px;
-            height: 0%;
-            background: var(--success);
-            border-radius: 1px;
-            transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .step-connector.filled .connector-fill {
-            height: 100%;
-        }
-
-        .connection-step {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            padding: 12px 0;
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            max-width: 280px;
-        }
-
-        .step-indicator {
-            width: 48px;
-            height: 48px;
-            min-width: 48px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255,255,255,0.5);
-            border: 1.5px solid var(--border);
-            flex-shrink: 0;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .step-indicator svg {
-            width: 22px;
-            height: 22px;
-            color: var(--text-muted);
-            transition: all 0.3s ease;
-        }
-
-        /* Waiting state */
-        .connection-step.waiting .step-indicator { opacity: 0.5; }
-        .connection-step.waiting .step-content { opacity: 0.5; }
-        .connection-step.waiting .step-text { color: var(--text-muted); }
-
-        /* Active state */
-        .connection-step.active .step-indicator {
-            background: var(--accent-soft);
-            border-color: var(--accent);
-            animation: indicatorPulse 2s ease-in-out infinite;
-        }
-        .connection-step.active .step-indicator svg { color: var(--accent-dark); }
-        .connection-step.active .step-subtext { color: var(--accent-dark); }
-
-        @keyframes indicatorPulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.3); }
-            50% { box-shadow: 0 0 0 8px rgba(96, 165, 250, 0); }
-        }
-
-        /* Phone ringing animation */
-        .connection-step.active[data-step="agent"] .step-indicator svg {
-            animation: phoneRing 1s ease-in-out infinite;
-        }
-
-        @keyframes phoneRing {
-            0%, 100% { transform: rotate(0deg); }
-            10% { transform: rotate(-12deg); }
-            20% { transform: rotate(12deg); }
-            30% { transform: rotate(-10deg); }
-            40% { transform: rotate(10deg); }
-            50% { transform: rotate(0deg); }
-        }
-
-        /* Complete state */
-        .connection-step.complete .step-indicator {
-            background: var(--success-soft);
-            border-color: var(--success);
-        }
-        .connection-step.complete .step-indicator svg { color: var(--success); }
-        .connection-step.complete .step-subtext { color: var(--success); }
-
-        .step-content {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            flex: 1;
-        }
-
-        .step-text {
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: var(--text);
-            line-height: 1.3;
-        }
-
-        .step-subtext {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            font-weight: 400;
-            line-height: 1.3;
-        }
-
-        /* ========== CALL SCREEN ========== */
-        .call-screen {
-            position: relative;
-            overflow: hidden;
-            background: var(--bg);
-        }
-
-        .call-screen.active {
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* ========== CALL INFO BAR ========== */
-        .call-info-bar {
-            text-align: center;
-            padding: 16px 20px;
-            background: var(--glass-strong);
-            backdrop-filter: var(--blur-strong);
-            -webkit-backdrop-filter: var(--blur-strong);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-lg);
-            margin: 16px 20px;
-        }
-
-        .contact-name {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        .contact-phone {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            margin-top: 2px;
-        }
-
-        .call-timer-inline {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            background: var(--success-soft);
-            border-radius: var(--radius-full);
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.9375rem;
-            font-weight: 600;
-            color: var(--success);
-            margin-top: 10px;
-        }
-
-        .call-timer-inline svg {
-            width: 14px;
-            height: 14px;
-        }
-
-        /* ========== SCRIPT AREA ========== */
-        .script-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 0 20px 20px;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        /* ========== SCRIPT PANEL ========== */
-        .script-panel {
-            background: var(--glass-strong);
-            backdrop-filter: var(--blur-strong);
-            -webkit-backdrop-filter: var(--blur-strong);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-lg);
-            margin-bottom: 12px;
-            overflow: hidden;
-        }
-
-        .script-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px 16px;
-            cursor: pointer;
-            transition: background 0.15s ease;
-        }
-
-        .script-header:hover {
-            background: rgba(0,0,0,0.02);
-        }
-
-        .script-icon {
-            width: 36px;
-            height: 36px;
-            background: var(--accent-soft);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .script-icon svg {
-            width: 18px;
-            height: 18px;
-            color: var(--accent);
-        }
-
-        .script-header-content {
-            flex: 1;
-        }
-
-        .script-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.9375rem;
-            font-weight: 600;
-        }
-
-        .script-type {
-            font-size: 0.6875rem;
-            color: var(--text-muted);
-        }
-
-        .script-toggle {
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-muted);
-            transition: transform 0.2s ease;
-        }
-
-        .script-toggle svg {
-            width: 16px;
-            height: 16px;
-        }
-
-        .script-panel.expanded .script-toggle {
-            transform: rotate(180deg);
-        }
-
-        .script-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-        }
-
-        .script-panel.expanded .script-content {
-            max-height: 500px;
-        }
-
-        .script-body {
-            padding: 0 16px 16px;
-        }
-
-        .script-text {
-            font-size: 0.875rem;
-            line-height: 1.6;
-            color: var(--text);
-            background: var(--surface);
-            border-radius: 10px;
-            padding: 14px;
-            margin-bottom: 12px;
-        }
-
-        .script-text strong {
-            color: var(--accent-dark);
-        }
-
-        .script-section {
-            padding: 10px 12px;
-            background: var(--surface);
-            border-radius: 8px;
-            margin-bottom: 8px;
-        }
-
-        .script-section:last-child {
-            margin-bottom: 0;
-        }
-
-        .script-section-title {
-            font-size: 0.6875rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            color: var(--accent-dark);
-            margin-bottom: 4px;
-        }
-
-        .script-section-content {
-            font-size: 0.8125rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-        }
-
-        /* ========== OBJECTIONS PANEL ========== */
-        .objections-panel {
-            background: var(--warning-soft);
-            border-radius: var(--radius-lg);
-            margin-bottom: 12px;
-            overflow: hidden;
-        }
-
-        .objections-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
-            cursor: pointer;
-        }
-
-        .objections-icon {
-            width: 32px;
-            height: 32px;
             background: white;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .objections-icon svg {
-            width: 16px;
-            height: 16px;
-            color: var(--warning);
-        }
-
-        .objections-header-content {
-            flex: 1;
-        }
-
-        .objections-title {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--warning);
-        }
-
-        .objections-toggle {
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--warning);
-            transition: transform 0.2s ease;
-        }
-
-        .objections-toggle svg {
-            width: 16px;
-            height: 16px;
-        }
-
-        .objections-panel.expanded .objections-toggle {
-            transform: rotate(180deg);
-        }
-
-        .objections-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-        }
-
-        .objections-panel.expanded .objections-content {
-            max-height: 400px;
-        }
-
-        .objection-item {
-            padding: 12px 16px;
-            border-top: 1px solid rgba(245, 158, 11, 0.2);
-        }
-
-        .objection-trigger {
-            font-size: 0.8125rem;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 4px;
-        }
-
-        .objection-response {
-            font-size: 0.8125rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            font-style: italic;
-        }
-
-        /* ========== END CALL BUTTON ========== */
-        .end-call-section {
-            margin-top: auto;
-            padding-top: 12px;
-        }
-
-        .end-call-btn {
-            width: 100%;
-            padding: 14px;
-            background: var(--danger-soft);
-            color: var(--danger);
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.9375rem;
-            font-weight: 600;
-            border: 1.5px solid var(--danger);
+            border: 1.5px solid var(--border-solid);
             border-radius: var(--radius-full);
-            cursor: pointer;
-            transition: all 0.2s ease;
+            cursor: pointer; transition: all 0.2s;
+            font-size: 0.95rem; font-weight: 500;
         }
-
-        .end-call-btn:hover {
-            background: var(--danger);
-            color: white;
+        
+        .select-trigger:hover { border-color: var(--text-muted); }
+        .custom-select.open .select-trigger { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+        .select-trigger svg { width: 18px; height: 18px; color: var(--text-muted); transition: transform 0.2s; }
+        .custom-select.open .select-trigger svg { transform: rotate(180deg); }
+        
+        .select-options {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: white;
+            border: 1.5px solid var(--accent);
+            border-top: none;
+            border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+            z-index: 100;
+            opacity: 0; visibility: hidden;
+            transform: translateY(-4px);
+            transition: all 0.2s;
         }
-
-        /* ========== DISPOSITION SCREEN ========== */
-        .disposition-screen {
-            justify-content: flex-start;
-            align-items: center;
-            padding: 40px 24px;
-            overflow-y: auto;
+        
+        .custom-select.open .select-options { opacity: 1; visibility: visible; transform: translateY(0); }
+        
+        .select-option {
+            padding: 14px 16px;
+            cursor: pointer; transition: background 0.15s;
+            display: flex; flex-direction: column; gap: 2px;
         }
-
-        .disposition-screen.active {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .call-summary {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-
-        .call-summary-icon {
-            width: 56px;
-            height: 56px;
-            background: var(--success-soft);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 12px;
-        }
-
-        .call-summary-icon svg {
-            width: 28px;
-            height: 28px;
-            color: var(--success);
-        }
-
-        .call-summary-name {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        .call-summary-duration {
-            font-size: 0.8125rem;
-            color: var(--text-secondary);
-        }
-
-        .disposition-card {
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .disposition-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        .disposition-btn {
+        
+        .select-option:hover { background: var(--accent-soft); }
+        .select-option:last-child { border-radius: 0 0 10px 10px; }
+        .option-title { font-weight: 500; font-size: 0.95rem; }
+        .option-desc { font-size: 0.8rem; color: var(--text-muted); }
+        
+        /* Input Methods */
+        .input-methods { display: flex; gap: 8px; margin-bottom: 12px; }
+        
+        .method-btn {
+            flex: 1;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
             padding: 14px 12px;
-            background: var(--surface);
-            border: 1.5px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.8125rem;
-            font-weight: 500;
-            color: var(--text);
-            cursor: pointer;
-            transition: all 0.15s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
+            background: white;
+            border: 1.5px solid var(--border-solid);
+            border-radius: var(--radius-full);
+            font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer; transition: all 0.2s;
         }
-
-        .disposition-btn:hover {
-            border-color: var(--accent);
-            background: var(--accent-soft);
-        }
-
-        .disposition-btn.selected {
-            border-color: var(--accent);
-            background: var(--accent-soft);
-            color: var(--accent-dark);
-        }
-
-        .disposition-btn.success {
-            border-color: var(--success);
-            background: var(--success-soft);
-            color: var(--success);
-        }
-
-        .disposition-btn svg {
-            width: 20px;
-            height: 20px;
-        }
-
-        /* ========== APPOINTMENT FORM ========== */
-        .appointment-form {
-            background: var(--success-soft);
-            border: 1px solid var(--success);
-            border-radius: var(--radius-sm);
-            padding: 16px;
-            margin-bottom: 16px;
+        
+        .method-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .method-btn.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+        .method-btn svg { width: 20px; height: 20px; }
+        
+        /* Camera Upload */
+        .camera-upload {
             display: none;
+            flex-direction: column; align-items: center;
+            padding: 28px 24px;
+            border: 2px dashed var(--border-solid);
+            border-radius: var(--radius-md);
+            background: rgba(255,255,255,0.5);
+            cursor: pointer; transition: all 0.2s;
         }
-
-        .appointment-form.visible {
-            display: block;
+        
+        .camera-upload.active { display: flex; }
+        .camera-upload:hover { border-color: var(--accent); background: var(--accent-soft); }
+        .camera-upload svg { width: 44px; height: 44px; color: var(--accent); margin-bottom: 12px; }
+        .camera-upload-text { font-size: 0.95rem; font-weight: 600; color: var(--text); }
+        .camera-upload-hint { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+        .camera-upload input { display: none; }
+        
+        /* Image Preview */
+        .image-preview { display: none; position: relative; margin-bottom: 16px; border-radius: var(--radius-md); overflow: hidden; }
+        .image-preview.active { display: block; }
+        .image-preview img { width: 100%; max-height: 180px; object-fit: cover; }
+        
+        .preview-remove {
+            position: absolute; top: 8px; right: 8px;
+            width: 32px; height: 32px;
+            background: rgba(0,0,0,0.6); border: none; border-radius: 50%;
+            color: white; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
         }
-
-        .appointment-form-title {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--success);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .appointment-form-title svg {
-            width: 14px;
-            height: 14px;
-        }
-
-        .appointment-row {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .appointment-input {
-            flex: 1;
-            padding: 10px 12px;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.8125rem;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            transition: all 0.2s ease;
-        }
-
-        .appointment-input:focus {
-            outline: none;
-            border-color: var(--success);
-            box-shadow: 0 0 0 3px var(--success-soft);
-        }
-
-        .appointment-notes {
-            width: 100%;
-            padding: 10px 12px;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.8125rem;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            resize: none;
-            height: 60px;
-        }
-
-        /* ========== NEXT CONTACT ========== */
-        .next-contact {
-            background: var(--surface);
+        
+        .preview-remove svg { width: 18px; height: 18px; }
+        
+        /* Paste Area */
+        .paste-area { display: none; }
+        .paste-area.active { display: block; }
+        
+        .form-textarea {
+            width: 100%; padding: 14px 16px;
+            font-family: 'Inter', sans-serif; font-size: 0.9rem;
+            color: var(--text); background: white;
+            border: 1.5px solid var(--border-solid);
             border-radius: var(--radius-sm);
-            padding: 14px;
-            margin-bottom: 16px;
+            resize: none; min-height: 100px; line-height: 1.5;
+            transition: all 0.2s;
         }
-
-        .next-label {
-            font-size: 0.6875rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
-            margin-bottom: 6px;
+        
+        .form-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+        .form-textarea::placeholder { color: var(--text-muted); }
+        .form-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 8px; }
+        
+        /* Contacts Preview */
+        .contacts-preview { display: none; margin-top: 16px; text-align: left; }
+        .contacts-preview.active { display: block; }
+        
+        .contacts-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        
+        .contacts-count { font-size: 0.8rem; font-weight: 600; color: var(--success); display: flex; align-items: center; gap: 6px; }
+        .contacts-count svg { width: 16px; height: 16px; }
+        
+        .contacts-edit { font-size: 0.8rem; color: var(--accent); background: none; border: none; cursor: pointer; font-weight: 500; }
+        
+        .contacts-list { max-height: 140px; overflow-y: auto; background: rgba(255,255,255,0.6); border-radius: var(--radius-sm); padding: 6px; }
+        
+        .contact-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 8px; font-size: 0.85rem; }
+        .contact-row:nth-child(odd) { background: rgba(0,0,0,0.02); }
+        .contact-row-name { font-weight: 500; }
+        .contact-row-phone { color: var(--text-muted); font-size: 0.8rem; }
+        
+        /* Processing Overlay */
+        .processing { display: none; position: absolute; inset: 0; background: rgba(255,255,255,0.92); backdrop-filter: blur(4px); border-radius: var(--radius-xl); flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+        .processing.active { display: flex; }
+        
+        .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .processing-text { font-size: 0.95rem; font-weight: 500; color: var(--text-secondary); }
+        
+        /* Start Button */
+        .start-btn {
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            padding: 16px 24px;
+            background: var(--text); color: white;
+            font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 600;
+            border: none; border-radius: var(--radius-full);
+            cursor: pointer; transition: all 0.2s;
+            width: 100%; margin-top: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08);
         }
-
-        .next-name {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .next-phone {
-            font-size: 0.8125rem;
-            color: var(--text-secondary);
-        }
-
-        /* ========== SESSION COMPLETE ========== */
-        .complete-screen {
-            justify-content: center;
-            align-items: center;
-            padding: 40px 24px;
-        }
-
-        .complete-screen.active {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .complete-icon {
-            width: 80px;
-            height: 80px;
-            background: var(--success-soft);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 24px;
-        }
-
-        .complete-icon svg {
-            width: 40px;
-            height: 40px;
-            color: var(--success);
-        }
-
-        .complete-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .complete-subtitle {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-bottom: 32px;
-        }
-
-        .complete-stats {
-            display: flex;
-            gap: 32px;
-            margin-bottom: 32px;
-        }
-
-        .complete-stat {
-            text-align: center;
-        }
-
-        .complete-stat-value {
-            font-family: 'Outfit', sans-serif;
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--text);
-        }
-
-        .complete-stat-value.highlight {
-            color: var(--success);
-        }
-
-        .complete-stat-label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        /* ========== MOBILE STYLES ========== */
+        
+        .start-btn:hover:not(:disabled) { transform: translateY(-2px); }
+        .start-btn:active:not(:disabled) { transform: scale(0.98); }
+        .start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .start-btn svg { width: 22px; height: 22px; }
+        
+        /* ========== ACTIVE SCREEN ========== */
+        .active-screen .glass-card { max-width: 440px; }
+        
+        .current-contact { padding: 20px; background: var(--accent-soft); border-radius: var(--radius-md); margin-bottom: 20px; }
+        .contact-name { font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 600; margin-bottom: 4px; }
+        .contact-phone { font-size: 0.95rem; color: var(--accent); font-weight: 500; }
+        .contact-sponsor { font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; }
+        
+        .call-status { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: var(--radius-full); font-size: 0.85rem; font-weight: 600; margin-bottom: 20px; }
+        .call-status.waiting { background: var(--surface); color: var(--text-secondary); }
+        .call-status.ringing { background: var(--warning-soft); color: var(--warning); }
+        .call-status.connected { background: var(--success-soft); color: var(--success); }
+        
+        .status-pulse { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        
+        /* Script Expander */
+        .script-box { background: white; border-radius: var(--radius-sm); margin-bottom: 16px; overflow: hidden; border: 1px solid var(--border); }
+        .script-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; cursor: pointer; font-weight: 500; font-size: 0.9rem; }
+        .script-header svg { width: 18px; height: 18px; color: var(--text-muted); transition: transform 0.2s; }
+        .script-box.open .script-header svg { transform: rotate(180deg); }
+        .script-body { display: none; padding: 0 16px 16px; font-size: 0.88rem; line-height: 1.7; text-align: left; color: var(--text-secondary); background: #FFFEF5; border-top: 1px solid #FEF3C7; }
+        .script-box.open .script-body { display: block; }
+        .script-body strong { color: var(--text); }
+        
+        /* Buttons */
+        .call-actions { display: flex; gap: 10px; margin-bottom: 16px; }
+        .call-actions .btn { flex: 1; }
+        
+        .btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 20px; font-family: 'Inter', sans-serif; font-size: 0.95rem; font-weight: 600; border: none; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s; }
+        .btn svg { width: 20px; height: 20px; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-dark); }
+        .btn-outline { background: transparent; color: var(--text-secondary); border: 1.5px solid var(--border-solid); }
+        .btn-outline:hover { background: rgba(0,0,0,0.02); }
+        
+        /* Disposition */
+        .disposition-section { display: none; }
+        .disposition-section.active { display: block; }
+        .disposition-label { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; text-align: left; }
+        .disposition-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        
+        .disp-btn { padding: 14px 12px; background: white; border: 1.5px solid var(--border-solid); border-radius: var(--radius-sm); font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+        .disp-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+        .disp-btn.success { border-color: var(--success); background: var(--success-soft); color: var(--success); }
+        
+        /* Progress */
+        .progress-section { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--surface); border-radius: var(--radius-sm); margin-top: 20px; }
+        .progress-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; }
+        .progress-text { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); min-width: 48px; text-align: right; }
+        
+        .end-session-link { margin-top: 12px; background: none; border: none; color: var(--text-muted); font-size: 0.85rem; font-weight: 500; cursor: pointer; text-decoration: underline; }
+        .end-session-link:hover { color: var(--danger); }
+        
+        /* ========== COMPLETE SCREEN ========== */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 28px 0; }
+        .stat-card { padding: 20px 16px; background: var(--surface); border-radius: var(--radius-sm); }
+        .stat-value { font-family: 'Outfit', sans-serif; font-size: 1.75rem; font-weight: 700; color: var(--accent); }
+        .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+        
+        /* ========== MODAL ========== */
+        .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 24px; }
+        .modal-backdrop.open { display: flex; }
+        .modal { background: white; border-radius: var(--radius-lg); padding: 28px; width: 100%; max-width: 340px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        .modal-title { font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 600; margin-bottom: 20px; }
+        .modal .form-input { width: 100%; padding: 14px 16px; font-family: 'Inter', sans-serif; font-size: 0.95rem; border: 1.5px solid var(--border-solid); border-radius: var(--radius-sm); margin-bottom: 12px; }
+        .modal .form-input:focus { outline: none; border-color: var(--accent); }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .modal-actions .btn { flex: 1; }
+        
+        /* ========== MOBILE ========== */
         @media (max-width: 768px) {
             .sidebar { display: none; }
-            .main-area { margin-left: 0; }
-            .mobile-header { display: flex; }
-            .bottom-pill { display: block; }
-            .session-header { display: none; }
-
-            body.in-call .mobile-session-stats { display: flex; }
-
-            .phone-content {
-                padding-top: calc(44px + var(--safe-top));
-                padding-bottom: calc(80px + var(--safe-bottom));
-            }
-
-            .glass-card {
-                padding: 32px 24px;
-            }
-
-            .card-icon {
-                width: 64px;
-                height: 64px;
-                border-radius: 16px;
-            }
-
-            .card-icon svg {
-                width: 32px;
-                height: 32px;
-            }
-
-            .card-title {
-                font-size: 1.25rem;
-            }
-
-            .card-subtitle {
-                font-size: 0.85rem;
-                margin-bottom: 24px;
-            }
-
-            .script-area {
-                padding-bottom: calc(80px + var(--safe-bottom) + 20px);
-            }
+            .main-content { margin-left: 0; padding: 20px; padding-top: calc(20px + var(--safe-top)); }
+            .glass-card { padding: 32px 24px; }
+            .mode-btn { padding: 10px 12px; font-size: 0.8rem; }
+            .stats-grid { gap: 8px; }
+            .stat-card { padding: 16px 12px; }
+            .stat-value { font-size: 1.4rem; }
         }
-
-        /* ========== SCRIPTS DATA ========== */
-        /* Scripts stored in JS, loaded dynamically based on list type */
     </style>
 </head>
 <body>
-    <!-- Landscape Blocker -->
-    <div class="landscape-blocker">
-        <div class="landscape-blocker-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="4" y="2" width="16" height="20" rx="2"/>
-                <line x1="12" y1="18" x2="12" y2="18"/>
-            </svg>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo"><img src="/static/favicon.svg" alt="Coachd"></div>
+        <nav class="sidebar-nav">
+            <a href="/" class="nav-item" data-tooltip="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></a>
+            <a href="/call" class="nav-item active" data-tooltip="Live Call"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg></a>
+            <button class="nav-item" data-tooltip="Ask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></button>
+            <a href="#" class="nav-item" data-tooltip="Resources"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg></a>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="#" class="nav-item" data-tooltip="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></a>
+            <div class="user-avatar" id="userAvatar">A</div>
         </div>
-        <h2 class="landscape-blocker-title">Rotate Your Phone</h2>
-        <p class="landscape-blocker-text">Power Dialer works best in portrait mode</p>
-    </div>
+    </aside>
 
-    <div class="app">
-        <!-- Sidebar (Desktop) -->
-        <aside class="sidebar">
-            <a href="/" class="sidebar-logo">
-                <img src="/static/logo.svg" alt="Coachd" onerror="this.style.display='none'">
-            </a>
-
-            <nav class="sidebar-nav">
-                <!-- Normal nav -->
-                <div class="sidebar-nav-normal">
-                    <a href="/agent" class="nav-item" data-tooltip="Dashboard">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                    </a>
-                    <a href="/call" class="nav-item" data-tooltip="Presentation">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="8" x2="4" y2="16"/><line x1="8" y1="5" x2="8" y2="19"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="16" y1="4" x2="16" y2="20"/><line x1="20" y1="9" x2="20" y2="15"/></svg>
-                    </a>
-                    <button class="nav-item active" data-tooltip="Power Dialer">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                    </button>
+    <div class="main-content">
+        <!-- SETUP SCREEN -->
+        <div class="screen setup-screen active" id="setupScreen">
+            <div class="glass-card">
+                <div class="processing" id="processing">
+                    <div class="spinner"></div>
+                    <div class="processing-text" id="processingText">Reading contacts...</div>
                 </div>
-
-                <!-- Call nav -->
-                <div class="sidebar-nav-call">
-                    <button class="nav-item" data-tooltip="Script" onclick="PowerDialer.toggleScript()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                    </button>
-                    <button class="nav-item" data-tooltip="Objections" onclick="PowerDialer.toggleObjections()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                    </button>
+                
+                <div class="mode-toggle">
+                    <a href="/call" class="mode-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Presentation</a>
+                    <button class="mode-btn active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="4" height="4" rx="1"/><rect x="10" y="4" width="4" height="4" rx="1"/><rect x="16" y="4" width="4" height="4" rx="1"/><rect x="4" y="10" width="4" height="4" rx="1"/><rect x="10" y="10" width="4" height="4" rx="1"/><rect x="16" y="10" width="4" height="4" rx="1"/><rect x="4" y="16" width="4" height="4" rx="1"/><rect x="10" y="16" width="4" height="4" rx="1"/><rect x="16" y="16" width="4" height="4" rx="1"/></svg>Power Dialer</button>
                 </div>
-            </nav>
-
-            <div class="sidebar-footer">
-                <!-- Normal footer -->
-                <div class="sidebar-footer-normal">
-                    <a href="/agent#settings" class="nav-item" data-tooltip="Settings">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                    </a>
+                
+                <h1 class="card-title">Power Dialer</h1>
+                <p class="card-subtitle">Book appointments fast</p>
+                
+                <div class="agent-phone-pill">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                    <span id="agentPhoneDisplay">(404) 422-1729</span>
                 </div>
-
-                <!-- Call footer -->
-                <div class="sidebar-footer-call">
-                    <button class="nav-item danger" data-tooltip="End Call" onclick="PowerDialer.endCall()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/><line x1="23" y1="1" x2="1" y2="23"/></svg>
-                    </button>
+                
+                <!-- List Type -->
+                <div class="form-group">
+                    <label class="form-label">List Type</label>
+                    <div class="custom-select" id="listTypeSelect">
+                        <div class="select-trigger" onclick="PD.toggleDropdown()">
+                            <span id="listTypeText">Referrals</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                        <div class="select-options">
+                            <div class="select-option" onclick="PD.selectType('referrals','Referrals')"><span class="option-title">Referrals</span><span class="option-desc">Sponsored by existing clients</span></div>
+                            <div class="select-option" onclick="PD.selectType('policy_owner','Policy Owner Service')"><span class="option-title">Policy Owner Service</span><span class="option-desc">Lapse reactivation</span></div>
+                            <div class="select-option" onclick="PD.selectType('cold','Cold / Other')"><span class="option-title">Cold / Other</span><span class="option-desc">Generic script</span></div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </aside>
-
-        <!-- Mobile Header -->
-        <header class="mobile-header">
-            <div class="mobile-header-left">
-                <div class="mobile-header-logo">
-                    <img src="/static/logo.svg" alt="Coachd" onerror="this.style.display='none'">
-                </div>
-                <span class="mobile-header-wordmark">Power Dialer</span>
-            </div>
-            <div class="mobile-header-right">
-                <!-- Timer shown during calls via JS -->
-            </div>
-        </header>
-
-        <!-- Main Area -->
-        <div class="main-area">
-            <!-- Session Stats Header (Desktop, during calls) -->
-            <header class="session-header" id="sessionHeader">
-                <div class="session-stat">
-                    <div class="session-stat-value" id="progressStat">0/0</div>
-                    <div class="session-stat-label">Progress</div>
-                </div>
-                <div class="session-stat">
-                    <div class="session-stat-value highlight" id="appointmentsStat">0</div>
-                    <div class="session-stat-label">Appts</div>
-                </div>
-                <div class="session-stat">
-                    <div class="session-stat-value" id="sessionTimerStat">0:00</div>
-                    <div class="session-stat-label">Session</div>
-                </div>
-            </header>
-
-            <!-- Mobile Session Stats (during calls) -->
-            <div class="mobile-session-stats" id="mobileSessionStats">
-                <div class="mobile-session-stat">
-                    <div class="mobile-session-stat-value" id="mobileProgressStat">0/0</div>
-                    <div class="mobile-session-stat-label">Progress</div>
-                </div>
-                <div class="mobile-session-stat">
-                    <div class="mobile-session-stat-value highlight" id="mobileAppointmentsStat">0</div>
-                    <div class="mobile-session-stat-label">Appts</div>
-                </div>
-                <div class="mobile-session-stat">
-                    <div class="mobile-session-stat-value" id="mobileSessionTimerStat">0:00</div>
-                    <div class="mobile-session-stat-label">Session</div>
-                </div>
-            </div>
-
-            <!-- Upload Screen -->
-            <div class="screen upload-screen active" id="uploadScreen">
-                <div class="glass-card">
-                    <!-- Mode Toggle -->
-                    <div class="mode-toggle">
-                        <button class="mode-toggle-btn" data-mode="presentation" onclick="window.location.href='/call'">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-                            Presentation
-                        </button>
-                        <button class="mode-toggle-btn active" data-mode="dialer">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="4" height="4" rx="1"/><rect x="10" y="4" width="4" height="4" rx="1"/><rect x="16" y="4" width="4" height="4" rx="1"/><rect x="4" y="10" width="4" height="4" rx="1"/><rect x="10" y="10" width="4" height="4" rx="1"/><rect x="16" y="10" width="4" height="4" rx="1"/><rect x="4" y="16" width="4" height="4" rx="1"/><rect x="10" y="16" width="4" height="4" rx="1"/><rect x="16" y="16" width="4" height="4" rx="1"/></svg>
-                            Power Dialer
-                        </button>
+                
+                <!-- Contact Input -->
+                <div class="form-group">
+                    <label class="form-label">Add Contacts</label>
+                    <div class="input-methods">
+                        <button class="method-btn active" id="cameraBtn" onclick="PD.setMethod('camera')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Photo</button>
+                        <button class="method-btn" id="pasteBtn" onclick="PD.setMethod('paste')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>Paste</button>
                     </div>
                     
-                    <h1 class="card-title">Power Dialer</h1>
-                    <p class="card-subtitle">Book appointments fast</p>
-
-                    <div class="section-label">What type of list?</div>
-                    <div class="list-type-options" id="listTypeOptions">
-                        <button class="list-type-btn selected" data-type="referrals" onclick="PowerDialer.selectListType(this)">
-                            <div class="list-type-radio"></div>
-                            <div class="list-type-info">
-                                <div class="list-type-name">Referrals</div>
-                                <div class="list-type-desc">Sponsored by existing clients</div>
-                            </div>
-                        </button>
-                        <button class="list-type-btn" data-type="policy_owner" onclick="PowerDialer.selectListType(this)">
-                            <div class="list-type-radio"></div>
-                            <div class="list-type-info">
-                                <div class="list-type-name">Policy Owner Service</div>
-                                <div class="list-type-desc">Lapse reactivation</div>
-                            </div>
-                        </button>
-                        <button class="list-type-btn" data-type="cold" onclick="PowerDialer.selectListType(this)">
-                            <div class="list-type-radio"></div>
-                            <div class="list-type-info">
-                                <div class="list-type-name">Cold / Other</div>
-                                <div class="list-type-desc">Generic script</div>
-                            </div>
-                        </button>
+                    <div class="camera-upload active" id="cameraUpload" onclick="document.getElementById('imageInput').click()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                        <div class="camera-upload-text">Tap to photo your list</div>
+                        <div class="camera-upload-hint">AI extracts names & numbers instantly</div>
+                        <input type="file" id="imageInput" accept="image/*" capture="environment" onchange="PD.handleImage(event)">
                     </div>
-
-                    <div class="section-label">Upload contacts</div>
-                    <div class="upload-methods">
-                        <button class="upload-btn" onclick="PowerDialer.takePhoto()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                                <circle cx="8.5" cy="8.5" r="1.5"/>
-                                <polyline points="21 15 16 10 5 21"/>
-                            </svg>
-                            Take Photo of List
-                        </button>
-                        
-                        <div class="upload-divider"><span>or paste</span></div>
-                        
-                        <textarea class="form-input" id="pasteInput" placeholder="John Smith (678) 555-1234
-Maria Garcia 404-555-5678
-..."></textarea>
+                    
+                    <div class="image-preview" id="imagePreview">
+                        <img id="previewImg" src="" alt="Preview">
+                        <button class="preview-remove" onclick="PD.removeImage()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                     </div>
-
-                    <button class="btn-primary btn-accent" onclick="PowerDialer.loadContacts()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="13 17 18 12 13 7"/>
-                            <polyline points="6 17 11 12 6 7"/>
-                        </svg>
-                        Start Dialing
-                    </button>
-
-                    <button class="link-btn" onclick="window.location.href='/call'">Switch to Presentation mode</button>
-                </div>
-            </div>
-
-            <!-- Connecting Screen -->
-            <div class="screen connecting-screen" id="connectingScreen">
-                <div class="glass-card">
-                    <h1 class="card-title" id="connectingTitle">Calling</h1>
-                    <p class="card-subtitle" id="connectingSubtitle">Maria Garcia</p>
-
-                    <div class="connection-steps">
-                        <div class="connection-step active" id="stepAgent" data-step="agent">
-                            <div class="step-indicator" id="stepAgentIndicator">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
-                                </svg>
-                            </div>
-                            <div class="step-content">
-                                <span class="step-text">Your Phone</span>
-                                <span class="step-subtext" id="stepAgentSubtext">Ringing...</span>
-                            </div>
-                        </div>
-
-                        <div class="step-connector" id="connectorAgentClient">
-                            <div class="connector-fill"></div>
-                        </div>
-
-                        <div class="connection-step waiting" id="stepClient" data-step="client">
-                            <div class="step-indicator" id="stepClientIndicator">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                                    <circle cx="12" cy="7" r="4"/>
-                                </svg>
-                            </div>
-                            <div class="step-content">
-                                <span class="step-text">Client</span>
-                                <span class="step-subtext" id="stepClientSubtext">Waiting...</span>
-                            </div>
-                        </div>
-                        <!-- NO STEP 3 - No Coachd AI for Power Dialer -->
-                    </div>
-
-                    <button class="btn-secondary" onclick="PowerDialer.skipContact()">Skip</button>
-                </div>
-            </div>
-
-            <!-- Call Screen -->
-            <div class="screen call-screen" id="callScreen">
-                <div class="call-info-bar">
-                    <div class="contact-name" id="callContactName">Maria Garcia</div>
-                    <div class="contact-phone" id="callContactPhone">(404) 555-5678</div>
-                    <div class="call-timer-inline">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <polyline points="12 6 12 12 16 14"/>
-                        </svg>
-                        <span id="callTimer">0:00</span>
+                    
+                    <div class="paste-area" id="pasteArea">
+                        <textarea class="form-textarea" id="contactsText" placeholder="John Smith (678) 555-1234&#10;Maria Garcia 404-555-5678" oninput="PD.parseText()"></textarea>
+                        <div class="form-hint">One per line: Name Phone</div>
                     </div>
                 </div>
-
-                <div class="script-area">
-                    <!-- Script Panel -->
-                    <div class="script-panel expanded" id="scriptPanel">
-                        <div class="script-header" onclick="PowerDialer.toggleScript()">
-                            <div class="script-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                                    <path d="M14 2v6h6"/>
-                                    <line x1="16" y1="13" x2="8" y2="13"/>
-                                    <line x1="16" y1="17" x2="8" y2="17"/>
-                                </svg>
-                            </div>
-                            <div class="script-header-content">
-                                <div class="script-title">Script</div>
-                                <div class="script-type" id="scriptTypeLabel">Referrals</div>
-                            </div>
-                            <div class="script-toggle">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="6 9 12 15 18 9"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="script-content">
-                            <div class="script-body" id="scriptBody">
-                                <!-- Populated by JS based on list type -->
-                            </div>
-                        </div>
+                
+                <!-- Preview -->
+                <div class="contacts-preview" id="contactsPreview">
+                    <div class="contacts-header">
+                        <div class="contacts-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span id="countText">0 contacts</span></div>
+                        <button class="contacts-edit" onclick="PD.editContacts()">Edit</button>
                     </div>
-
-                    <!-- Objections Panel -->
-                    <div class="objections-panel" id="objectionsPanel">
-                        <div class="objections-header" onclick="PowerDialer.toggleObjections()">
-                            <div class="objections-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-                                </svg>
-                            </div>
-                            <div class="objections-header-content">
-                                <div class="objections-title">Quick Objections</div>
-                            </div>
-                            <div class="objections-toggle">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="6 9 12 15 18 9"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="objections-content" id="objectionsContent">
-                            <!-- Populated by JS -->
-                        </div>
-                    </div>
-
-                    <!-- End Call Button -->
-                    <div class="end-call-section">
-                        <button class="end-call-btn" onclick="PowerDialer.endCall()">End Call</button>
-                    </div>
+                    <div class="contacts-list" id="contactsList"></div>
                 </div>
-            </div>
-
-            <!-- Disposition Screen -->
-            <div class="screen disposition-screen" id="dispositionScreen">
-                <div class="call-summary">
-                    <div class="call-summary-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                    </div>
-                    <div class="call-summary-name" id="dispositionContactName">Maria Garcia</div>
-                    <div class="call-summary-duration">Call: <span id="dispositionDuration">1:47</span></div>
-                </div>
-
-                <div class="disposition-card glass-card" style="padding: 24px;">
-                    <div class="section-label">What happened?</div>
-                    <div class="disposition-grid">
-                        <button class="disposition-btn" data-disposition="appointment" onclick="PowerDialer.selectDisposition(this)">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="4" width="18" height="18" rx="2"/>
-                                <line x1="16" y1="2" x2="16" y2="6"/>
-                                <line x1="8" y1="2" x2="8" y2="6"/>
-                                <line x1="3" y1="10" x2="21" y2="10"/>
-                            </svg>
-                            Appt Set
-                        </button>
-                        <button class="disposition-btn" data-disposition="callback" onclick="PowerDialer.selectDisposition(this)">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23 4 23 10 17 10"/>
-                                <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
-                            </svg>
-                            Callback
-                        </button>
-                        <button class="disposition-btn" data-disposition="not_interested" onclick="PowerDialer.selectDisposition(this)">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="15" y1="9" x2="9" y2="15"/>
-                                <line x1="9" y1="9" x2="15" y2="15"/>
-                            </svg>
-                            Not Interested
-                        </button>
-                        <button class="disposition-btn" data-disposition="no_answer" onclick="PowerDialer.selectDisposition(this)">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M10.68 13.31a16 16 0 003.41 2.6l1.27-1.27"/>
-                                <line x1="1" y1="1" x2="23" y2="23"/>
-                            </svg>
-                            No Answer
-                        </button>
-                    </div>
-
-                    <!-- Appointment Form (shown when Appt Set selected) -->
-                    <div class="appointment-form" id="appointmentForm">
-                        <div class="appointment-form-title">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="4" width="18" height="18" rx="2"/>
-                                <line x1="16" y1="2" x2="16" y2="6"/>
-                                <line x1="8" y1="2" x2="8" y2="6"/>
-                            </svg>
-                            Presentation Details
-                        </div>
-                        <div class="appointment-row">
-                            <input type="date" class="appointment-input" id="appointmentDate">
-                            <input type="time" class="appointment-input" id="appointmentTime">
-                        </div>
-                        <textarea class="appointment-notes" id="appointmentNotes" placeholder="Notes (e.g., both spouses confirmed)"></textarea>
-                    </div>
-
-                    <!-- Next Contact Preview -->
-                    <div class="next-contact" id="nextContactPreview">
-                        <div class="next-label">Up Next</div>
-                        <div class="next-name" id="nextContactName">Robert Johnson</div>
-                        <div class="next-phone" id="nextContactPhone">(770) 555-9012</div>
-                    </div>
-
-                    <button class="btn-primary btn-accent" onclick="PowerDialer.saveAndNext()">
-                        Save & Next Call
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="13 17 18 12 13 7"/>
-                            <polyline points="6 17 11 12 6 7"/>
-                        </svg>
-                    </button>
-
-                    <button class="link-btn" onclick="PowerDialer.endSession()">End Session</button>
-                </div>
-            </div>
-
-            <!-- Session Complete Screen -->
-            <div class="screen complete-screen" id="completeScreen">
-                <div class="glass-card">
-                    <div class="complete-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                    </div>
-                    <h1 class="complete-title">Session Complete</h1>
-                    <p class="complete-subtitle">Great work!</p>
-
-                    <div class="complete-stats">
-                        <div class="complete-stat">
-                            <div class="complete-stat-value" id="finalCallsStat">0</div>
-                            <div class="complete-stat-label">Calls</div>
-                        </div>
-                        <div class="complete-stat">
-                            <div class="complete-stat-value highlight" id="finalAppointmentsStat">0</div>
-                            <div class="complete-stat-label">Appointments</div>
-                        </div>
-                        <div class="complete-stat">
-                            <div class="complete-stat-value" id="finalTimeStat">0:00</div>
-                            <div class="complete-stat-label">Time</div>
-                        </div>
-                    </div>
-
-                    <button class="btn-primary" onclick="PowerDialer.newSession()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23 4 23 10 17 10"/>
-                            <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
-                        </svg>
-                        New Session
-                    </button>
-
-                    <button class="link-btn" onclick="window.location.href='/agent'">Back to Dashboard</button>
-                </div>
+                
+                <button class="start-btn" id="startBtn" onclick="PD.start()" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Start Dialing
+                </button>
             </div>
         </div>
-
-        <!-- Mobile Bottom Pill -->
-        <nav class="bottom-pill">
-            <div class="bottom-pill-inner">
-                <div class="bottom-pill-items">
-                    <!-- Normal nav -->
-                    <div class="pill-nav-normal">
-                        <a href="/agent" class="pill-item">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                            <span class="pill-item-label">Home</span>
-                        </a>
-                        <a href="/call" class="pill-item">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="8" x2="4" y2="16"/><line x1="8" y1="5" x2="8" y2="19"/><line x1="12" y1="7" x2="12" y2="17"/><line x1="16" y1="4" x2="16" y2="20"/><line x1="20" y1="9" x2="20" y2="15"/></svg>
-                            <span class="pill-item-label">Presentation</span>
-                        </a>
-                        <button class="pill-item active">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-                            <span class="pill-item-label">Dialer</span>
-                        </button>
-                    </div>
-
-                    <!-- Call nav -->
-                    <div class="pill-nav-call">
-                        <button class="pill-item" onclick="PowerDialer.toggleScript()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
-                            <span class="pill-item-label">Script</span>
-                        </button>
-                        <button class="pill-item" onclick="PowerDialer.toggleObjections()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                            <span class="pill-item-label">Objections</span>
-                        </button>
-                        <button class="pill-item danger" onclick="PowerDialer.endCall()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72"/><line x1="23" y1="1" x2="1" y2="23"/></svg>
-                            <span class="pill-item-label">End</span>
-                        </button>
+        
+        <!-- ACTIVE SCREEN -->
+        <div class="screen active-screen" id="activeScreen">
+            <div class="glass-card">
+                <div class="current-contact">
+                    <div class="contact-name" id="contactName">Maria Garcia</div>
+                    <div class="contact-phone" id="contactPhone">(404) 555-5678</div>
+                    <div class="contact-sponsor" id="contactSponsor"></div>
+                </div>
+                
+                <div class="call-status waiting" id="callStatus"><span class="status-pulse"></span><span id="statusText">Ready</span></div>
+                
+                <div class="script-box" id="scriptBox" onclick="this.classList.toggle('open')">
+                    <div class="script-header"><span>📋 View Script</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></div>
+                    <div class="script-body" id="scriptBody"></div>
+                </div>
+                
+                <div class="call-actions" id="callActions">
+                    <button class="btn btn-primary" id="dialBtn" onclick="PD.dial()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>Dial</button>
+                    <button class="btn btn-outline" onclick="PD.skip()">Skip</button>
+                </div>
+                
+                <div class="disposition-section" id="dispSection">
+                    <div class="disposition-label">Quick Outcome</div>
+                    <div class="disposition-grid">
+                        <button class="disp-btn success" onclick="PD.disp('appointment')">📅 Appointment</button>
+                        <button class="disp-btn" onclick="PD.disp('callback')">🔄 Callback</button>
+                        <button class="disp-btn" onclick="PD.disp('no_answer')">📵 No Answer</button>
+                        <button class="disp-btn" onclick="PD.disp('not_interested')">❌ Not Interested</button>
                     </div>
                 </div>
+                
+                <div class="progress-section">
+                    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+                    <div class="progress-text" id="progressText">0/0</div>
+                </div>
+                
+                <button class="end-session-link" onclick="PD.end()">End Session</button>
             </div>
-        </nav>
+        </div>
+        
+        <!-- COMPLETE SCREEN -->
+        <div class="screen complete-screen" id="completeScreen">
+            <div class="glass-card">
+                <h1 class="card-title">Session Complete 🎉</h1>
+                <p class="card-subtitle">Great work!</p>
+                <div class="stats-grid">
+                    <div class="stat-card"><div class="stat-value" id="statCalls">0</div><div class="stat-label">Calls</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statAppts">0</div><div class="stat-label">Appts</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statTime">0:00</div><div class="stat-label">Time</div></div>
+                </div>
+                <button class="start-btn" onclick="PD.reset()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Start New Session</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal -->
+    <div class="modal-backdrop" id="modal">
+        <div class="modal">
+            <h2 class="modal-title">📅 Book Appointment</h2>
+            <input type="date" class="form-input" id="apptDate">
+            <input type="time" class="form-input" id="apptTime" value="10:00">
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="PD.closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="PD.saveAppt()">Save</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        // ========== SCRIPTS DATA ==========
-        const SCRIPTS = {
-            referrals: {
-                name: 'Referrals',
-                opener: `"Hey <strong>___</strong>, this is <strong>___</strong> with Globe Life Liberty National. <strong>(Sponsor's name)</strong> was really excited to include you because obviously if something happened to you unexpectedly, an extra $3,000 would be a HUGE help to your family."`,
-                sections: [
-                    {
-                        title: 'If home now',
-                        content: '"Go ahead and grab (spouse); we can handle this right now."'
-                    },
-                    {
-                        title: 'Schedule appointment',
-                        content: '"What time do you get home from work? I\'ll call you tomorrow between ___ and ___."'
-                    },
-                    {
-                        title: 'Confirmation',
-                        content: '"Grab a pen — my name is ___ and your confirmation # is (agent#). Be sure to let your spouse know I\'ll be calling!"'
-                    }
-                ]
-            },
-            policy_owner: {
-                name: 'Policy Owner Service',
-                opener: `"Hi <strong>___</strong>, this is <strong>___</strong> with Globe Life Liberty National. Your servicing Agent asked that I call you to verify a couple of things about your policy..."`,
-                sections: [
-                    {
-                        title: 'Beneficiary check',
-                        content: '"First, I need to verify your beneficiary information is still current. Who do you have listed?"'
-                    },
-                    {
-                        title: 'Policy review',
-                        content: '"We also want to make sure you\'re getting the most out of your coverage. When is a good time for a quick review?"'
-                    },
-                    {
-                        title: 'Schedule',
-                        content: '"Perfect. I\'ll call you (day) between (time) and (time). Will your spouse be available too?"'
-                    }
-                ]
-            },
-            cold: {
-                name: 'Cold / Other',
-                opener: `"Hi <strong>___</strong>, this is <strong>___</strong> with Globe Life Liberty National. I'm calling because you may qualify for some additional coverage benefits in your area..."`,
-                sections: [
-                    {
-                        title: 'Interest check',
-                        content: '"Have you had a chance to review your life insurance coverage recently?"'
-                    },
-                    {
-                        title: 'Schedule',
-                        content: '"I\'d like to show you what\'s available. When would be a good time for a quick 15-minute call with you and your spouse?"'
-                    }
-                ]
+    const PD = {
+        sessionId: null, agentPhone: '', listType: 'referrals',
+        contacts: [], idx: 0, appts: 0, startTime: null,
+        
+        scripts: {
+            referrals: `<p><strong>Opening:</strong> "Hi, is this [Name]? This is [Agent] from Globe Life. [Sponsor] suggested I call."</p><p><strong>Bridge:</strong> "They got coverage with us and wanted to share the opportunity."</p><p><strong>Close:</strong> "Quick questions to see if you qualify. Got 2 minutes?"</p>`,
+            policy_owner: `<p><strong>Opening:</strong> "Hi [Name], this is [Agent] with Globe Life about your policy."</p><p><strong>Purpose:</strong> "Checking your coverage still fits and sharing updates."</p><p><strong>Close:</strong> "Got a moment to review?"</p>`,
+            cold: `<p><strong>Opening:</strong> "Hi, is this [Name]? This is [Agent] with Globe Life."</p><p><strong>Purpose:</strong> "Reaching families in your area about affordable life insurance."</p><p><strong>Close:</strong> "30 seconds to see if you qualify?"</p>`
+        },
+        
+        init() {
+            const p = localStorage.getItem('coachd_agent_phone');
+            if (p) { this.agentPhone = p; document.getElementById('agentPhoneDisplay').textContent = this.fmt(p); }
+            const t = new Date(); t.setDate(t.getDate() + 1);
+            document.getElementById('apptDate').value = t.toISOString().split('T')[0];
+            document.addEventListener('click', e => { if (!document.getElementById('listTypeSelect').contains(e.target)) document.getElementById('listTypeSelect').classList.remove('open'); });
+        },
+        
+        fmt(p) { const d = p.replace(/\D/g, '').slice(-10); return d.length === 10 ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}` : p; },
+        
+        toggleDropdown() { document.getElementById('listTypeSelect').classList.toggle('open'); },
+        selectType(v, l) { this.listType = v; document.getElementById('listTypeText').textContent = l; document.getElementById('listTypeSelect').classList.remove('open'); },
+        
+        setMethod(m) {
+            document.getElementById('cameraBtn').classList.toggle('active', m === 'camera');
+            document.getElementById('pasteBtn').classList.toggle('active', m === 'paste');
+            document.getElementById('cameraUpload').classList.toggle('active', m === 'camera');
+            document.getElementById('pasteArea').classList.toggle('active', m === 'paste');
+            if (m === 'paste') document.getElementById('imagePreview').classList.remove('active');
+        },
+        
+        async handleImage(e) {
+            const f = e.target.files[0]; if (!f) return;
+            const r = new FileReader();
+            r.onload = ev => { document.getElementById('previewImg').src = ev.target.result; document.getElementById('imagePreview').classList.add('active'); document.getElementById('cameraUpload').classList.remove('active'); };
+            r.readAsDataURL(f);
+            this.showProc('Reading with AI...');
+            try {
+                const fd = new FormData(); fd.append('image', f);
+                const res = await fetch('/api/dialer/parse-image', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.contacts?.length) { this.contacts = data.contacts; this.showPreview(); }
+                else alert('No contacts found. Try clearer photo or paste manually.');
+            } catch (err) { alert('Failed to process. Try again or paste.'); }
+            this.hideProc();
+        },
+        
+        removeImage() { document.getElementById('imagePreview').classList.remove('active'); document.getElementById('cameraUpload').classList.add('active'); document.getElementById('imageInput').value = ''; this.contacts = []; document.getElementById('contactsPreview').classList.remove('active'); document.getElementById('startBtn').disabled = true; },
+        
+        parseText() {
+            const lines = document.getElementById('contactsText').value.trim().split('\n').filter(l => l.trim());
+            this.contacts = lines.map((l, i) => {
+                const pm = l.match(/[\d\-\(\)\.\s]{10,}/);
+                const ph = pm ? pm[0].replace(/\D/g, '') : '';
+                const nm = l.replace(pm ? pm[0] : '', '').trim() || `Contact ${i+1}`;
+                return { id: i+1, name: nm, phone: ph.length === 10 ? `+1${ph}` : (ph.length === 11 ? `+${ph}` : '') };
+            }).filter(c => c.phone.length >= 11);
+            this.contacts.length ? this.showPreview() : (document.getElementById('contactsPreview').classList.remove('active'), document.getElementById('startBtn').disabled = true);
+        },
+        
+        showPreview() {
+            document.getElementById('countText').textContent = `${this.contacts.length} contacts`;
+            document.getElementById('contactsList').innerHTML = this.contacts.slice(0, 5).map(c => `<div class="contact-row"><span class="contact-row-name">${c.name}</span><span class="contact-row-phone">${this.fmt(c.phone)}</span></div>`).join('') + (this.contacts.length > 5 ? `<div class="contact-row" style="justify-content:center;color:var(--text-muted)">+${this.contacts.length - 5} more</div>` : '');
+            document.getElementById('contactsPreview').classList.add('active');
+            document.getElementById('startBtn').disabled = false;
+        },
+        
+        editContacts() { this.setMethod('paste'); document.getElementById('contactsText').value = this.contacts.map(c => `${c.name} ${this.fmt(c.phone)}`).join('\n'); },
+        
+        showProc(t) { document.getElementById('processingText').textContent = t; document.getElementById('processing').classList.add('active'); },
+        hideProc() { document.getElementById('processing').classList.remove('active'); },
+        
+        screen(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); },
+        
+        async start() {
+            if (!this.contacts.length) return;
+            this.idx = 0; this.appts = 0; this.startTime = Date.now();
+            document.getElementById('scriptBody').innerHTML = this.scripts[this.listType];
+            this.screen('activeScreen'); this.updateProgress(); this.showContact();
+            this.setStatus('waiting', 'Calling you...');
+            try {
+                const res = await fetch('/api/dialer/start-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ agent_phone: this.agentPhone, list_type: this.listType, contacts: this.contacts.map(c => ({ name: c.name, phone: c.phone, sponsor: c.sponsor })) }) });
+                const data = await res.json();
+                if (data.success) { this.sessionId = data.session_id; this.setStatus('ringing', 'Answer phone'); }
+            } catch (e) { console.error(e); }
+        },
+        
+        showContact() {
+            const c = this.contacts[this.idx];
+            if (c) {
+                document.getElementById('contactName').textContent = c.name;
+                document.getElementById('contactPhone').textContent = this.fmt(c.phone);
+                const sp = document.getElementById('contactSponsor');
+                sp.textContent = c.sponsor ? `Referred by ${c.sponsor}` : '';
+                sp.style.display = c.sponsor ? 'block' : 'none';
             }
-        };
-
-        const OBJECTIONS = [
-            {
-                trigger: '"How long will this take?"',
-                response: '"It doesn\'t take long — for me the quicker the better."'
-            },
-            {
-                trigger: '"Why does my spouse need to be there?"',
-                response: '"They ask us to speak with both of you to answer any questions and make sure you\'re both protected."'
-            },
-            {
-                trigger: '"Just mail it to me"',
-                response: '"I wish we could, but we need to designate your beneficiaries for the no-cost coverage. It only takes a few minutes."'
-            },
-            {
-                trigger: '"Not interested"',
-                response: '"That\'s OK, but you\'re still entitled to the no-cost coverage. It doesn\'t take long — can we at least get you that?"'
-            }
-        ];
-
-        // ========== POWER DIALER STATE ==========
-        const PowerDialer = {
-            // State
-            listType: 'referrals',
-            contacts: [],
-            currentIndex: 0,
-            appointments: 0,
-            sessionStartTime: null,
-            callStartTime: null,
-            callTimerInterval: null,
-            sessionTimerInterval: null,
-
-            // DOM refs
-            get uploadScreen() { return document.getElementById('uploadScreen'); },
-            get connectingScreen() { return document.getElementById('connectingScreen'); },
-            get callScreen() { return document.getElementById('callScreen'); },
-            get dispositionScreen() { return document.getElementById('dispositionScreen'); },
-            get completeScreen() { return document.getElementById('completeScreen'); },
-
-            // ========== LIST TYPE ==========
-            selectListType(btn) {
-                document.querySelectorAll('.list-type-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-                this.listType = btn.dataset.type;
-            },
-
-            // ========== PHOTO UPLOAD ==========
-            takePhoto() {
-                // In production, this would open camera and use Claude Vision OCR
-                alert('Photo capture would open here. For now, paste contacts manually.');
-            },
-
-            // ========== LOAD CONTACTS ==========
-            loadContacts() {
-                const input = document.getElementById('pasteInput').value.trim();
-                if (!input) {
-                    alert('Please enter some contacts');
-                    return;
-                }
-
-                // Parse contacts (simple format: "Name Phone")
-                const lines = input.split('\n').filter(l => l.trim());
-                this.contacts = lines.map((line, i) => {
-                    // Extract phone number (last sequence of digits)
-                    const phoneMatch = line.match(/[\d\(\)\-\s]{10,}/);
-                    const phone = phoneMatch ? phoneMatch[0].trim() : '';
-                    const name = line.replace(phone, '').trim() || `Contact ${i + 1}`;
-                    return { name, phone, disposition: null };
-                });
-
-                if (this.contacts.length === 0) {
-                    alert('No valid contacts found');
-                    return;
-                }
-
-                this.currentIndex = 0;
-                this.appointments = 0;
-                this.sessionStartTime = Date.now();
-                this.startSessionTimer();
-                this.dialNext();
-            },
-
-            // ========== DIAL NEXT CONTACT ==========
-            dialNext() {
-                if (this.currentIndex >= this.contacts.length) {
-                    this.showComplete();
-                    return;
-                }
-
-                const contact = this.contacts[this.currentIndex];
-                this.updateStats();
-
-                // Update connecting screen
-                document.getElementById('connectingSubtitle').textContent = `${contact.name} • ${contact.phone}`;
-
-                // Reset connection steps
-                const stepAgent = document.getElementById('stepAgent');
-                const stepClient = document.getElementById('stepClient');
-                const connector = document.getElementById('connectorAgentClient');
-
-                stepAgent.className = 'connection-step active';
-                stepAgent.querySelector('.step-subtext').textContent = 'Ringing...';
-                stepClient.className = 'connection-step waiting';
-                stepClient.querySelector('.step-subtext').textContent = 'Waiting...';
-                connector.classList.remove('filled');
-
-                this.showScreen('connectingScreen');
-
-                // Simulate connection flow (in production, this would be real Telnyx calls)
-                setTimeout(() => {
-                    // Agent connected
-                    stepAgent.className = 'connection-step complete';
-                    stepAgent.querySelector('.step-subtext').textContent = 'Connected';
-                    stepAgent.querySelector('.step-indicator').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
-                    connector.classList.add('filled');
-
-                    // Start dialing client
-                    stepClient.className = 'connection-step active';
-                    stepClient.querySelector('.step-subtext').textContent = 'Ringing...';
-                }, 1500);
-
-                setTimeout(() => {
-                    // Client connected
-                    stepClient.className = 'connection-step complete';
-                    stepClient.querySelector('.step-subtext').textContent = 'Connected';
-                    stepClient.querySelector('.step-indicator').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
-
-                    // Transition to call screen
-                    setTimeout(() => this.startCall(), 500);
-                }, 3000);
-            },
-
-            // ========== START CALL ==========
-            startCall() {
-                const contact = this.contacts[this.currentIndex];
-
-                document.getElementById('callContactName').textContent = contact.name;
-                document.getElementById('callContactPhone').textContent = contact.phone;
-
-                // Load script based on list type
-                this.loadScript();
-                this.loadObjections();
-
-                // Start call timer
-                this.callStartTime = Date.now();
-                this.startCallTimer();
-
-                // Enter call mode
-                document.body.classList.add('in-call');
-                this.showScreen('callScreen');
-            },
-
-            // ========== LOAD SCRIPT ==========
-            loadScript() {
-                const script = SCRIPTS[this.listType];
-                document.getElementById('scriptTypeLabel').textContent = script.name;
-
-                let html = `<div class="script-text">${script.opener}</div>`;
-                script.sections.forEach(section => {
-                    html += `
-                        <div class="script-section">
-                            <div class="script-section-title">${section.title}</div>
-                            <div class="script-section-content">${section.content}</div>
-                        </div>
-                    `;
-                });
-
-                document.getElementById('scriptBody').innerHTML = html;
-            },
-
-            // ========== LOAD OBJECTIONS ==========
-            loadObjections() {
-                let html = '';
-                OBJECTIONS.forEach(obj => {
-                    html += `
-                        <div class="objection-item">
-                            <div class="objection-trigger">${obj.trigger}</div>
-                            <div class="objection-response">${obj.response}</div>
-                        </div>
-                    `;
-                });
-                document.getElementById('objectionsContent').innerHTML = html;
-            },
-
-            // ========== TOGGLE PANELS ==========
-            toggleScript() {
-                document.getElementById('scriptPanel').classList.toggle('expanded');
-            },
-
-            toggleObjections() {
-                document.getElementById('objectionsPanel').classList.toggle('expanded');
-            },
-
-            // ========== SKIP CONTACT ==========
-            skipContact() {
-                this.contacts[this.currentIndex].disposition = 'skipped';
-                this.currentIndex++;
-                this.dialNext();
-            },
-
-            // ========== END CALL ==========
-            endCall() {
-                this.stopCallTimer();
-                document.body.classList.remove('in-call');
-
-                const contact = this.contacts[this.currentIndex];
-                const duration = this.formatTime(Date.now() - this.callStartTime);
-
-                document.getElementById('dispositionContactName').textContent = contact.name;
-                document.getElementById('dispositionDuration').textContent = duration;
-
-                // Reset disposition buttons
-                document.querySelectorAll('.disposition-btn').forEach(b => {
-                    b.classList.remove('selected', 'success');
-                });
-                document.getElementById('appointmentForm').classList.remove('visible');
-
-                // Set default date/time
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                document.getElementById('appointmentDate').value = tomorrow.toISOString().split('T')[0];
-                document.getElementById('appointmentTime').value = '18:00';
-                document.getElementById('appointmentNotes').value = '';
-
-                // Show next contact preview
-                const nextIndex = this.currentIndex + 1;
-                if (nextIndex < this.contacts.length) {
-                    const next = this.contacts[nextIndex];
-                    document.getElementById('nextContactName').textContent = next.name;
-                    document.getElementById('nextContactPhone').textContent = next.phone;
-                    document.getElementById('nextContactPreview').style.display = 'block';
-                } else {
-                    document.getElementById('nextContactPreview').style.display = 'none';
-                }
-
-                this.showScreen('dispositionScreen');
-            },
-
-            // ========== SELECT DISPOSITION ==========
-            selectDisposition(btn) {
-                document.querySelectorAll('.disposition-btn').forEach(b => {
-                    b.classList.remove('selected', 'success');
-                });
-
-                const disposition = btn.dataset.disposition;
-                this.contacts[this.currentIndex].disposition = disposition;
-
-                if (disposition === 'appointment') {
-                    btn.classList.add('success');
-                    document.getElementById('appointmentForm').classList.add('visible');
-                } else {
-                    btn.classList.add('selected');
-                    document.getElementById('appointmentForm').classList.remove('visible');
-                }
-            },
-
-            // ========== SAVE AND NEXT ==========
-            saveAndNext() {
-                const contact = this.contacts[this.currentIndex];
-
-                if (!contact.disposition) {
-                    alert('Please select a disposition');
-                    return;
-                }
-
-                if (contact.disposition === 'appointment') {
-                    this.appointments++;
-                    contact.appointmentDate = document.getElementById('appointmentDate').value;
-                    contact.appointmentTime = document.getElementById('appointmentTime').value;
-                    contact.appointmentNotes = document.getElementById('appointmentNotes').value;
-
-                    // In production, save to database here
-                    console.log('Appointment saved:', contact);
-                }
-
-                this.currentIndex++;
-                this.updateStats();
-                this.dialNext();
-            },
-
-            // ========== END SESSION ==========
-            endSession() {
-                this.showComplete();
-            },
-
-            // ========== SHOW COMPLETE ==========
-            showComplete() {
-                this.stopSessionTimer();
-                this.stopCallTimer();
-                document.body.classList.remove('in-call');
-
-                const totalCalls = this.contacts.filter(c => c.disposition && c.disposition !== 'skipped').length;
-                const totalTime = this.formatTime(Date.now() - this.sessionStartTime);
-
-                document.getElementById('finalCallsStat').textContent = totalCalls;
-                document.getElementById('finalAppointmentsStat').textContent = this.appointments;
-                document.getElementById('finalTimeStat').textContent = totalTime;
-
-                this.showScreen('completeScreen');
-            },
-
-            // ========== NEW SESSION ==========
-            newSession() {
-                this.contacts = [];
-                this.currentIndex = 0;
-                this.appointments = 0;
-                this.sessionStartTime = null;
-                document.getElementById('pasteInput').value = '';
-                this.showScreen('uploadScreen');
-            },
-
-            // ========== TIMERS ==========
-            startCallTimer() {
-                const timerEl = document.getElementById('callTimer');
-                this.callTimerInterval = setInterval(() => {
-                    const elapsed = Date.now() - this.callStartTime;
-                    timerEl.textContent = this.formatTime(elapsed);
-                }, 1000);
-            },
-
-            stopCallTimer() {
-                if (this.callTimerInterval) {
-                    clearInterval(this.callTimerInterval);
-                    this.callTimerInterval = null;
-                }
-            },
-
-            startSessionTimer() {
-                this.sessionTimerInterval = setInterval(() => {
-                    const elapsed = Date.now() - this.sessionStartTime;
-                    const formatted = this.formatTime(elapsed);
-                    document.getElementById('sessionTimerStat').textContent = formatted;
-                    document.getElementById('mobileSessionTimerStat').textContent = formatted;
-                }, 1000);
-            },
-
-            stopSessionTimer() {
-                if (this.sessionTimerInterval) {
-                    clearInterval(this.sessionTimerInterval);
-                    this.sessionTimerInterval = null;
-                }
-            },
-
-            formatTime(ms) {
-                const totalSeconds = Math.floor(ms / 1000);
-                const minutes = Math.floor(totalSeconds / 60);
-                const seconds = totalSeconds % 60;
-                return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-            },
-
-            // ========== UPDATE STATS ==========
-            updateStats() {
-                const progress = `${this.currentIndex + 1}/${this.contacts.length}`;
-                document.getElementById('progressStat').textContent = progress;
-                document.getElementById('mobileProgressStat').textContent = progress;
-                document.getElementById('appointmentsStat').textContent = this.appointments;
-                document.getElementById('mobileAppointmentsStat').textContent = this.appointments;
-            },
-
-            // ========== SCREEN MANAGEMENT ==========
-            showScreen(screenId) {
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                document.getElementById(screenId).classList.add('active');
-            }
-        };
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('[PowerDialer] Initialized');
-        });
+        },
+        
+        setStatus(t, txt) { const b = document.getElementById('callStatus'); b.className = `call-status ${t}`; document.getElementById('statusText').textContent = txt; },
+        updateProgress() { const pct = this.contacts.length ? (this.idx / this.contacts.length) * 100 : 0; document.getElementById('progressFill').style.width = `${pct}%`; document.getElementById('progressText').textContent = `${this.idx}/${this.contacts.length}`; },
+        
+        async dial() {
+            if (!this.sessionId) return;
+            this.setStatus('ringing', 'Dialing...');
+            document.getElementById('dialBtn').disabled = true;
+            document.getElementById('callActions').style.display = 'flex';
+            document.getElementById('dispSection').classList.remove('active');
+            try {
+                const res = await fetch('/api/dialer/dial-next', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: this.sessionId }) });
+                const data = await res.json();
+                if (data.success) setTimeout(() => { this.setStatus('connected', 'Connected'); document.getElementById('callActions').style.display = 'none'; document.getElementById('dispSection').classList.add('active'); }, 2000);
+                else if (data.complete) this.end();
+            } catch (e) { console.error(e); }
+        },
+        
+        async skip() {
+            if (this.sessionId) try { await fetch('/api/dialer/skip', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: this.sessionId }) }); } catch (e) {}
+            this.idx++; this.updateProgress();
+            this.idx >= this.contacts.length ? this.end() : (this.showContact(), this.resetUI());
+        },
+        
+        disp(t) { t === 'appointment' ? document.getElementById('modal').classList.add('open') : this.saveDisp(t); },
+        
+        async saveDisp(t, date, time) {
+            const c = this.contacts[this.idx];
+            try { await fetch('/api/dialer/disposition', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: this.sessionId, contact_id: c.id, disposition: t, scheduled_date: date, scheduled_time: time }) }); } catch (e) {}
+            if (t === 'appointment') this.appts++;
+            this.idx++; this.updateProgress();
+            this.idx >= this.contacts.length ? this.end() : (this.showContact(), this.resetUI());
+        },
+        
+        resetUI() { document.getElementById('callActions').style.display = 'flex'; document.getElementById('dispSection').classList.remove('active'); document.getElementById('dialBtn').disabled = false; this.setStatus('waiting', 'Ready'); },
+        
+        closeModal() { document.getElementById('modal').classList.remove('open'); },
+        saveAppt() { this.closeModal(); this.saveDisp('appointment', document.getElementById('apptDate').value, document.getElementById('apptTime').value); },
+        
+        async end() {
+            if (this.sessionId) try { await fetch('/api/dialer/end-session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: this.sessionId }) }); } catch (e) {}
+            const s = Math.floor((Date.now() - this.startTime) / 1000);
+            document.getElementById('statCalls').textContent = this.idx;
+            document.getElementById('statAppts').textContent = this.appts;
+            document.getElementById('statTime').textContent = `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`;
+            this.screen('completeScreen');
+        },
+        
+        reset() {
+            this.sessionId = null; this.contacts = []; this.idx = 0; this.appts = 0; this.startTime = null;
+            document.getElementById('contactsText').value = '';
+            document.getElementById('contactsPreview').classList.remove('active');
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('imagePreview').classList.remove('active');
+            document.getElementById('cameraUpload').classList.add('active');
+            document.getElementById('imageInput').value = '';
+            this.screen('setupScreen');
+        }
+    };
+    
+    document.addEventListener('DOMContentLoaded', () => PD.init());
     </script>
 </body>
 </html>
