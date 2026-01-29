@@ -72,6 +72,10 @@
         /* Name inputs row */
         .name-row{display:flex;gap:12px;width:100%;max-width:320px;margin-bottom:24px}
         .name-row .input-wrapper{flex:1;margin-bottom:0}
+        
+        /* Inline error text */
+        .input-error{font-size:0.8rem;color:var(--color-error);margin-top:8px;text-align:center;opacity:0;height:0;overflow:hidden;transition:all 0.2s}
+        .input-error.show{opacity:1;height:auto;margin-top:10px}
 
         /* ===== DASHBOARD SCREEN ===== */
         .dashboard-screen{flex-direction:row;position:relative}
@@ -198,6 +202,7 @@
             <p class="auth-tagline">Coaching on call.</p>
             <div class="input-wrapper">
                 <input type="text" class="auth-input code-input" id="agencyCodeInput" placeholder="AGENCY CODE" autocomplete="off" autocapitalize="characters">
+                <p class="input-error" id="agencyCodeError"></p>
             </div>
             <button class="btn-primary" id="agencyCodeBtn" onclick="validateAgencyCode()">
                 Continue 
@@ -220,6 +225,7 @@
             <p class="auth-subtitle">Enter your phone number to sign in or create your account</p>
             <div class="input-wrapper">
                 <input type="tel" class="auth-input phone-input" id="phoneInput" placeholder="(555) 123-4567" autocomplete="tel">
+                <p class="input-error" id="phoneError"></p>
             </div>
             <button class="btn-primary" id="phoneBtn" onclick="submitPhone()">
                 Send Code
@@ -238,6 +244,7 @@
             <p class="auth-subtitle">We sent a 5-digit code to <span id="phoneDisplay"></span></p>
             <div class="input-wrapper">
                 <input type="text" class="auth-input verify-code-input" id="verifyCodeInput" placeholder="•••••" maxlength="5" inputmode="numeric" autocomplete="one-time-code">
+                <p class="input-error" id="verifyError"></p>
             </div>
             <button class="btn-primary" id="verifyBtn" onclick="verifyCode()" disabled>
                 Verify
@@ -267,6 +274,7 @@
                     <input type="text" class="auth-input name-input" id="lastNameInput" placeholder="Smith" autocomplete="family-name">
                 </div>
             </div>
+            <p class="input-error" id="profileError"></p>
             <button class="btn-primary" id="profileBtn" onclick="completeProfile()">
                 Get Started
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -405,6 +413,27 @@
             play:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
         };
 
+        // ==================== INLINE ERROR HELPERS ====================
+        function showError(elementId, message) {
+            const el = document.getElementById(elementId);
+            if (el) {
+                el.textContent = message;
+                el.classList.add('show');
+            }
+        }
+        
+        function clearError(elementId) {
+            const el = document.getElementById(elementId);
+            if (el) {
+                el.classList.remove('show');
+            }
+        }
+        
+        function clearAllErrors() {
+            document.querySelectorAll('.input-error').forEach(el => el.classList.remove('show'));
+            document.querySelectorAll('.auth-input').forEach(el => el.classList.remove('error'));
+        }
+
         // ==================== SCREEN NAVIGATION ====================
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -412,6 +441,7 @@
         }
         
         function goBack(screenId) {
+            clearAllErrors();
             showScreen(screenId);
         }
 
@@ -464,6 +494,8 @@
             const code = input.value.trim().toUpperCase();
             
             input.classList.remove('error');
+            clearError('agencyCodeError');
+            
             if (!code) {
                 input.classList.add('error');
                 return;
@@ -487,11 +519,15 @@
                     
                     document.getElementById('agencyNameDisplay').textContent = data.name;
                     showScreen('phoneScreen');
+                    btn.disabled = false;
+                    btn.innerHTML = 'Continue <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+                    return;
                 } else {
                     input.classList.add('error');
+                    showError('agencyCodeError', 'Agency not found. Check your code and try again.');
                 }
             } catch (e) {
-                // Fallback - accept any code
+                // Fallback - accept any code (for development/demo)
                 state.agencyCode = code;
                 state.agencyName = code;
                 localStorage.setItem('coachd_agency', JSON.stringify({ code, name: code }));
@@ -510,8 +546,11 @@
             const phone = input.value.trim();
             
             input.classList.remove('error');
+            clearError('phoneError');
+            
             if (!phone || phone.replace(/\D/g, '').length < 10) {
                 input.classList.add('error');
+                if (phone) showError('phoneError', 'Please enter a valid 10-digit phone number.');
                 return;
             }
             
@@ -539,6 +578,8 @@
                 if (verifyData.already_verified) {
                     // Skip verification, complete login
                     await completeLogin();
+                    btn.disabled = false;
+                    btn.innerHTML = 'Send Code <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
                     return;
                 }
                 
@@ -551,6 +592,7 @@
             } catch (e) {
                 console.error('Phone submit failed:', e);
                 input.classList.add('error');
+                showError('phoneError', 'Could not send code. Please try again.');
             }
             
             btn.disabled = false;
@@ -567,6 +609,7 @@
             
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div>';
+            clearError('verifyError');
             
             try {
                 const res = await fetch('/api/verify/confirm', {
@@ -580,11 +623,12 @@
                 } else {
                     const data = await res.json();
                     input.classList.add('error');
-                    alert(data.detail || 'Invalid code');
+                    showError('verifyError', data.detail || 'Invalid or expired code. Tap resend below.');
                 }
             } catch (e) {
                 console.error('Verify failed:', e);
                 input.classList.add('error');
+                showError('verifyError', 'Connection error. Please try again.');
             }
             
             btn.disabled = false;
@@ -606,7 +650,7 @@
                 
                 const data = await res.json();
                 
-                if (data.success) {
+                if (res.ok && data.success) {
                     state.token = data.token;
                     state.agent = data.agent;
                     localStorage.setItem('coachd_token', data.token);
@@ -616,9 +660,12 @@
                     } else {
                         showDashboard();
                     }
+                } else {
+                    showError('verifyError', data.detail || 'Login failed. Please try again.');
                 }
             } catch (e) {
                 console.error('Login complete failed:', e);
+                showError('verifyError', 'Connection error. Please try again.');
             }
         }
 
@@ -627,6 +674,10 @@
             const firstName = document.getElementById('firstNameInput').value.trim();
             const lastName = document.getElementById('lastNameInput').value.trim();
             const btn = document.getElementById('profileBtn');
+            
+            clearError('profileError');
+            document.getElementById('firstNameInput').classList.remove('error');
+            document.getElementById('lastNameInput').classList.remove('error');
             
             if (!firstName || !lastName) {
                 if (!firstName) document.getElementById('firstNameInput').classList.add('error');
@@ -649,12 +700,16 @@
                 
                 const data = await res.json();
                 
-                if (data.success) {
+                if (res.ok && data.success) {
                     state.agent = data.agent;
                     showDashboard();
+                    return; // Success - don't reset button
+                } else {
+                    showError('profileError', data.detail || 'Could not save profile. Please try again.');
                 }
             } catch (e) {
                 console.error('Profile complete failed:', e);
+                showError('profileError', 'Connection error. Please try again.');
             }
             
             btn.disabled = false;
@@ -800,12 +855,33 @@
             this.value = this.value.replace(/\D/g, '');
             document.getElementById('verifyBtn').disabled = this.value.length !== 5;
             this.classList.remove('error');
+            clearError('verifyError');
         });
 
         // Enter key handlers
         document.getElementById('agencyCodeInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') validateAgencyCode(); });
         document.getElementById('phoneInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') submitPhone(); });
         document.getElementById('verifyCodeInput')?.addEventListener('keypress', e => { if (e.key === 'Enter' && e.target.value.length === 5) verifyCode(); });
+        document.getElementById('firstNameInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('lastNameInput').focus(); });
+        document.getElementById('lastNameInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') completeProfile(); });
+        
+        // Clear error state when typing
+        document.getElementById('agencyCodeInput')?.addEventListener('input', function() { 
+            this.classList.remove('error'); 
+            clearError('agencyCodeError');
+        });
+        document.getElementById('phoneInput')?.addEventListener('input', function() { 
+            this.classList.remove('error'); 
+            clearError('phoneError');
+        });
+        document.getElementById('firstNameInput')?.addEventListener('input', function() { 
+            this.classList.remove('error'); 
+            clearError('profileError');
+        });
+        document.getElementById('lastNameInput')?.addEventListener('input', function() { 
+            this.classList.remove('error'); 
+            clearError('profileError');
+        });
 
         // ==================== CHAT MODULE ====================
         const Chat = {
