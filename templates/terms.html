@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
     <link rel="shortcut icon" href="/static/favicon.ico">
     <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#FFFFFF">
+    <meta name="theme-color" content="#F5F5F7">
     
     <!-- SEO -->
     <meta name="description" content="AI-powered sales coaching for life insurance agents.">
@@ -21,14 +21,23 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --color-bg: #FFFFFF;
+            /* Shop.app-inspired design system */
+            --color-bg: #F5F5F7;
             --color-text: #1A1A1A;
             --color-text-secondary: #6B7280;
             --color-text-muted: #9CA3AF;
-            --color-accent: #60A5FA;
-            --color-border: rgba(0, 0, 0, 0.08);
+            --color-accent: #3B82F6;
+            --color-border: rgba(0,0,0,0.06);
+            --color-glass: rgba(255,255,255,0.65);
+            --color-glass-strong: rgba(255,255,255,0.85);
+            --color-glass-border: rgba(255,255,255,0.4);
             --font-display: 'Outfit', -apple-system, sans-serif;
             --font-body: 'Inter', -apple-system, sans-serif;
+            --blur: blur(24px);
+            --shadow-glass: 0 8px 32px rgba(0,0,0,0.06);
+            --radius-sm: 12px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
         }
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -163,24 +172,37 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 40px;
-            height: 40px;
-            background: #F5F5F5;
-            border: none;
-            border-radius: 12px;
+            width: 44px;
+            height: 44px;
+            background: var(--color-glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--color-glass-border);
+            border-radius: var(--radius-sm);
             cursor: pointer;
             transition: all 0.15s ease;
             text-decoration: none;
             flex-shrink: 0;
         }
         
-        .back-btn:hover { background: #E5E5E5; }
+        .back-btn:hover { background: var(--color-glass-strong); }
         .back-btn:active { transform: scale(0.95); }
-        .back-btn svg { width: 20px; height: 20px; color: var(--color-text); }
+        .back-btn svg { width: 20px; height: 20px; color: var(--color-text-secondary); }
         
         .logo {
             display: block;
             height: 32px;
+        }
+        
+        /* Content Card */
+        .content-card {
+            background: var(--color-glass-strong);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--color-glass-border);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            box-shadow: var(--shadow-glass);
         }
         
         h1 {

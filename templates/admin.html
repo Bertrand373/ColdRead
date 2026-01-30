@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
     <link rel="shortcut icon" href="/static/favicon.ico">
     <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#FFFFFF">
+    <meta name="theme-color" content="#F5F5F7">
     
     <!-- SEO -->
     <meta name="description" content="AI-powered sales coaching for life insurance agents.">
@@ -20,25 +20,33 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --color-bg: #FFFFFF;
-            --color-surface: #F5F5F5;
-            --color-border: #E5E5E5;
+            /* Shop.app-inspired design system - aligned with agent.html */
+            --color-bg: #F5F5F7;
+            --color-surface: rgba(255,255,255,0.65);
+            --color-surface-solid: #FFFFFF;
+            --color-glass: rgba(255,255,255,0.65);
+            --color-glass-strong: rgba(255,255,255,0.85);
+            --color-glass-border: rgba(255,255,255,0.4);
+            --color-border: rgba(0,0,0,0.06);
             --color-text: #1A1A1A;
-            --color-text-secondary: #666666;
-            --color-text-muted: #999999;
+            --color-text-secondary: #6B7280;
+            --color-text-muted: #9CA3AF;
             --color-accent: #10B981;
             --color-accent-soft: rgba(16, 185, 129, 0.1);
-            --color-blue: #60A5FA;
-            --color-blue-dark: #3B82F6;
-            --color-blue-soft: rgba(96, 165, 250, 0.1);
+            --color-blue: #3B82F6;
+            --color-blue-dark: #2563EB;
+            --color-blue-soft: rgba(59, 130, 246, 0.12);
             --color-error: #EF4444;
             --color-error-soft: rgba(239, 68, 68, 0.1);
             --color-warning: #F59E0B;
             --font-display: 'Outfit', sans-serif;
             --font-body: 'Inter', -apple-system, sans-serif;
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
+            --blur: blur(24px);
+            --blur-strong: blur(40px);
+            --shadow-glass: 0 8px 32px rgba(0,0,0,0.06);
+            --radius-sm: 12px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
             --radius-full: 9999px;
             --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
             --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
@@ -168,9 +176,10 @@
             align-items: center;
             padding: 0 32px;
             height: 64px;
-            background: rgba(255, 253, 250, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: var(--color-glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-bottom: 1px solid var(--color-glass-border);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -276,7 +285,10 @@
             display: flex;
             gap: 4px;
             padding: 4px;
-            background: var(--color-surface);
+            background: var(--color-glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--color-glass-border);
             border-radius: var(--radius-md);
             margin-bottom: 24px;
         }
@@ -304,7 +316,7 @@
         }
         
         .view-tab.active {
-            background: var(--color-bg);
+            background: var(--color-glass-strong);
             color: var(--color-text);
             box-shadow: var(--shadow-sm);
         }
@@ -332,17 +344,21 @@
         }
         
         .stat-card {
-            background: var(--color-surface);
-            border-radius: var(--radius-md);
+            background: var(--color-glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--color-glass-border);
+            border-radius: var(--radius-lg);
             padding: 20px;
             text-align: center;
+            box-shadow: var(--shadow-glass);
         }
         
         .stat-icon {
             width: 40px;
             height: 40px;
             margin: 0 auto 12px;
-            background: var(--color-bg);
+            background: var(--color-glass-strong);
             border-radius: var(--radius-sm);
             display: flex;
             align-items: center;
@@ -358,7 +374,7 @@
         .stat-icon.accent { background: var(--color-accent-soft); }
         .stat-icon.accent svg { color: var(--color-accent); }
         .stat-icon.blue { background: var(--color-blue-soft); }
-        .stat-icon.blue svg { color: var(--color-blue-dark); }
+        .stat-icon.blue svg { color: var(--color-blue); }
         .stat-icon.error { background: var(--color-error-soft); }
         .stat-icon.error svg { color: var(--color-error); }
         
@@ -387,15 +403,18 @@
         }
         
         .card {
-            background: var(--color-surface);
+            background: var(--color-glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--color-glass-border);
             border-radius: var(--radius-lg);
             overflow: hidden;
-            box-shadow: var(--shadow-sm);
+            box-shadow: var(--shadow-glass);
             transition: all 0.2s ease;
         }
         
         .card:hover {
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
         }
         
         .card-header {
@@ -739,9 +758,9 @@
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -763,7 +782,10 @@
         }
         
         .modal {
-            background: var(--color-bg);
+            background: var(--color-glass-strong);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border: 1px solid var(--color-glass-border);
             border-radius: var(--radius-lg);
             padding: 24px;
             width: 100%;
@@ -792,7 +814,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--color-blue-dark);
+            color: var(--color-blue);
             flex-shrink: 0;
         }
         
@@ -817,8 +839,8 @@
         
         .modal-input {
             width: 100%;
-            padding: 12px 14px;
-            background: var(--color-surface);
+            padding: 14px 16px;
+            background: transparent;
             border: 1.5px solid var(--color-border);
             border-radius: var(--radius-md);
             font-family: var(--font-body);
@@ -826,20 +848,25 @@
             color: var(--color-text);
             margin-bottom: 20px;
             transition: all 0.2s ease;
-            min-height: 46px;
+            min-height: 50px;
         }
         
         .modal-input:focus {
             outline: none;
-            border-color: var(--color-blue-dark);
+            border-color: var(--color-blue);
             box-shadow: 0 0 0 3px var(--color-blue-soft);
-            background: var(--color-bg);
         }
         
         .modal-input.error {
             border-color: var(--color-error);
             box-shadow: 0 0 0 3px var(--color-error-soft);
-            animation: shake 0.4s ease;
+            animation: shakeAndRevert 0.4s ease-out forwards;
+        }
+        
+        @keyframes shakeAndRevert {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
         }
         
         @keyframes shake {
@@ -852,8 +879,8 @@
             display: none;
             color: var(--color-error);
             font-size: 0.75rem;
-            margin-top: 8px;
-            margin-bottom: 8px;
+            margin-top: -12px;
+            margin-bottom: 12px;
             text-align: center;
         }
         
@@ -1043,6 +1070,8 @@
             position: fixed;
             inset: 0;
             background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             display: none;
             align-items: center;
             justify-content: center;
@@ -1054,11 +1083,15 @@
         }
         
         .upload-modal {
-            background: var(--color-bg);
+            background: var(--color-glass-strong);
+            backdrop-filter: var(--blur-strong);
+            -webkit-backdrop-filter: var(--blur-strong);
+            border: 1px solid var(--color-glass-border);
             border-radius: var(--radius-lg);
             padding: 40px;
             text-align: center;
             max-width: 320px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
         }
         
         .upload-spinner {
@@ -1841,10 +1874,13 @@
                     sessionStorage.setItem('adminPassword', pwd);
                     unlockPage();
                 } else {
-                    // Show error with shake animation
+                    // Show error with shake animation - revert after animation completes
                     input.classList.add('error');
                     errorEl.classList.add('visible');
-                    setTimeout(() => input.classList.remove('error'), 400);
+                    input.addEventListener('animationend', function handler() {
+                        input.classList.remove('error');
+                        input.removeEventListener('animationend', handler);
+                    }, { once: true });
                     input.value = '';
                     input.focus();
                 }

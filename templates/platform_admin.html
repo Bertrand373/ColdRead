@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
     <link rel="shortcut icon" href="/static/favicon.ico">
     <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#FFFFFF">
+    <meta name="theme-color" content="#F5F5F7">
     
     <!-- SEO -->
     <meta name="description" content="AI-powered sales coaching for life insurance agents.">
@@ -21,17 +21,22 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
+            /* Shop.app-inspired design system - aligned with agent.html */
             --font-display: 'Outfit', -apple-system, sans-serif;
             --font-body: 'Inter', -apple-system, sans-serif;
-            --color-bg: #F9FAFB;
-            --color-surface: #FFFFFF;
+            --color-bg: #F5F5F7;
+            --color-surface: rgba(255,255,255,0.65);
+            --color-surface-solid: #FFFFFF;
+            --color-glass: rgba(255,255,255,0.65);
+            --color-glass-strong: rgba(255,255,255,0.85);
+            --color-glass-border: rgba(255,255,255,0.4);
             --color-border: rgba(0, 0, 0, 0.06);
             --color-border-hover: rgba(0, 0, 0, 0.1);
             --color-text: #1A1A1A;
             --color-text-secondary: #6B7280;
             --color-text-muted: #9CA3AF;
-            --color-accent: #60A5FA;
-            --color-accent-soft: rgba(96, 165, 250, 0.1);
+            --color-accent: #3B82F6;
+            --color-accent-soft: rgba(59, 130, 246, 0.12);
             --color-ready: #10B981;
             --color-ready-soft: rgba(16, 185, 129, 0.1);
             --color-warning: #F59E0B;
@@ -39,12 +44,15 @@
             --color-error: #EF4444;
             --color-error-soft: rgba(239, 68, 68, 0.1);
             --color-info: #3B82F6;
-            --color-info-soft: rgba(59, 130, 246, 0.1);
+            --color-info-soft: rgba(59, 130, 246, 0.12);
             --color-purple: #8B5CF6;
             --color-purple-soft: rgba(139, 92, 246, 0.1);
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
+            --blur: blur(24px);
+            --blur-strong: blur(40px);
+            --shadow-glass: 0 8px 32px rgba(0,0,0,0.06);
+            --radius-sm: 12px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
             --radius-full: 9999px;
         }
         
@@ -165,9 +173,10 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            background: var(--color-glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border-bottom: 1px solid var(--color-glass-border);
             padding: 0 32px;
             height: 60px;
             display: flex;
@@ -214,8 +223,10 @@
             justify-content: center;
             width: 36px;
             height: 36px;
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
+            background: var(--color-glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--color-glass-border);
             border-radius: var(--radius-sm);
             color: var(--color-text-secondary);
             cursor: pointer;
@@ -223,7 +234,7 @@
         }
         
         .refresh-btn:hover {
-            background: var(--color-border-hover);
+            background: var(--color-glass-strong);
             color: var(--color-text);
         }
         
@@ -275,10 +286,13 @@
         }
         
         .stat-card {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
+            background: var(--color-glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--color-glass-border);
             border-radius: var(--radius-lg);
             padding: 24px;
+            box-shadow: var(--shadow-glass);
         }
         
         .stat-card.highlight {
@@ -339,10 +353,13 @@
         
         /* Cards */
         .card {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
+            background: var(--color-glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--color-glass-border);
             border-radius: var(--radius-lg);
             overflow: hidden;
+            box-shadow: var(--shadow-glass);
         }
         
         .card-header {
@@ -388,10 +405,13 @@
         }
         
         .service-card {
-            background: var(--color-surface);
-            border: 1px solid var(--color-border);
+            background: var(--color-glass);
+            backdrop-filter: var(--blur);
+            -webkit-backdrop-filter: var(--blur);
+            border: 1px solid var(--color-glass-border);
             border-radius: var(--radius-lg);
             padding: 24px;
+            box-shadow: var(--shadow-glass);
         }
         
         .service-header {
