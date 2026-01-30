@@ -4854,6 +4854,7 @@
             agentPhone: null,
             clientPhone: null,  // Client phone for click-to-call
             agency: null,
+            authAgent: null,  // Full agent data from auth system
             // SECURITY: Validated agency from home page
             validatedAgencyCode: null,
             validatedAgencyName: null,
@@ -5009,7 +5010,7 @@
             
             await loadAgencies();
             loadClientContext();
-            checkExistingIdentity();
+            await checkExistingIdentity();
             
             // Initialize transcript sidebar scroll tracking
             initTranscriptScroll();
@@ -5065,7 +5066,37 @@
             }
         }
         
-        function checkExistingIdentity() {
+        async function checkExistingIdentity() {
+            // FIRST: Check for auth token (agent logged in via signup flow)
+            const authToken = localStorage.getItem('coachd_token');
+            if (authToken) {
+                try {
+                    const authRes = await fetch('/api/auth/me', {
+                        headers: { 'Authorization': `Bearer ${authToken}` }
+                    });
+                    if (authRes.ok) {
+                        const authData = await authRes.json();
+                        if (authData.success && authData.agent) {
+                            // SECURITY: Verify agent's agency matches validated agency
+                            if (authData.agent.agency_code === state.validatedAgencyCode) {
+                                console.log('[Auth] Using authenticated agent:', authData.agent.first_name);
+                                state.agentPhone = authData.agent.phone;
+                                state.agency = authData.agent.agency_code;
+                                state.authAgent = authData.agent;
+                                updatePhoneDisplay();
+                                showScreen('startScreen');
+                                return;
+                            } else {
+                                console.log('[Auth] Agent agency mismatch - showing identify screen');
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log('[Auth] Token check failed:', e);
+                }
+            }
+            
+            // FALLBACK: Check for legacy coachd_agent localStorage
             const saved = localStorage.getItem('coachd_agent');
             if (saved) {
                 try {

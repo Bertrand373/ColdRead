@@ -361,6 +361,12 @@ async def dialer_page(request: Request):
     return templates.TemplateResponse("power_dialer.html", {"request": request})
 
 
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    """Agent settings and profile"""
+    return templates.TemplateResponse("settings.html", {"request": request})
+
+
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
     """Admin dashboard"""
