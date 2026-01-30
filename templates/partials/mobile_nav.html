@@ -23,6 +23,7 @@
                     <span class="bottom-nav-label pill-item-label">Settings</span>
                 </a>
             </div>
+            {% if active_page == 'call' %}
             <div class="bottom-nav-call pill-nav-call">
                 <button class="bottom-nav-item pill-item" id="pillTranscriptBtn" onclick="typeof Coachd !== 'undefined' && Coachd.toggleBottomSheet && Coachd.toggleBottomSheet('transcript')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
@@ -39,6 +40,7 @@
                     <span class="bottom-nav-label pill-item-label">End</span>
                 </button>
             </div>
+            {% endif %}
         </div>
     </div>
 </nav>
