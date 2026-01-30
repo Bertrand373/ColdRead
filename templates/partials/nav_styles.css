@@ -1,33 +1,11 @@
 /* ============================================
    UNIVERSAL NAVIGATION STYLES
    Single source of truth for all nav components
+   
+   Supports both variable naming conventions:
+   - --color-* prefix (agent.html, settings.html)
+   - No prefix (call_telnyx.html)
    ============================================ */
-
-/* ========== CSS VARIABLES (ensure these exist in :root) ========== */
-/*
-Required variables - add to your page's :root if not present:
---bg: #F5F5F7;
---surface: #FFFFFF;
---glass: rgba(255,255,255,0.65);
---glass-strong: rgba(255,255,255,0.85);
---glass-border: rgba(255,255,255,0.4);
---border: rgba(0,0,0,0.06);
---text: #1A1A1A;
---text-secondary: #6B7280;
---text-muted: #9CA3AF;
---accent: #3B82F6;
---accent-soft: rgba(59,130,246,0.12);
---danger: #EF4444;
---success: #10B981;
---blur: blur(24px);
---blur-strong: blur(40px);
---radius-sm: 12px;
---radius-md: 16px;
---radius-full: 9999px;
---safe-top: env(safe-area-inset-top, 0px);
---safe-bottom: env(safe-area-inset-bottom, 0px);
---sidebar-width: 72px;
-*/
 
 /* ========== DESKTOP SIDEBAR ========== */
 .sidebar {
@@ -36,10 +14,10 @@ Required variables - add to your page's :root if not present:
     left: 0;
     width: var(--sidebar-width);
     height: 100vh;
-    background: var(--glass);
+    background: var(--color-glass, var(--glass));
     backdrop-filter: var(--blur-strong);
     -webkit-backdrop-filter: var(--blur-strong);
-    border-right: 1px solid var(--border);
+    border-right: 1px solid var(--color-border, var(--border));
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -94,7 +72,7 @@ body.in-call .sidebar-nav-call { display: flex; }
     border: none;
     border-radius: var(--radius-sm);
     background: transparent;
-    color: var(--text-muted);
+    color: var(--color-text-muted, var(--text-muted));
     cursor: pointer;
     transition: all 0.15s ease;
     text-decoration: none;
@@ -103,16 +81,16 @@ body.in-call .sidebar-nav-call { display: flex; }
 
 .nav-item:hover {
     background: rgba(255,255,255,0.5);
-    color: var(--text);
+    color: var(--color-text, var(--text));
 }
 
 .nav-item.active {
-    background: var(--accent-soft);
-    color: var(--accent);
+    background: var(--color-accent-soft, var(--accent-soft));
+    color: var(--color-accent, var(--accent));
 }
 
 .nav-item.danger {
-    color: var(--danger);
+    color: var(--color-error, var(--danger));
 }
 
 .nav-item.danger:hover {
@@ -132,7 +110,7 @@ body.in-call .sidebar-nav-call { display: flex; }
     min-width: 18px;
     height: 18px;
     padding: 0 5px;
-    background: var(--accent);
+    background: var(--color-accent, var(--accent));
     color: white;
     border-radius: 9px;
     font-size: 0.65rem;
@@ -149,7 +127,7 @@ body.in-call .sidebar-nav-call { display: flex; }
     position: absolute;
     left: calc(100% + 12px);
     padding: 8px 12px;
-    background: var(--text);
+    background: var(--color-text, var(--text));
     color: white;
     font-size: 0.8rem;
     font-weight: 500;
@@ -197,8 +175,8 @@ body.in-call .sidebar-footer-call { display: flex; }
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: var(--accent-soft);
-    color: var(--accent);
+    background: var(--color-accent-soft, var(--accent-soft));
+    color: var(--color-accent, var(--accent));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -215,7 +193,7 @@ body.in-call .sidebar-footer-call { display: flex; }
     right: 0;
     height: 44px;
     padding: 0 20px;
-    padding-top: var(--safe-top);
+    padding-top: var(--safe-top, 0px);
     z-index: 300;
     align-items: center;
     justify-content: space-between;
@@ -225,10 +203,10 @@ body.in-call .sidebar-footer-call { display: flex; }
 
 /* Glass treatment during calls */
 body.in-call .mobile-header {
-    background: var(--glass);
+    background: var(--color-glass, var(--glass));
     backdrop-filter: var(--blur);
     -webkit-backdrop-filter: var(--blur);
-    border-bottom: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--color-glass-border, var(--glass-border));
 }
 
 .mobile-header-left {
@@ -266,7 +244,7 @@ body.in-call .mobile-header-timer {
 .mobile-header-timer .status-dot {
     width: 8px;
     height: 8px;
-    background: var(--success);
+    background: var(--color-success, var(--success, #10B981));
     border-radius: 50%;
     animation: pulse 2s infinite;
 }
@@ -274,7 +252,7 @@ body.in-call .mobile-header-timer {
 .mobile-header-timer .timer-text {
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary, var(--text-secondary));
     font-variant-numeric: tabular-nums;
 }
 
@@ -283,7 +261,95 @@ body.in-call .mobile-header-timer {
     50% { opacity: 0.4; }
 }
 
-/* ========== MOBILE BOTTOM NAV (Pill) ========== */
+/* ========== MOBILE BOTTOM NAV ========== */
+.bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 400;
+    padding: 8px 12px calc(8px + var(--safe-bottom));
+}
+
+.bottom-nav-pill {
+    background: var(--color-glass-strong, var(--glass-strong));
+    backdrop-filter: var(--blur-strong);
+    -webkit-backdrop-filter: var(--blur-strong);
+    border: 1px solid var(--color-glass-border, var(--glass-border));
+    border-radius: var(--radius-full);
+    padding: 6px 8px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+}
+
+.bottom-nav-items {
+    display: flex;
+    justify-content: space-around;
+}
+
+/* Normal nav items (hidden during call) */
+.bottom-nav-normal { display: contents; }
+body.in-call .bottom-nav-normal { display: none; }
+
+/* Call nav items (hidden when not in call) */
+.bottom-nav-call { display: none; }
+body.in-call .bottom-nav-call { display: contents; }
+
+.bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    color: var(--color-text-muted, var(--text-muted));
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    position: relative;
+    transition: color 0.15s;
+}
+
+.bottom-nav-item.active { color: var(--color-accent, var(--accent)); }
+.bottom-nav-item.danger { color: var(--color-error, var(--danger)); }
+.bottom-nav-item svg { width: 20px; height: 20px; }
+.bottom-nav-label { font-size: 0.6rem; font-weight: 600; }
+
+.bottom-nav-badge {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: var(--color-accent, var(--accent));
+    color: white;
+    border-radius: 8px;
+    font-size: 0.55rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.bottom-nav-badge.empty { display: none; }
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .sidebar { display: none; }
+    .mobile-header { display: flex; }
+    .bottom-nav, .bottom-pill { display: block; }
+}
+
+@media (min-width: 769px) {
+    .sidebar { display: flex; }
+    .mobile-header { display: none; }
+    .bottom-nav, .bottom-pill { display: none; }
+}
+
+/* ========== PILL CLASS ALIASES (for call_telnyx.html compatibility) ========== */
+/* These mirror the .bottom-nav-* classes above for pages using .pill-* naming */
+
 .bottom-pill {
     display: none;
     position: fixed;
@@ -291,14 +357,14 @@ body.in-call .mobile-header-timer {
     left: 0;
     right: 0;
     z-index: 400;
-    padding: 8px 16px calc(8px + var(--safe-bottom));
+    padding: 8px 12px calc(8px + var(--safe-bottom));
 }
 
 .bottom-pill-inner {
-    background: var(--glass-strong);
+    background: var(--color-glass-strong, var(--glass-strong));
     backdrop-filter: var(--blur-strong);
     -webkit-backdrop-filter: var(--blur-strong);
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--color-glass-border, var(--glass-border));
     border-radius: var(--radius-full);
     padding: 6px 8px;
     box-shadow: 0 4px 24px rgba(0,0,0,0.1);
@@ -309,11 +375,9 @@ body.in-call .mobile-header-timer {
     justify-content: space-around;
 }
 
-/* Normal nav items (hidden during call) */
 .pill-nav-normal { display: contents; }
 body.in-call .pill-nav-normal { display: none; }
 
-/* Call nav items (hidden when not in call) */
 .pill-nav-call { display: none; }
 body.in-call .pill-nav-call { display: contents; }
 
@@ -325,26 +389,27 @@ body.in-call .pill-nav-call { display: contents; }
     padding: 8px 12px;
     background: transparent;
     border: none;
-    color: var(--text-muted);
+    color: var(--color-text-muted, var(--text-muted));
     cursor: pointer;
     border-radius: var(--radius-md);
     text-decoration: none;
     position: relative;
+    transition: color 0.15s;
 }
 
-.pill-item.active { color: var(--accent); }
-.pill-item.danger { color: var(--danger); }
+.pill-item.active { color: var(--color-accent, var(--accent)); }
+.pill-item.danger { color: var(--color-error, var(--danger)); }
 .pill-item svg { width: 20px; height: 20px; }
 .pill-item-label { font-size: 0.6rem; font-weight: 600; }
 
-.pill-item .pill-badge {
+.pill-badge {
     position: absolute;
     top: 2px;
     right: 4px;
     min-width: 16px;
     height: 16px;
     padding: 0 4px;
-    background: var(--accent);
+    background: var(--color-accent, var(--accent));
     color: white;
     border-radius: 8px;
     font-size: 0.55rem;
@@ -353,17 +418,4 @@ body.in-call .pill-nav-call { display: contents; }
     align-items: center;
     justify-content: center;
 }
-.pill-item .pill-badge.empty { display: none; }
-
-/* ========== RESPONSIVE ========== */
-@media (max-width: 768px) {
-    .sidebar { display: none; }
-    .mobile-header { display: flex; }
-    .bottom-pill { display: block; }
-}
-
-@media (min-width: 769px) {
-    .sidebar { display: flex; }
-    .mobile-header { display: none; }
-    .bottom-pill { display: none; }
-}
+.pill-badge.empty { display: none; }

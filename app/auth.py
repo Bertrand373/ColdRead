@@ -7,7 +7,7 @@ No passwords - agents verify via SMS each session (like magic links).
 Flow:
 1. Agent enters agency code (existing)
 2. Agent enters phone number
-3. SMS verification (reuses phone_verification.py)
+3. SMS verification (reuses phone_verification.py) - SKIPPED for returning users with valid session
 4. On success: create/update agent record, return session token
 5. Token stored in localStorage, sent with API requests
 """
@@ -245,7 +245,10 @@ async def require_agent(
 async def initiate_login(data: PhoneLoginRequest):
     """
     Step 1: Agent provides phone + agency code.
-    We check if they exist and trigger SMS verification.
+    
+    NEW BEHAVIOR:
+    - If agent exists AND has valid (unexpired) session → return token immediately (skip SMS)
+    - If agent is new OR session expired → require SMS verification
     """
     if not is_db_configured():
         raise HTTPException(status_code=503, detail="Database not configured")
@@ -266,20 +269,60 @@ async def initiate_login(data: PhoneLoginRequest):
         
         if is_new:
             print(f"[Auth] New agent - will create after verification", flush=True)
-        else:
-            print(f"[Auth] Existing agent: {agent.first_name} {agent.last_name}", flush=True)
-    
-    # Trigger SMS verification using existing endpoint
-    # The frontend will call /api/verify/initiate directly
-    # This endpoint just validates and returns status
-    
-    return {
-        "success": True,
-        "phone": normalized_phone,
-        "agency_code": agency_code,
-        "is_new_agent": is_new,
-        "message": "Please verify your phone number"
-    }
+            return {
+                "success": True,
+                "phone": normalized_phone,
+                "agency_code": agency_code,
+                "is_new_agent": True,
+                "needs_verification": True,
+                "message": "Please verify your phone number"
+            }
+        
+        # Existing agent - check if they have a valid session
+        print(f"[Auth] Existing agent: {agent.first_name} {agent.last_name}", flush=True)
+        
+        has_valid_session = (
+            agent.session_token is not None and 
+            agent.session_expires is not None and 
+            agent.session_expires > datetime.utcnow()
+        )
+        
+        if has_valid_session:
+            # SKIP SMS - return existing token and extend session
+            print(f"[Auth] Valid session exists - skipping SMS verification", flush=True)
+            
+            # Extend session
+            agent.session_expires = datetime.utcnow() + timedelta(days=SESSION_DURATION_DAYS)
+            agent.last_login = datetime.utcnow()
+            agent.last_active = datetime.utcnow()
+            db.commit()
+            db.refresh(agent)
+            
+            response_data = agent_to_response(agent)
+            
+            return {
+                "success": True,
+                "phone": normalized_phone,
+                "agency_code": agency_code,
+                "is_new_agent": False,
+                "needs_verification": False,
+                "already_authenticated": True,
+                "token": agent.session_token,
+                "expires": agent.session_expires.isoformat(),
+                "agent": response_data,
+                "message": "Welcome back!"
+            }
+        
+        # Session expired or doesn't exist - need SMS verification
+        print(f"[Auth] Session expired or missing - requiring SMS verification", flush=True)
+        return {
+            "success": True,
+            "phone": normalized_phone,
+            "agency_code": agency_code,
+            "is_new_agent": False,
+            "needs_verification": True,
+            "message": "Please verify your phone number"
+        }
 
 
 @router.post("/login/complete")
