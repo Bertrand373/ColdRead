@@ -5,175 +5,235 @@
 
 {% block styles %}
 /* ===== SETTINGS STYLES ===== */
-.settings{max-width:800px;margin:0 auto}
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
-.stat-card{padding:20px;text-align:center}
-.stat-value{font-family:var(--font-display);font-size:2rem;font-weight:600;color:var(--color-accent);line-height:1;margin-bottom:4px}
-.stat-label{font-size:0.8rem;color:var(--color-text-muted);text-transform:uppercase;letter-spacing:0.04em}
+.settings-page{max-width:1200px;margin:0 auto}
+.day-badge{display:flex;align-items:center;gap:8px;padding:10px 18px;background:var(--color-glass-strong);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--color-glass-border);border-radius:var(--radius-full);font-size:0.85rem;font-weight:600;color:var(--color-accent);box-shadow:var(--shadow-glass)}
+.day-badge svg{width:16px;height:16px}
 
-.profile-card{margin-bottom:28px}
-.profile-header{display:flex;align-items:center;gap:20px;padding:24px}
-.profile-avatar{width:72px;height:72px;border-radius:50%;background:var(--color-accent-soft);color:var(--color-accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:1.75rem;font-weight:600}
+/* Stats Grid */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:28px}
+.stat-card{padding:24px}
+.stat-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.stat-label{font-size:0.9rem;font-weight:500;color:var(--color-text-secondary)}
+.stat-icon{width:36px;height:36px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;color:var(--color-text-muted)}
+.stat-icon svg{width:18px;height:18px}
+.stat-value{font-family:var(--font-display);font-size:2.5rem;font-weight:600;line-height:1}
+
+/* Two Column Layout */
+.content-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.card-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--color-border)}
+.card-title{font-family:var(--font-display);font-size:1.1rem;font-weight:600}
+.card-body{padding:20px 24px}
+
+/* Profile Section */
+.profile-header{display:flex;align-items:center;gap:20px;margin-bottom:24px}
+.profile-avatar{width:80px;height:80px;border-radius:50%;background:var(--color-accent-soft);color:var(--color-accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:2rem}
 .profile-info h2{font-family:var(--font-display);font-size:1.5rem;font-weight:600;margin-bottom:4px}
-.profile-info p{color:var(--color-text-secondary);font-size:0.95rem}
-.profile-meta{display:flex;gap:20px;padding:0 24px 24px;border-bottom:1px solid var(--color-border)}
-.profile-meta-item{display:flex;align-items:center;gap:8px;color:var(--color-text-secondary);font-size:0.9rem}
-.profile-meta-item svg{width:16px;height:16px;color:var(--color-text-muted)}
+.profile-info p{font-size:0.9rem;color:var(--color-text-secondary)}
 
-.quick-actions{padding:16px}
-.quick-action{display:flex;align-items:center;gap:16px;padding:16px;border-radius:var(--radius-md);cursor:pointer;transition:background 0.15s;text-decoration:none;color:inherit}
-.quick-action:hover{background:rgba(0,0,0,0.03)}
-.quick-action-icon{width:44px;height:44px;border-radius:var(--radius-sm);background:var(--color-accent-soft);color:var(--color-accent);display:flex;align-items:center;justify-content:center}
-.quick-action-icon svg{width:20px;height:20px}
-.quick-action-content{flex:1}
-.quick-action-title{font-weight:600;margin-bottom:2px}
-.quick-action-desc{font-size:0.85rem;color:var(--color-text-secondary)}
-.quick-action-arrow{color:var(--color-text-muted)}
-.quick-action-arrow svg{width:20px;height:20px}
-.quick-action.danger .quick-action-icon{background:rgba(239,68,68,0.1);color:var(--color-error)}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid var(--color-border)}
+.info-row:last-child{border-bottom:none}
+.info-label{font-size:0.85rem;color:var(--color-text-secondary)}
+.info-value{font-size:0.95rem;font-weight:500}
 
-@media(max-width:768px){.stats-grid{grid-template-columns:repeat(2,1fr)}.profile-meta{flex-direction:column;gap:12px}}
+/* Action Buttons */
+.action-list{display:flex;flex-direction:column;gap:4px}
+.action-btn{display:flex;align-items:center;gap:12px;width:100%;padding:16px 20px;background:transparent;border:none;border-radius:var(--radius-md);font-family:var(--font-body);font-size:0.95rem;color:var(--color-text);cursor:pointer;transition:all 0.15s;text-align:left;text-decoration:none}
+.action-btn:hover{background:rgba(255,255,255,0.5)}
+.action-btn svg{width:20px;height:20px;color:var(--color-text-muted)}
+.action-btn span{flex:1}
+.action-btn .action-arrow{color:var(--color-text-muted);opacity:0;transition:all 0.15s}
+.action-btn:hover .action-arrow{opacity:1;transform:translateX(4px)}
+.action-btn.danger{color:var(--color-error)}
+.action-btn.danger svg{color:var(--color-error)}
+
+@media(max-width:1024px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){
+    .stats-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+    .stat-card{padding:16px}
+    .stat-value{font-size:2rem}
+    .content-grid{grid-template-columns:1fr}
+}
 {% endblock %}
 
 {% block content %}
-<div class="settings">
+<div class="settings-page">
     <header class="page-header">
         <div>
-            <h1 class="page-title">Settings</h1>
-            <p class="page-subtitle">Manage your account</p>
+            <h1 class="page-title" id="pageGreeting">Settings</h1>
+            <p class="page-subtitle">Manage your profile and track your progress</p>
+        </div>
+        <div class="day-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span id="dayBadge">Day 1 of 14</span>
         </div>
     </header>
-    
-    <section class="stats-grid">
-        <div class="glass-card stat-card">
-            <div class="stat-value" id="statCalls">0</div>
-            <div class="stat-label">Calls</div>
-        </div>
-        <div class="glass-card stat-card">
-            <div class="stat-value" id="statAppointments">0</div>
-            <div class="stat-label">Appointments</div>
-        </div>
-        <div class="glass-card stat-card">
-            <div class="stat-value" id="statPresentations">0</div>
-            <div class="stat-label">Presentations</div>
-        </div>
-        <div class="glass-card stat-card">
-            <div class="stat-value" id="statCloses">0</div>
-            <div class="stat-label">Closes</div>
-        </div>
-    </section>
-    
-    <section class="glass-card profile-card">
-        <div class="profile-header">
-            <div class="profile-avatar" id="profileAvatar">A</div>
-            <div class="profile-info">
-                <h2 id="profileName">Agent</h2>
-                <p id="profileAgency">Loading...</p>
-            </div>
-        </div>
-        <div class="profile-meta">
-            <div class="profile-meta-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-                <span id="profilePhone">---</span>
-            </div>
-            <div class="profile-meta-item">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                <span id="profileJoined">Joined ---</span>
-            </div>
-        </div>
-        <div class="quick-actions">
-            <a href="https://discord.gg/your-server" target="_blank" class="quick-action">
-                <div class="quick-action-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                </div>
-                <div class="quick-action-content">
-                    <div class="quick-action-title">Join Discord</div>
-                    <div class="quick-action-desc">Connect with other agents</div>
-                </div>
-                <div class="quick-action-arrow">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-                </div>
-            </a>
-            <button class="quick-action" onclick="typeof Chat !== 'undefined' && Chat.open()">
-                <div class="quick-action-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                </div>
-                <div class="quick-action-content">
-                    <div class="quick-action-title">Ask Coachd</div>
-                    <div class="quick-action-desc">Get help anytime</div>
-                </div>
-                <div class="quick-action-arrow">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-                </div>
-            </button>
-            <a href="/call" class="quick-action">
-                <div class="quick-action-icon">
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <section class="glass-card stat-card">
+            <div class="stat-card-header">
+                <span class="stat-label">Total Calls</span>
+                <div class="stat-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
                 </div>
-                <div class="quick-action-content">
-                    <div class="quick-action-title">Start a Call</div>
-                    <div class="quick-action-desc">Get real-time coaching</div>
+            </div>
+            <div class="stat-value" id="statCalls">0</div>
+        </section>
+        <section class="glass-card stat-card">
+            <div class="stat-card-header">
+                <span class="stat-label">Appointments</span>
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 </div>
-                <div class="quick-action-arrow">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </div>
+            <div class="stat-value" id="statAppointments">0</div>
+        </section>
+        <section class="glass-card stat-card">
+            <div class="stat-card-header">
+                <span class="stat-label">Presentations</span>
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
                 </div>
-            </a>
-            <button class="quick-action danger" onclick="logout()">
-                <div class="quick-action-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            </div>
+            <div class="stat-value" id="statPresentations">0</div>
+        </section>
+        <section class="glass-card stat-card">
+            <div class="stat-card-header">
+                <span class="stat-label">Closes</span>
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                 </div>
-                <div class="quick-action-content">
-                    <div class="quick-action-title">Sign Out</div>
-                    <div class="quick-action-desc">Log out of your account</div>
+            </div>
+            <div class="stat-value" id="statCloses">0</div>
+        </section>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="content-grid">
+        <!-- Profile Card -->
+        <section class="glass-card">
+            <div class="card-header">
+                <h3 class="card-title">Profile</h3>
+            </div>
+            <div class="card-body">
+                <div class="profile-header">
+                    <div class="profile-avatar" id="profileAvatar">A</div>
+                    <div class="profile-info">
+                        <h2 id="profileName">Agent</h2>
+                        <p id="profileAgency">Loading...</p>
+                    </div>
                 </div>
-                <div class="quick-action-arrow">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                <div class="info-row">
+                    <span class="info-label">Phone</span>
+                    <span class="info-value" id="profilePhone">—</span>
                 </div>
-            </button>
-        </div>
-    </section>
+                <div class="info-row">
+                    <span class="info-label">Member since</span>
+                    <span class="info-value" id="profileJoined">—</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Actions Card -->
+        <section class="glass-card">
+            <div class="card-header">
+                <h3 class="card-title">Quick Actions</h3>
+            </div>
+            <div class="card-body" style="padding:12px 16px">
+                <div class="action-list">
+                    <a href="https://discord.gg/GzpQ4qssC" target="_blank" class="action-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                        <span>Join Team Discord</span>
+                        <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </a>
+                    <button class="action-btn" onclick="Chat.open()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                        <span>Ask Coachd</span>
+                        <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </button>
+                    <a href="/call" class="action-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                        <span>Start a Call</span>
+                        <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </a>
+                    <button class="action-btn danger" onclick="logout()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                        <span>Sign Out</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    let currentAgent = null;
+    let agent = null;
     
-    Chat.setAgencyCodeGetter(() => currentAgent?.agency_code);
+    Chat.setAgencyCodeGetter(() => agent?.agency_code);
 
-    function initSettings(agent) {
-        currentAgent = agent;
+    function formatPhone(p) {
+        const d = (p || '').replace(/\D/g, '');
+        return d.length === 10 ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}` : 
+               d.length === 11 && d[0] === '1' ? `(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}` : p || '—';
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '—';
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    }
+
+    async function initSettings(agentData) {
+        agent = agentData;
         
-        // Update stats
+        const initials = ((agent.first_name?.[0] || '') + (agent.last_name?.[0] || '')).toUpperCase() || 'A';
+        const fullName = agent.first_name && agent.last_name 
+            ? `${agent.first_name} ${agent.last_name}` 
+            : 'Agent';
+        
+        // Header
+        document.getElementById('pageGreeting').textContent = `${fullName}'s Settings`;
+        document.getElementById('dayBadge').textContent = `Day ${agent.onboarding_day || 1} of 14`;
+        
+        // Avatars
+        updateAvatar(agent);
+        document.getElementById('profileAvatar').textContent = initials;
+        
+        // Profile card
+        document.getElementById('profileName').textContent = fullName;
+        document.getElementById('profileAgency').textContent = agent.agency_code;
+        document.getElementById('profilePhone').textContent = formatPhone(agent.phone);
+        document.getElementById('profileJoined').textContent = formatDate(agent.created_at);
+        
+        // Stats
         document.getElementById('statCalls').textContent = agent.total_calls || 0;
         document.getElementById('statAppointments').textContent = agent.total_appointments || 0;
         document.getElementById('statPresentations').textContent = agent.total_presentations || 0;
         document.getElementById('statCloses').textContent = agent.total_closes || 0;
-        
-        // Update profile
-        const initials = ((agent.first_name?.[0] || '') + (agent.last_name?.[0] || '')).toUpperCase() || 'A';
-        document.getElementById('profileAvatar').textContent = initials;
-        document.getElementById('profileName').textContent = agent.first_name && agent.last_name 
-            ? `${agent.first_name} ${agent.last_name}` 
-            : 'Agent';
-        document.getElementById('profileAgency').textContent = agent.agency_code || 'Agency';
-        document.getElementById('profilePhone').textContent = agent.phone || '---';
-        document.getElementById('profileJoined').textContent = 'Day ' + (agent.onboarding_day || 1) + ' of 14';
-        
-        updateAvatar(agent);
     }
-    
+
     function logout() {
+        const token = localStorage.getItem('coachd_token');
+        if (token) {
+            fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            }).catch(() => {});
+        }
+        
         localStorage.removeItem('coachd_token');
+        localStorage.removeItem('coachd_agency');
+        localStorage.removeItem('coachd_agent');
         localStorage.removeItem('coachd_agent_cache');
-        sessionStorage.clear();
         window.location.href = '/auth';
     }
 
     // Initialize on page load
     (async function() {
-        const agent = await checkAuth();
-        if (agent) initSettings(agent);
+        const agentData = await checkAuth();
+        if (agentData) initSettings(agentData);
     })();
 </script>
 {% endblock %}
