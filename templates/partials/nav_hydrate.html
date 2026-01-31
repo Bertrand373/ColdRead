@@ -1,3 +1,24 @@
 <script>
-(function(){try{var c=localStorage.getItem('coachd_agent_cache');if(c){var a=JSON.parse(c);var i=((a.first_name||'')[0]||'')+((a.last_name||'')[0]||'');if(i){i=i.toUpperCase();document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('#userAvatar,#profileAvatar,.user-avatar,[data-nav-avatar]').forEach(function(e){if(e.textContent==='A')e.textContent=i;});});}}}catch(e){}})();
+(function(){
+    var i = '';
+    try {
+        var c = localStorage.getItem('coachd_agent_cache');
+        if (c) {
+            var a = JSON.parse(c);
+            i = ((a.first_name||'')[0]||'')+((a.last_name||'')[0]||'');
+            i = i.toUpperCase();
+        }
+    } catch(e){}
+    // Inject style to show correct initials immediately
+    if (i) {
+        document.write('<style>#userAvatar:not([data-set]){font-size:0}#userAvatar:not([data-set])::after{content:"'+i+'";font-size:0.85rem;font-weight:600}</style>');
+    }
+    document.addEventListener('DOMContentLoaded', function(){
+        var el = document.getElementById('userAvatar');
+        if (el && i) {
+            el.textContent = i;
+            el.setAttribute('data-set', '1');
+        }
+    });
+})();
 </script>
