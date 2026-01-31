@@ -270,7 +270,7 @@
         async function loadProfile() {
             const token = localStorage.getItem('coachd_token');
             if (!token) {
-                window.location.href = '/';
+                window.location.href = '/auth';
                 return;
             }
             
@@ -281,7 +281,7 @@
                 
                 if (!res.ok) {
                     localStorage.removeItem('coachd_token');
-                    window.location.href = '/';
+                    window.location.href = '/auth';
                     return;
                 }
                 
@@ -339,11 +339,14 @@
             localStorage.removeItem('coachd_agency');
             localStorage.removeItem('coachd_agent');
             localStorage.removeItem('coachd_agent_cache');
-            window.location.href = '/';
+            window.location.href = '/auth';
         }
 
         // Init
         loadProfile();
+        
+        // Re-init on Turbo navigation
+        document.addEventListener('turbo:load', () => loadProfile());
     </script>
 </body>
 </html>

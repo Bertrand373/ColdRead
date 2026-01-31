@@ -4849,7 +4849,7 @@
                 console.log('[Security] No validated agency code - redirecting to home');
                 const loader = document.getElementById('pageLoader');
                 if (loader) loader.classList.remove('hidden');
-                window.location.href = '/';
+                window.location.href = '/auth';
                 return null;
             }
             try {
@@ -4858,7 +4858,7 @@
                     console.log('[Security] Invalid agency code format - redirecting to home');
                     const loader = document.getElementById('pageLoader');
                     if (loader) loader.classList.remove('hidden');
-                    window.location.href = '/';
+                    window.location.href = '/auth';
                     return null;
                 }
                 console.log('[Security] Validated agency code:', agency.code);
@@ -4868,7 +4868,7 @@
                 localStorage.removeItem('coachd_agency');
                 const loader = document.getElementById('pageLoader');
                 if (loader) loader.classList.remove('hidden');
-                window.location.href = '/';
+                window.location.href = '/auth';
                 return null;
             }
         }
@@ -6921,7 +6921,7 @@
         function goHome() {
             showPageLoader();
             setTimeout(() => {
-                window.location.href = '/';
+                window.location.href = '/auth';
             }, 150);
         }
         
@@ -6945,7 +6945,7 @@
                 } else if (dom.identifyScreen?.classList.contains('active')) {
                     showPageLoader();
                     setTimeout(() => {
-                        window.location.href = '/';
+                        window.location.href = '/auth';
                     }, 150);
                 } else {
                     // Fallback: go home if no known state
