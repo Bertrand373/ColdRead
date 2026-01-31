@@ -8,8 +8,12 @@
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#F5F5F7">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.4/dist/turbo.es2017-esm.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        /* Turbo progress bar */
+        .turbo-progress-bar{position:fixed;top:0;left:0;height:3px;background:var(--color-accent,#3B82F6);z-index:9999;transition:width 0.3s ease}
+        
         :root{--color-bg:#F5F5F7;--color-glass:rgba(255,255,255,0.65);--color-glass-strong:rgba(255,255,255,0.85);--color-glass-border:rgba(255,255,255,0.4);--color-border:rgba(0,0,0,0.06);--color-text:#1A1A1A;--color-text-secondary:#6B7280;--color-text-muted:#9CA3AF;--color-accent:#3B82F6;--color-accent-soft:rgba(59,130,246,0.12);--color-error:#EF4444;--font-display:'Outfit',sans-serif;--font-body:'Inter',sans-serif;--blur:blur(24px);--blur-strong:blur(40px);--shadow-glass:0 8px 32px rgba(0,0,0,0.06);--radius-sm:12px;--radius-md:16px;--radius-lg:24px;--radius-full:9999px;--safe-bottom:env(safe-area-inset-bottom,0px);--sidebar-width:72px}
         *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{height:100%;overflow:hidden}body{background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);-webkit-font-smoothing:antialiased}
         .screen{display:none;height:100%}.screen.active{display:flex}
