@@ -318,9 +318,21 @@ async def telnyx_agent_stream(websocket: WebSocket, session_id: str):
 # ============ PAGE ROUTES ============
 
 @app.get("/", response_class=HTMLResponse)
-async def agent_home(request: Request):
-    """Main agent entry point"""
-    return templates.TemplateResponse("agent.html", {"request": request})
+async def root(request: Request):
+    """Root - serves auth page"""
+    return templates.TemplateResponse("auth.html", {"request": request})
+
+
+@app.get("/auth", response_class=HTMLResponse)
+async def auth_page(request: Request):
+    """Auth/login page"""
+    return templates.TemplateResponse("auth.html", {"request": request})
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard_page(request: Request):
+    """Dashboard for authenticated users"""
+    return templates.TemplateResponse("dashboard.html", {"request": request})
 
 
 @app.get("/chat", response_class=HTMLResponse)
