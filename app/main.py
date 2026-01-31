@@ -148,7 +148,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Coachd.ai",
     description="Real-time AI sales assistant for life insurance agents",
-    version="3.2.0",  # Added agent authentication
+    version="3.3.0",  # Fixed duplicate route, Turbo Drive navigation
     lifespan=lifespan
 )
 
@@ -332,7 +332,7 @@ async def auth_page(request: Request):
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_page(request: Request):
     """Dashboard for authenticated users"""
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    return templates.TemplateResponse("dashboard.html", {"request": request, "active_page": "dashboard"})
 
 
 @app.get("/chat", response_class=HTMLResponse)
@@ -345,26 +345,26 @@ async def chat_page(request: Request):
 async def call_page(request: Request):
     """Live call interface"""
     if is_telnyx_configured():
-        return templates.TemplateResponse("call_telnyx.html", {"request": request})
-    return templates.TemplateResponse("call_new.html", {"request": request})
+        return templates.TemplateResponse("call_telnyx.html", {"request": request, "active_page": "call"})
+    return templates.TemplateResponse("call_new.html", {"request": request, "active_page": "call"})
 
 
 @app.get("/call/browser", response_class=HTMLResponse)
 async def call_browser_page(request: Request):
     """Browser mic mode"""
-    return templates.TemplateResponse("call_new.html", {"request": request})
+    return templates.TemplateResponse("call_new.html", {"request": request, "active_page": "call"})
 
 
 @app.get("/call/telnyx", response_class=HTMLResponse)
 async def call_telnyx_page(request: Request):
     """Telnyx click-to-call mode"""
-    return templates.TemplateResponse("call_telnyx.html", {"request": request})
+    return templates.TemplateResponse("call_telnyx.html", {"request": request, "active_page": "call"})
 
 
 @app.get("/call/test", response_class=HTMLResponse)
 async def call_test_page(request: Request):
     """Test page"""
-    return templates.TemplateResponse("call_new.html", {"request": request})
+    return templates.TemplateResponse("call_new.html", {"request": request, "active_page": "call"})
 
 
 @app.get("/dialer", response_class=HTMLResponse)
@@ -376,7 +376,13 @@ async def dialer_page(request: Request):
 @app.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request):
     """Agent settings and profile"""
-    return templates.TemplateResponse("settings.html", {"request": request})
+    return templates.TemplateResponse("settings.html", {"request": request, "active_page": "settings"})
+
+
+@app.get("/resources", response_class=HTMLResponse)
+async def resources_page(request: Request):
+    """Resources page - training materials"""
+    return templates.TemplateResponse("resources.html", {"request": request, "active_page": "resources"})
 
 
 @app.get("/admin", response_class=HTMLResponse)
@@ -405,9 +411,11 @@ async def platform_admin_page(request: Request):
     return templates.TemplateResponse("platform_admin.html", {"request": request})
 
 
-@app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard_redirect(request: Request):
-    return RedirectResponse(url="/admin")
+# REMOVED: Duplicate /dashboard route that was redirecting to /admin
+# This was causing route conflicts and breaking navigation
+# @app.get("/dashboard", response_class=HTMLResponse)
+# async def dashboard_redirect(request: Request):
+#     return RedirectResponse(url="/admin")
 
 
 @app.get("/privacy", response_class=HTMLResponse)
