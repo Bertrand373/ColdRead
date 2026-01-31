@@ -1,352 +1,247 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Settings | Coachd</title>
-    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#F5F5F7">
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.4/dist/turbo.es2017-esm.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <style>
-        /* Turbo progress bar */
-        .turbo-progress-bar{position:fixed;top:0;left:0;height:3px;background:var(--color-accent,#3B82F6);z-index:9999;transition:width 0.3s ease}
-        
-        :root{--color-bg:#F5F5F7;--color-glass:rgba(255,255,255,0.65);--color-glass-strong:rgba(255,255,255,0.85);--color-glass-border:rgba(255,255,255,0.4);--color-border:rgba(0,0,0,0.06);--color-text:#1A1A1A;--color-text-secondary:#6B7280;--color-text-muted:#9CA3AF;--color-accent:#3B82F6;--color-accent-soft:rgba(59,130,246,0.12);--color-error:#EF4444;--color-success:#10B981;--font-display:'Outfit',sans-serif;--font-body:'Inter',sans-serif;--blur:blur(24px);--blur-strong:blur(40px);--shadow-glass:0 8px 32px rgba(0,0,0,0.06);--radius-sm:12px;--radius-md:16px;--radius-lg:24px;--radius-full:9999px;--safe-bottom:env(safe-area-inset-bottom,0px);--sidebar-width:72px}
-        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{height:100%;overflow:hidden}body{background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);-webkit-font-smoothing:antialiased}
-        
-        .app{display:flex;height:100%}
-
-        /* ===== SIDEBAR (Desktop) ===== */
-        .sidebar{width:var(--sidebar-width);background:var(--color-glass);backdrop-filter:var(--blur-strong);border-right:1px solid var(--color-border);display:flex;flex-direction:column;align-items:center;padding:20px 0;position:fixed;top:0;left:0;height:100vh;z-index:100}
-        .sidebar-logo{width:40px;height:40px;margin-bottom:32px}
-        .sidebar-logo img{width:100%;height:100%}
-        .sidebar-nav{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 12px}
-        .nav-item{width:48px;height:48px;display:flex;align-items:center;justify-content:center;border:none;border-radius:var(--radius-sm);background:transparent;color:var(--color-text-muted);cursor:pointer;transition:all 0.15s;text-decoration:none;position:relative}
-        .nav-item:hover{background:rgba(255,255,255,0.5);color:var(--color-text)}
-        .nav-item.active{background:var(--color-accent-soft);color:var(--color-accent)}
-        .nav-item svg{width:22px;height:22px}
-        .nav-item::after{content:attr(data-tooltip);position:absolute;left:calc(100% + 12px);padding:8px 12px;background:var(--color-text);color:white;font-size:0.8rem;font-weight:500;border-radius:8px;white-space:nowrap;opacity:0;visibility:hidden;transition:all 0.15s;pointer-events:none}
-        .nav-item:hover::after{opacity:1;visibility:visible}
-        .sidebar-footer{padding:0 12px;display:flex;flex-direction:column;align-items:center;gap:8px}
-        .user-avatar{width:40px;height:40px;border-radius:50%;background:var(--color-accent-soft);color:var(--color-accent);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem}
-
-        /* ===== MAIN CONTENT (matches dashboard) ===== */
-        .main-content{flex:1;margin-left:var(--sidebar-width);height:100vh;overflow-y:auto;padding:32px 40px 120px}
-        .settings-page{max-width:1200px;margin:0 auto}
-        
-        /* ===== PAGE HEADER (matches dashboard) ===== */
-        .page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px}
-        .page-title{font-family:var(--font-display);font-size:2rem;font-weight:600;letter-spacing:-0.02em;margin-bottom:4px}
-        .page-subtitle{font-size:0.95rem;color:var(--color-text-secondary)}
-        .day-badge{display:flex;align-items:center;gap:8px;padding:10px 18px;background:var(--color-glass-strong);backdrop-filter:var(--blur);border:1px solid var(--color-glass-border);border-radius:var(--radius-full);font-size:0.85rem;font-weight:600;color:var(--color-accent);box-shadow:var(--shadow-glass)}
-        .day-badge svg{width:16px;height:16px}
-
-        /* ===== GLASS CARDS ===== */
-        .glass-card{background:var(--color-glass);backdrop-filter:var(--blur);border:1px solid var(--color-glass-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-glass);overflow:hidden}
-        .card-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--color-border)}
-        .card-title{font-family:var(--font-display);font-size:1.1rem;font-weight:600}
-        .card-body{padding:20px 24px}
-
-        /* ===== STATS GRID (matches dashboard progress cards) ===== */
-        .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:28px}
-        .stat-card{padding:24px}
-        .stat-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-        .stat-label{font-size:0.9rem;font-weight:500;color:var(--color-text-secondary)}
-        .stat-icon{width:36px;height:36px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;color:var(--color-text-muted)}
-        .stat-icon svg{width:18px;height:18px}
-        .stat-value{font-family:var(--font-display);font-size:2.5rem;font-weight:600;line-height:1}
-
-        /* ===== TWO COLUMN LAYOUT ===== */
-        .content-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-
-        /* ===== PROFILE SECTION ===== */
-        .profile-header{display:flex;align-items:center;gap:20px;margin-bottom:24px}
-        .profile-avatar{width:80px;height:80px;border-radius:50%;background:var(--color-accent-soft);color:var(--color-accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:2rem}
-        .profile-info h2{font-family:var(--font-display);font-size:1.5rem;font-weight:600;margin-bottom:4px}
-        .profile-info p{font-size:0.9rem;color:var(--color-text-secondary)}
-        
-        .info-row{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid var(--color-border)}
-        .info-row:last-child{border-bottom:none}
-        .info-label{font-size:0.85rem;color:var(--color-text-secondary)}
-        .info-value{font-size:0.95rem;font-weight:500}
-
-        /* ===== ACTION BUTTONS ===== */
-        .action-list{display:flex;flex-direction:column;gap:4px}
-        .action-btn{display:flex;align-items:center;gap:12px;width:100%;padding:16px 20px;background:transparent;border:none;border-radius:var(--radius-md);font-family:var(--font-body);font-size:0.95rem;color:var(--color-text);cursor:pointer;transition:all 0.15s;text-align:left;text-decoration:none}
-        .action-btn:hover{background:rgba(255,255,255,0.5)}
-        .action-btn svg{width:20px;height:20px;color:var(--color-text-muted)}
-        .action-btn span{flex:1}
-        .action-btn .action-arrow{color:var(--color-text-muted);opacity:0;transition:all 0.15s}
-        .action-btn:hover .action-arrow{opacity:1;transform:translateX(4px)}
-        .action-btn.danger{color:var(--color-error)}
-        .action-btn.danger svg{color:var(--color-error)}
-
-        /* ===== MOBILE HEADER ===== */
-        .mobile-header{display:none;position:fixed;top:0;left:0;right:0;height:44px;padding:0 20px;z-index:300;align-items:center;justify-content:space-between;background:transparent}
-        .mobile-header-left{display:flex;align-items:center}
-        .mobile-header-logo{height:20px;opacity:0.9}
-
-        /* ===== FLOATING GLASS PILL NAV (Mobile) ===== */
-        .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:400;padding:8px 12px calc(8px + var(--safe-bottom))}
-        .bottom-nav-pill{background:var(--color-glass-strong);backdrop-filter:var(--blur-strong);border:1px solid var(--color-glass-border);border-radius:var(--radius-full);padding:6px 8px;box-shadow:0 4px 24px rgba(0,0,0,0.1)}
-        .bottom-nav-items{display:flex;justify-content:space-around}
-        .bottom-nav-normal{display:contents}
-        .bottom-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 12px;background:transparent;border:none;color:var(--color-text-muted);text-decoration:none;border-radius:var(--radius-md);transition:color 0.15s}
-        .bottom-nav-item.active{color:var(--color-accent)}
-        .bottom-nav-item svg{width:20px;height:20px}
-        .bottom-nav-label{font-size:0.6rem;font-weight:600}
-
-        /* Chat styles loaded from partial */
-        {% include 'partials/chat_styles.css' %}
-
-        /* ===== RESPONSIVE ===== */
-        @media(max-width:1024px){
-            .stats-grid{grid-template-columns:repeat(2,1fr)}
-        }
-        @media(max-width:768px){
-            .sidebar{display:none}
-            .mobile-header{display:flex}
-            .bottom-nav{display:block}
-            .main-content{margin-left:0;padding:calc(44px + 24px) 20px calc(140px + var(--safe-bottom))}
-            .page-header{flex-direction:column;gap:16px}
-            .page-title{font-size:1.6rem}
-            .stats-grid{grid-template-columns:repeat(2,1fr);gap:12px}
-            .stat-card{padding:16px}
-            .stat-value{font-size:2rem}
-            .content-grid{grid-template-columns:1fr}
-        }
-    </style>
-</head>
+{% extends "base_app.html" %}
 {% set active_page = 'settings' %}
-<body>
-    {% include 'partials/nav_hydrate.html' %}
-    <div class="app">
-        {% include 'partials/mobile_header.html' %}
-        {% include 'partials/sidebar.html' %}
-        
-        <!-- Main Content -->
-        <main class="main-content">
-            <div class="settings-page">
-                <!-- Page Header (matches dashboard) -->
-                <header class="page-header">
-                    <div>
-                        <h1 class="page-title" id="pageGreeting">Settings</h1>
-                        <p class="page-subtitle">Manage your profile and track your progress</p>
-                    </div>
-                    <div class="day-badge">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        <span id="dayBadge">Day 1 of 14</span>
-                    </div>
-                </header>
 
-                <!-- Stats Grid (matches dashboard progress cards) -->
-                <div class="stats-grid">
-                    <section class="glass-card stat-card">
-                        <div class="stat-card-header">
-                            <span class="stat-label">Total Calls</span>
-                            <div class="stat-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-                            </div>
-                        </div>
-                        <div class="stat-value" id="statCalls">0</div>
-                    </section>
-                    <section class="glass-card stat-card">
-                        <div class="stat-card-header">
-                            <span class="stat-label">Appointments</span>
-                            <div class="stat-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                            </div>
-                        </div>
-                        <div class="stat-value" id="statAppointments">0</div>
-                    </section>
-                    <section class="glass-card stat-card">
-                        <div class="stat-card-header">
-                            <span class="stat-label">Presentations</span>
-                            <div class="stat-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                            </div>
-                        </div>
-                        <div class="stat-value" id="statPresentations">0</div>
-                    </section>
-                    <section class="glass-card stat-card">
-                        <div class="stat-card-header">
-                            <span class="stat-label">Closes</span>
-                            <div class="stat-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                            </div>
-                        </div>
-                        <div class="stat-value" id="statCloses">0</div>
-                    </section>
-                </div>
+{% block title %}Settings | Coachd{% endblock %}
 
-                <!-- Two Column Layout -->
-                <div class="content-grid">
-                    <!-- Profile Card -->
-                    <section class="glass-card">
-                        <div class="card-header">
-                            <h3 class="card-title">Profile</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="profile-header">
-                                <div class="profile-avatar" id="profileAvatar">A</div>
-                                <div class="profile-info">
-                                    <h2 id="profileName">Agent</h2>
-                                    <p id="profileAgency">Loading...</p>
-                                </div>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Phone</span>
-                                <span class="info-value" id="profilePhone">—</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Member since</span>
-                                <span class="info-value" id="profileJoined">—</span>
-                            </div>
-                        </div>
-                    </section>
+{% block styles %}
+/* ===== SETTINGS STYLES ===== */
+.settings-page{max-width:1200px;margin:0 auto}
+.day-badge{display:flex;align-items:center;gap:8px;padding:10px 18px;background:var(--color-glass-strong);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--color-glass-border);border-radius:var(--radius-full);font-size:0.85rem;font-weight:600;color:var(--color-accent);box-shadow:var(--shadow-glass)}
+.day-badge svg{width:16px;height:16px}
 
-                    <!-- Quick Actions Card -->
-                    <section class="glass-card">
-                        <div class="card-header">
-                            <h3 class="card-title">Quick Actions</h3>
-                        </div>
-                        <div class="card-body" style="padding:12px 16px">
-                            <div class="action-list">
-                                <a href="https://discord.gg/GzpQ4qssC" target="_blank" class="action-btn">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                                    <span>Join Team Discord</span>
-                                    <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                                </a>
-                                <button class="action-btn" onclick="Chat.open()">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                                    <span>Ask Coachd</span>
-                                    <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                                </button>
-                                <a href="/call" class="action-btn">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
-                                    <span>Start a Call</span>
-                                    <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                                </a>
-                                <button class="action-btn danger" onclick="logout()">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-                                    <span>Sign Out</span>
-                                </button>
-                            </div>
-                        </div>
-                    </section>
+/* Stats Grid */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:28px}
+.stat-card{padding:24px}
+.stat-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.stat-label{font-size:0.9rem;font-weight:500;color:var(--color-text-secondary)}
+.stat-icon{width:36px;height:36px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;color:var(--color-text-muted)}
+.stat-icon svg{width:18px;height:18px}
+.stat-value{font-family:var(--font-display);font-size:2.5rem;font-weight:600;line-height:1}
+
+/* Two Column Layout */
+.content-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.card-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--color-border)}
+.card-title{font-family:var(--font-display);font-size:1.1rem;font-weight:600}
+.card-body{padding:20px 24px}
+
+/* Profile Section */
+.profile-header{display:flex;align-items:center;gap:20px;margin-bottom:24px}
+.profile-avatar{width:80px;height:80px;border-radius:50%;background:var(--color-accent-soft);color:var(--color-accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:2rem}
+.profile-info h2{font-family:var(--font-display);font-size:1.5rem;font-weight:600;margin-bottom:4px}
+.profile-info p{font-size:0.9rem;color:var(--color-text-secondary)}
+
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid var(--color-border)}
+.info-row:last-child{border-bottom:none}
+.info-label{font-size:0.85rem;color:var(--color-text-secondary)}
+.info-value{font-size:0.95rem;font-weight:500}
+
+/* Action Buttons */
+.action-list{display:flex;flex-direction:column;gap:4px}
+.action-btn{display:flex;align-items:center;gap:12px;width:100%;padding:16px 20px;background:transparent;border:none;border-radius:var(--radius-md);font-family:var(--font-body);font-size:0.95rem;color:var(--color-text);cursor:pointer;transition:all 0.15s;text-align:left;text-decoration:none}
+.action-btn:hover{background:rgba(255,255,255,0.5)}
+.action-btn svg{width:20px;height:20px;color:var(--color-text-muted)}
+.action-btn span{flex:1}
+.action-btn .action-arrow{color:var(--color-text-muted);opacity:0;transition:all 0.15s}
+.action-btn:hover .action-arrow{opacity:1;transform:translateX(4px)}
+.action-btn.danger{color:var(--color-error)}
+.action-btn.danger svg{color:var(--color-error)}
+
+@media(max-width:1024px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){
+    .stats-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+    .stat-card{padding:16px}
+    .stat-value{font-size:2rem}
+    .content-grid{grid-template-columns:1fr}
+}
+{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <header class="page-header">
+        <div>
+            <h1 class="page-title" id="pageGreeting">Settings</h1>
+            <p class="page-subtitle">Manage your profile and track your progress</p>
+        </div>
+        <div class="day-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span id="dayBadge">Day 1 of 14</span>
+        </div>
+    </header>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <section class="glass-card stat-card">
+            <div class="stat-card-header">
+                <span class="stat-label">Total Calls</span>
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
                 </div>
             </div>
-        </main>
-
-        {% include 'partials/mobile_nav.html' %}
+            <div class="stat-value" id="statCalls">0</div>
+        </section>
+        <section class="glass-card stat-card">
+            <div class="stat-card-header">
+                <span class="stat-label">Appointments</span>
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+            </div>
+            <div class="stat-value" id="statAppointments">0</div>
+        </section>
+        <section class="glass-card stat-card">
+            <div class="stat-card-header">
+                <span class="stat-label">Presentations</span>
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                </div>
+            </div>
+            <div class="stat-value" id="statPresentations">0</div>
+        </section>
+        <section class="glass-card stat-card">
+            <div class="stat-card-header">
+                <span class="stat-label">Closes</span>
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+            </div>
+            <div class="stat-value" id="statCloses">0</div>
+        </section>
     </div>
 
-    <!-- CHAT MODAL (loaded from partial) -->
-    {% include 'partials/chat.html' %}
+    <!-- Two Column Layout -->
+    <div class="content-grid">
+        <!-- Profile Card -->
+        <section class="glass-card">
+            <div class="card-header">
+                <h3 class="card-title">Profile</h3>
+            </div>
+            <div class="card-body">
+                <div class="profile-header">
+                    <div class="profile-avatar" id="profileAvatar">A</div>
+                    <div class="profile-info">
+                        <h2 id="profileName">Agent</h2>
+                        <p id="profileAgency">Loading...</p>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Phone</span>
+                    <span class="info-value" id="profilePhone">—</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Member since</span>
+                    <span class="info-value" id="profileJoined">—</span>
+                </div>
+            </div>
+        </section>
 
-    <script>
-        // Chat module (loaded from partial)
-        {% include 'partials/chat.js' %}
+        <!-- Quick Actions Card -->
+        <section class="glass-card">
+            <div class="card-header">
+                <h3 class="card-title">Quick Actions</h3>
+            </div>
+            <div class="card-body" style="padding:12px 16px">
+                <div class="action-list">
+                    <a href="https://discord.gg/GzpQ4qssC" target="_blank" class="action-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                        <span>Join Team Discord</span>
+                        <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </a>
+                    <button class="action-btn" onclick="Chat.open()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                        <span>Ask Coachd</span>
+                        <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </button>
+                    <a href="/call" class="action-btn" data-turbo="false">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                        <span>Start a Call</span>
+                        <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </a>
+                    <button class="action-btn danger" onclick="logout()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                        <span>Sign Out</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let agent = null;
+    
+    Chat.setAgencyCodeGetter(() => agent?.agency_code);
+
+    function formatPhone(p) {
+        const d = (p || '').replace(/\D/g, '');
+        return d.length === 10 ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}` : 
+               d.length === 11 && d[0] === '1' ? `(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}` : p || '—';
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '—';
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    }
+
+    async function initSettings(agentData) {
+        agent = agentData;
         
-        let agent = null;
+        const initials = ((agent.first_name?.[0] || '') + (agent.last_name?.[0] || '')).toUpperCase() || 'A';
+        const fullName = agent.first_name && agent.last_name 
+            ? `${agent.first_name} ${agent.last_name}` 
+            : 'Agent';
         
-        Chat.setAgencyCodeGetter(() => agent?.agency_code);
-
-        function formatPhone(p) {
-            const d = (p || '').replace(/\D/g, '');
-            return d.length === 10 ? `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}` : 
-                   d.length === 11 && d[0] === '1' ? `(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}` : p || '—';
-        }
-
-        function formatDate(dateStr) {
-            if (!dateStr) return '—';
-            const d = new Date(dateStr);
-            return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-        }
-
-        async function loadProfile() {
-            const token = localStorage.getItem('coachd_token');
-            if (!token) {
-                window.location.href = '/auth';
-                return;
-            }
-            
-            try {
-                const res = await fetch('/api/auth/me', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (!res.ok) {
-                    localStorage.removeItem('coachd_token');
-                    window.location.href = '/auth';
-                    return;
-                }
-                
-                const data = await res.json();
-                if (data.success && data.agent) {
-                    agent = data.agent;
-                    // Cache agent data for instant nav hydration
-                    try{localStorage.setItem('coachd_agent_cache',JSON.stringify({first_name:agent.first_name,last_name:agent.last_name,agency_code:agent.agency_code,onboarding_day:agent.onboarding_day}));}catch(e){}
-                    renderProfile();
-                }
-            } catch (e) {
-                console.error('Failed to load profile:', e);
-            }
-        }
-
-        function renderProfile() {
-            if (!agent) return;
-            
-            const initials = ((agent.first_name?.[0] || '') + (agent.last_name?.[0] || '')).toUpperCase() || 'A';
-            const fullName = agent.first_name && agent.last_name 
-                ? `${agent.first_name} ${agent.last_name}` 
-                : 'Agent';
-            
-            // Header
-            document.getElementById('pageGreeting').textContent = `${fullName}'s Settings`;
-            document.getElementById('dayBadge').textContent = `Day ${agent.onboarding_day || 1} of 14`;
-            
-            // Avatars
-            document.getElementById('userAvatar').textContent = initials;
-            document.getElementById('profileAvatar').textContent = initials;
-            
-            // Profile card
-            document.getElementById('profileName').textContent = fullName;
-            document.getElementById('profileAgency').textContent = agent.agency_code;
-            document.getElementById('profilePhone').textContent = formatPhone(agent.phone);
-            document.getElementById('profileJoined').textContent = formatDate(agent.created_at);
-            
-            // Stats
-            document.getElementById('statCalls').textContent = agent.total_calls || 0;
-            document.getElementById('statAppointments').textContent = agent.total_appointments || 0;
-            document.getElementById('statPresentations').textContent = agent.total_presentations || 0;
-            document.getElementById('statCloses').textContent = agent.total_closes || 0;
-        }
-
-        function logout() {
-            const token = localStorage.getItem('coachd_token');
-            if (token) {
-                fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }).catch(() => {});
-            }
-            
-            localStorage.removeItem('coachd_token');
-            localStorage.removeItem('coachd_agency');
-            localStorage.removeItem('coachd_agent');
-            localStorage.removeItem('coachd_agent_cache');
-            window.location.href = '/auth';
-        }
-
-        // Init
-        loadProfile();
+        // Header
+        document.getElementById('pageGreeting').textContent = `${fullName}'s Settings`;
+        document.getElementById('dayBadge').textContent = `Day ${agent.onboarding_day || 1} of 14`;
         
-        // Re-init on Turbo navigation
-        document.addEventListener('turbo:load', () => loadProfile());
-    </script>
-</body>
-</html>
+        // Avatars
+        updateAvatar(agent);
+        document.getElementById('profileAvatar').textContent = initials;
+        
+        // Profile card
+        document.getElementById('profileName').textContent = fullName;
+        document.getElementById('profileAgency').textContent = agent.agency_code;
+        document.getElementById('profilePhone').textContent = formatPhone(agent.phone);
+        document.getElementById('profileJoined').textContent = formatDate(agent.created_at);
+        
+        // Stats
+        document.getElementById('statCalls').textContent = agent.total_calls || 0;
+        document.getElementById('statAppointments').textContent = agent.total_appointments || 0;
+        document.getElementById('statPresentations').textContent = agent.total_presentations || 0;
+        document.getElementById('statCloses').textContent = agent.total_closes || 0;
+    }
+
+    function logout() {
+        const token = localStorage.getItem('coachd_token');
+        if (token) {
+            fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            }).catch(() => {});
+        }
+        
+        localStorage.removeItem('coachd_token');
+        localStorage.removeItem('coachd_agency');
+        localStorage.removeItem('coachd_agent');
+        localStorage.removeItem('coachd_agent_cache');
+        window.location.href = '/auth';
+    }
+
+    // Initialize
+    (async function() {
+        const agentData = await checkAuth();
+        if (agentData) initSettings(agentData);
+    })();
+
+    // Re-init on Turbo frame load
+    document.addEventListener('turbo:frame-load', async (e) => {
+        if (e.target.id === 'main-content') {
+            const agentData = await checkAuth();
+            if (agentData) initSettings(agentData);
+        }
+    });
+</script>
+{% endblock %}

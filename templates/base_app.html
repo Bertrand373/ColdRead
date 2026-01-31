@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>{% block title %}Coachd{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#F5F5F7">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.4/dist/turbo.es2017-esm.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ===== TURBO ===== */
+        .turbo-progress-bar{position:fixed;top:0;left:0;height:3px;background:var(--color-accent,#3B82F6);z-index:9999;transition:width 0.3s ease}
+        
+        /* ===== CSS VARIABLES ===== */
+        :root{--color-bg:#F5F5F7;--color-glass:rgba(255,255,255,0.65);--color-glass-strong:rgba(255,255,255,0.85);--color-glass-border:rgba(255,255,255,0.4);--color-border:rgba(0,0,0,0.06);--color-text:#1A1A1A;--color-text-secondary:#6B7280;--color-text-muted:#9CA3AF;--color-accent:#3B82F6;--color-accent-soft:rgba(59,130,246,0.12);--color-error:#EF4444;--color-success:#10B981;--font-display:'Outfit',sans-serif;--font-body:'Inter',sans-serif;--blur:blur(24px);--blur-strong:blur(40px);--shadow-glass:0 8px 32px rgba(0,0,0,0.06);--radius-sm:12px;--radius-md:16px;--radius-lg:24px;--radius-full:9999px;--safe-bottom:env(safe-area-inset-bottom,0px);--sidebar-width:72px}
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        html,body{height:100%;overflow:hidden}
+        body{background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);-webkit-font-smoothing:antialiased}
+
+        /* ===== APP SHELL ===== */
+        .app{display:flex;height:100%}
+
+        /* ===== SIDEBAR (Desktop) ===== */
+        .sidebar{width:var(--sidebar-width);background:var(--color-glass);backdrop-filter:var(--blur-strong);-webkit-backdrop-filter:var(--blur-strong);border-right:1px solid var(--color-border);display:flex;flex-direction:column;align-items:center;padding:20px 0;position:fixed;top:0;left:0;height:100vh;z-index:100}
+        .sidebar-logo{width:40px;height:40px;margin-bottom:32px}
+        .sidebar-logo img{width:100%;height:100%}
+        .sidebar-nav{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:0 12px}
+        .sidebar-nav-normal{display:flex;flex-direction:column;gap:8px}
+        .nav-item{width:48px;height:48px;display:flex;align-items:center;justify-content:center;border:none;border-radius:var(--radius-sm);background:transparent;color:var(--color-text-muted);cursor:pointer;transition:all 0.15s;text-decoration:none;position:relative}
+        .nav-item:hover{background:rgba(255,255,255,0.5);color:var(--color-text)}
+        .nav-item.active{background:var(--color-accent-soft);color:var(--color-accent)}
+        .nav-item svg{width:22px;height:22px}
+        .nav-item::after{content:attr(data-tooltip);position:absolute;left:calc(100% + 12px);padding:8px 12px;background:var(--color-text);color:white;font-size:0.8rem;font-weight:500;border-radius:8px;white-space:nowrap;opacity:0;visibility:hidden;transition:all 0.15s;pointer-events:none}
+        .nav-item:hover::after{opacity:1;visibility:visible}
+        .sidebar-footer{padding:0 12px;display:flex;flex-direction:column;align-items:center;gap:8px}
+        .sidebar-footer-normal{display:flex;flex-direction:column;gap:8px;align-items:center}
+        .user-avatar{width:40px;height:40px;border-radius:50%;background:var(--color-accent-soft);color:var(--color-accent);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.85rem}
+
+        /* ===== MAIN CONTENT FRAME ===== */
+        turbo-frame#main-content{display:contents}
+        .main-content{flex:1;margin-left:var(--sidebar-width);height:100vh;overflow-y:auto;padding:32px 40px 120px}
+
+        /* ===== SHARED COMPONENTS ===== */
+        .glass-card{background:var(--color-glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--color-glass-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-glass);overflow:hidden}
+        .page-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px}
+        .page-title{font-family:var(--font-display);font-size:2rem;font-weight:600;letter-spacing:-0.02em;margin-bottom:4px}
+        .page-subtitle{font-size:0.95rem;color:var(--color-text-secondary)}
+
+        /* ===== MOBILE HEADER ===== */
+        .mobile-header{display:none;position:fixed;top:0;left:0;right:0;height:44px;padding:0 20px;z-index:300;align-items:center;justify-content:space-between;background:transparent}
+        .mobile-header-left{display:flex;align-items:center}
+        .mobile-header-logo{height:20px;opacity:0.9}
+
+        /* ===== MOBILE NAV ===== */
+        .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:400;padding:8px 12px calc(8px + var(--safe-bottom))}
+        .bottom-nav-pill{background:var(--color-glass-strong);backdrop-filter:var(--blur-strong);-webkit-backdrop-filter:var(--blur-strong);border:1px solid var(--color-glass-border);border-radius:var(--radius-full);padding:6px 8px;box-shadow:0 4px 24px rgba(0,0,0,0.1)}
+        .bottom-nav-items{display:flex;justify-content:space-around}
+        .bottom-nav-normal{display:contents}
+        .bottom-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 12px;background:transparent;border:none;color:var(--color-text-muted);text-decoration:none;border-radius:var(--radius-md);transition:color 0.15s}
+        .bottom-nav-item.active{color:var(--color-accent)}
+        .bottom-nav-item svg{width:20px;height:20px}
+        .bottom-nav-label{font-size:0.6rem;font-weight:600}
+
+        /* ===== TOAST ===== */
+        .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(100px);padding:14px 28px;background:var(--color-text);color:white;border-radius:var(--radius-full);font-size:0.9rem;font-weight:500;opacity:0;transition:all 0.3s;z-index:2000}
+        .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+        .toast.error{background:var(--color-error)}
+
+        /* ===== RESPONSIVE ===== */
+        @media(max-width:768px){
+            .sidebar{display:none}
+            .mobile-header{display:flex}
+            .bottom-nav{display:block}
+            .main-content{margin-left:0;padding:calc(44px + 24px) 20px calc(140px + var(--safe-bottom))}
+            .page-header{flex-direction:column;gap:16px}
+            .page-title{font-size:1.6rem}
+        }
+
+        /* Chat styles */
+        {% include 'partials/chat_styles.css' %}
+
+        /* Page-specific styles */
+        {% block styles %}{% endblock %}
+    </style>
+</head>
+<body>
+    {% include 'partials/nav_hydrate.html' %}
+    
+    <div class="app">
+        {% include 'partials/mobile_header.html' %}
+        {% include 'partials/sidebar.html' %}
+        
+        <turbo-frame id="main-content" data-turbo-action="advance">
+            <main class="main-content">
+                {% block content %}{% endblock %}
+            </main>
+        </turbo-frame>
+        
+        {% include 'partials/mobile_nav.html' %}
+    </div>
+
+    {% include 'partials/chat.html' %}
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Shared utilities
+        function showToast(msg, type='info') { 
+            const t = document.getElementById('toast'); 
+            t.textContent = msg; 
+            t.className = 'toast show' + (type === 'error' ? ' error' : ''); 
+            setTimeout(() => t.classList.remove('show'), 3000); 
+        }
+
+        // Auth check - redirect to /auth if not logged in
+        async function checkAuth() {
+            const token = localStorage.getItem('coachd_token');
+            if (!token) {
+                window.location.href = '/auth';
+                return null;
+            }
+            try {
+                const res = await fetch('/api/auth/me', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        // Update cache for nav hydration
+                        try{localStorage.setItem('coachd_agent_cache',JSON.stringify({first_name:data.agent.first_name,last_name:data.agent.last_name,agency_code:data.agent.agency_code,onboarding_day:data.agent.onboarding_day}));}catch(e){}
+                        return data.agent;
+                    }
+                }
+            } catch (e) {}
+            localStorage.removeItem('coachd_token');
+            window.location.href = '/auth';
+            return null;
+        }
+
+        // Update avatar with agent initials
+        function updateAvatar(agent) {
+            const avatar = document.getElementById('userAvatar');
+            if (avatar && agent) {
+                const initials = ((agent.first_name?.[0] || '') + (agent.last_name?.[0] || '')).toUpperCase() || 'A';
+                avatar.textContent = initials;
+            }
+        }
+
+        // Chat module
+        {% include 'partials/chat.js' %}
+    </script>
+
+    {% block scripts %}{% endblock %}
+    
+    <script>
+        // Update nav active states on Turbo frame navigation
+        document.addEventListener('turbo:frame-load', (e) => {
+            if (e.target.id === 'main-content') {
+                const path = window.location.pathname;
+                
+                // Update sidebar active states
+                document.querySelectorAll('.sidebar .nav-item[href]').forEach(link => {
+                    const href = link.getAttribute('href');
+                    link.classList.toggle('active', href === path);
+                });
+                
+                // Update mobile nav active states
+                document.querySelectorAll('.bottom-nav .bottom-nav-item[href]').forEach(link => {
+                    const href = link.getAttribute('href');
+                    link.classList.toggle('active', href === path);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
